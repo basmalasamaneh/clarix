@@ -1,0 +1,16 @@
+Read replit.md, docs/CLARIX_SPEC.md (sections 6 and 7), expected/expected_results.json, tools/reference_calc.py and tools/verify.py. Create a checkpoint first. Build only this phase.
+
+PHASE 3 — CALCULATION AND QUALITY ENGINE (no UI, no database, no network).
+
+Build a pure TypeScript module:
+1. Source reader: decode bytes (UTF-8 with or without BOM, otherwise Windows-1256), detect the delimiter (, ; TAB |), parse CSV (quotes, CRLF), apply a mapping.json (see test-data/**/mapping.json): decimal separator, date and datetime formats, fixed unit, event-code map, unit table, tolerances. Keep the physical line number of every row (header = line 1).
+2. Quality + metrics engine implementing spec sections 6 and 7 exactly, including the order of checks, using decimal.js (precision 28). ROUND_HALF_UP only for display helpers.
+3. Output JSON in the same shape as expected_results.json (runs, volume, changeover, downtime, overlaps, issues, overall, comparison with pair, file_issues, formula_like_cells, event_reasons, capability_level).
+4. Display helpers: display number rounding, signed values (+5), minutes to hours.
+5. Design it as an adapter pipeline (reader -> canonical rows -> engine) so a new source format later means a new reader, not an engine change.
+
+The Python files show the rules in code. Write your own TypeScript implementation. Do not shell out to Python at runtime. If the spec and the reference seem to disagree, stop and ask.
+
+Tests (in the project test runner): for every folder under test-data/, load the files and mapping.json, run the engine and compare with the resolved expectation in expected/expected_results.json (implement the "extends" merge: objects merge, arrays and scalars replace; comparison.pair gives the runs to compare; numbers compared as exact decimals; null must be null). Include scenario 20 (identical content hash to baseline) and event_reasons for scenario 21. Port the unit tests from section 1 of tools/verify.py. Every test must pass. Never edit expected files or test data to make a test pass; if something does not match, report it.
+
+Do NOT build: UI, database storage, upload, any page.
