@@ -4,10 +4,10 @@ import request from "supertest";
 import app from "../app";
 import { pool } from "@workspace/db";
 import { assertSeedAllowed, allowedPages } from "../lib/permissions";
-import { withTenant } from "../lib/tenancy";
+import { withTenant, closeTenantPools } from "../lib/tenancy";
 import { sessionStore } from "../lib/session";
 
-after(async () => { sessionStore.close(); await pool.end(); });
+after(async () => { sessionStore.close(); await closeTenantPools(); await pool.end(); });
 test("clean-setup verification uses a genuine non-bypass owner", { skip: process.env.EXPECT_NON_BYPASS_OWNER !== "true" }, async () => {
   const result = await pool.query("SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname=current_user");
   assert.equal(result.rows[0].rolsuper, false);
@@ -103,10 +103,6 @@ test("RLS rejects missing context, forged factory context, and cross-user member
     const forbidden = await client.query("SELECT id FROM factories WHERE id='najm'");
     assert.equal(forbidden.rowCount, 0);
   });
-  await withTenant("test-manager", "najm", async (client) => {
-    assert.equal((await client.query("SELECT id FROM factories")).rowCount, 0);
-  });
-  await withTenant("test-platform", "ethmar", async (client) => {
-    assert.equal((await client.query("SELECT id FROM factories")).rowCount, 0);
-  });
+  await assert.rejects(withTenant("test-manager", "najm", async () => {}));
+  await assert.rejects(withTenant("test-platform", "ethmar", async () => {}));
 });

@@ -8,7 +8,7 @@ import { LoginBody, UpdatePreferencesBody, SelectFactoryBody, GetPageParams, Get
 import { sessionView } from "../lib/identity";
 import { saveSession } from "../lib/session";
 import { isProduction, allowedPages } from "../lib/permissions";
-import { withTenant } from "../lib/tenancy";
+import { withRequestTenant } from "../lib/tenancy";
 
 const router: IRouter = Router();
 const loginLimit = rateLimit({
@@ -79,7 +79,7 @@ router.get("/factories/:factoryId/pages/:page", async (req, res) => {
       !allowedPages(membership.role).includes(input.data.page)) {
     res.status(403).json({ error: "FORBIDDEN" }); return;
   }
-  const found = await withTenant(view.user!.id, membership.factoryId, async (client) =>
+  const found = await withRequestTenant(req, async (client) =>
     client.query("SELECT id FROM factories WHERE id=$1 AND status='active'", [membership.factoryId]));
   if (!found.rowCount) { res.status(403).json({ error: "FORBIDDEN" }); return; }
   res.json(GetPageResponse.parse({ page: input.data.page, factoryId: membership.factoryId, state: "empty" }));

@@ -24,7 +24,7 @@ try {
 
   const env = { ...process.env, PGOPTIONS: `-c role=${schema} -c search_path=${schema}`, EXPECT_NON_BYPASS_OWNER: "true", LOG_LEVEL: "silent" };
   // No connection strings or passwords are emitted or persisted.
-  for (const script of ["seed:test", "test"]) {
+  for (const script of ["seed:test", "test:foundation"]) {
     const result = spawnSync("pnpm", ["run", script], { env, stdio: "inherit" });
     if (result.status !== 0) throw new Error(`Clean restricted-owner ${script} failed`);
   }

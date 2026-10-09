@@ -1,0 +1,23 @@
+Read replit.md (including STANDING RULES), docs/CLARIX_SPEC.md (sections 4, 5 and 11) and docs/TENANCY_TESTS.md completely first. Create a checkpoint first.
+
+PHASE 2 — DATABASE SCHEMA + TENANCY (Wave 1). Build only this phase.
+
+Goal: the full canonical database schema from spec section 5 for the data phases that follow, with tenant isolation enforced at the database level.
+
+Build:
+1. Tables for: imports, raw_rows, column_mappings, orders, production_records, events, data_issues. Every table has factory_id. Use Postgres numeric (never float) for all quantities and durations. Uniqueness is scoped to (factory_id, source): the same order id "E-01" or record id must be allowed in two different factories, and the same file hash must be allowed in two different factories (duplicate-file detection is per factory only).
+2. raw_rows is immutable: block UPDATE and DELETE at the database level (trigger or equivalent), and store file name, physical line number and the original cells as JSON.
+3. Row-Level Security on every tenant table, FORCE ROW LEVEL SECURITY enabled, using a tenant context set per request from the authenticated membership (never from a client-supplied id). The runtime role must be a non-owner role without BYPASSRLS.
+4. One shared tenant-scoped data-access helper that all future code must use, so no query can run without a factory context.
+5. Prove the RLS claim with evidence: report which role the app connects as, whether it owns the tables, whether it has BYPASSRLS, and show that a query with no tenant context returns zero rows or errors.
+6. Add indexes on factory_id plus the columns that later phases will filter by (order id, machine, mold, shift, date, import id).
+
+Tests (automated, against the real database, using synthetic rows, not the golden-set files):
+- TENANCY_TESTS T6 (same order/record ids in both factories), T7 (same file hash in both factories) and T8 (no tenant context returns nothing).
+- A factory-A context can never read, update or delete factory-B rows in any new table.
+- raw_rows cannot be updated or deleted.
+- Exactness: a numeric value like 0.1 + 0.2 stays exactly 0.3.
+
+Do NOT build yet: file upload, CSV parsing, mapping UI, calculations, quality checks, comparison, charts, AI, snapshots, reconciliation, invitations. No new pages. Do not change test-data/, expected/ or tools/, and keep python3 tools/verify.py passing.
+
+When finished, use the final report format from STANDING RULES, including the RLS evidence from item 5.

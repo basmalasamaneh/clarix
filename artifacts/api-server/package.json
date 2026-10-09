@@ -11,6 +11,8 @@
     "seed:test": "tsx src/scripts/seed.ts",
     "setup:rls": "tsx src/scripts/setup-rls.ts",
     "test:clean-seed": "tsx src/scripts/verify-clean-seed.ts",
+    "test:foundation": "tsx --test src/tests/foundation.test.ts",
+    "inspect:tenancy": "tsx src/scripts/inspect-tenancy.ts",
     "test": "tsx --test src/tests/*.test.ts"
   },
   "dependencies": {

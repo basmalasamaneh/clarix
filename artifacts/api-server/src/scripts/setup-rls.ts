@@ -7,6 +7,8 @@ if (isProduction()) throw new Error("Development schema setup cannot run in prod
 try {
   const sql = await readFile(new URL("../../../../lib/db/foundation-rls.sql", import.meta.url), "utf8");
   await pool.query(sql);
+  const canonical = await readFile(new URL("../../../../lib/db/canonical-rls.sql", import.meta.url), "utf8");
+  await pool.query(canonical);
 } finally {
   await pool.end();
 }
