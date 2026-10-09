@@ -1,0 +1,17 @@
+Read replit.md (including STANDING RULES), docs/CLARIX_SPEC.md (sections 4, 5 and 9). Checkpoint first. Build only this phase. Reuse the engine from Phase 3.
+
+PHASE 4 — DATA IMPORT.
+
+Build a 3-step import wizard (Analyst and Factory Manager only; Viewer has no access):
+1. Upload: drag and drop plus file picker, several files per import (orders + records + events, or orders + totals). Check type, size (configurable limit) and content, not only the extension. Detect encoding and delimiter, compute SHA-256 per file, preview the first 20 rows. Store original files unmodified behind a storage interface. A file set whose content hash was already approved in THIS factory is flagged DUPLICATE_FILE and cannot be approved again (show the existing import instead). The same bytes in another factory are not a duplicate.
+2. Map: map each file column to a canonical field. Suggest the mapping by header similarity (deterministic matching, no AI). Let the user set decimal separator, date/time formats, fixed unit when there is no unit column, and the event-code map (code -> Changeover / Unplanned downtime / Planned stop). Show how sample values will be read ("1,500 t -> 1,500 kg"). Save as a named, versioned mapping template per factory and source, and load templates in later imports. Plain-language labels, inline validation.
+3. Check and approve: run the engine, show counts by severity and the issue list with file and line number. Nothing enters analysis until approved.
+
+Storage rules: save every raw row immutably with file and physical line number. Create canonical rows only at approval. Policy for repeated imports (document it in the spec section 5): data is keyed by (factory, source, order id); approving a new import that contains an order replaces the current data of that order, the old rows are kept and marked superseded. Show a confirmation listing how many orders will be replaced. Import statuses: draft, checked, approved, rejected. No deleting in the MVP.
+Run parsing behind a job interface with progress (synchronous inside the limit is fine). Unreadable numbers must produce a clear error message naming file, line and column, never a crash or a guess.
+
+Tests: through the API, import Ethmar baseline and Najm baseline with their own mapping; scenario 20 detected as duplicate; scenario 21 decodes Arabic; scenario 19 detected as Level 1; Viewer denied; a Najm user cannot see Ethmar imports; wrong file type, oversize and unreadable number cases. Imported then approved data must reproduce the expected numbers.
+
+Do NOT build: comparison, quality center page, charts, AI, reconciliation.                                                 Canonical tables keep unique source ids (see docs/PHASE2_DATABASE.md): at approval insert only the rows the engine INCLUDED. Excluded duplicates and quarantined rows stay only in raw_rows and are referenced by data_issues and by line number, so the source drawer can still show them.
+
+Source references: store both start_line and end_line of every raw row, and make every user-facing reference use the FIRST physical line of the record. Update the Phase 3 reader accordingly (the golden-set results do not change because the fixtures have no multi-line records) and add a test with a quoted cell that spans two lines.
