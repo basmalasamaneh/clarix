@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Clarix"
+description = "Bilingual multi-factory production analysis foundation with secure login, isolated memberships and role-aware empty workspaces."
+version = "1.0.0"
+id = "artifacts/clarix"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23314
+
+[services.development]
+run = "pnpm --filter @workspace/clarix run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/clarix", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/clarix/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23314"
+BASE_PATH = "/"

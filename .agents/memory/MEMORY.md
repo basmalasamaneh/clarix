@@ -1,1 +1,2 @@
 - [Authentication requirements](auth-requirements.md) — Managed auth requires five usable test identities; approved password fallback, seed restrictions and truthful login verification.
+- [Secret-safe browser verification](browser-verification.md) — Remote browser automation may lack workspace secrets; run local Chromium with env-driven inputs, never expose credentials.

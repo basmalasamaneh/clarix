@@ -24,8 +24,137 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/session:
+    get:
+      operationId: getSession
+      responses:
+        "200":
+          description: Session including CSRF token, also available before login
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /auth/login:
+    post:
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Credentials" }
+      responses:
+        "200":
+          description: Authenticated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /auth/logout:
+    post:
+      operationId: logout
+      responses:
+        "204": { description: Logged out }
+  /preferences:
+    patch:
+      operationId: updatePreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Preferences" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /active-factory:
+    post:
+      operationId: selectFactory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FactorySelection" }
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /factories/{factoryId}/pages/{page}:
+    get:
+      operationId: getPage
+      parameters:
+        - { name: factoryId, in: path, required: true, schema: { type: string } }
+        - { name: page, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Authorized empty page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PageState" }
 components:
   schemas:
+    Credentials:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        password: { type: string, minLength: 1, maxLength: 256 }
+    Preferences:
+      type: object
+      additionalProperties: false
+      properties:
+        language: { type: string, enum: [en, ar] }
+        theme: { type: string, enum: [light, dark, system] }
+        tourCompleted: { type: boolean }
+    FactorySelection:
+      type: object
+      additionalProperties: false
+      required: [factoryId]
+      properties:
+        factoryId: { type: string }
+    Membership:
+      type: object
+      required: [factoryId, factoryName, role]
+      properties:
+        factoryId: { type: string }
+        factoryName: { type: string }
+        role: { type: string, enum: [factory_manager, analyst, viewer] }
+    User:
+      type: object
+      required: [id, email, name, platformAdmin, language, theme, tourCompleted]
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: string }
+        platformAdmin: { type: boolean }
+        language: { type: string, enum: [en, ar] }
+        theme: { type: string, enum: [light, dark, system] }
+        tourCompleted: { type: boolean }
+    Session:
+      type: object
+      required: [user, csrfToken, memberships, activeFactoryId, allowedPages]
+      properties:
+        user:
+          anyOf:
+            - { $ref: "#/components/schemas/User" }
+            - { type: "null" }
+        csrfToken: { type: string }
+        activeFactoryId: { type: [string, "null"] }
+        memberships:
+          type: array
+          items: { $ref: "#/components/schemas/Membership" }
+        allowedPages:
+          type: array
+          items: { type: string }
+    PageState:
+      type: object
+      required: [page, factoryId, state]
+      properties:
+        page: { type: string }
+        factoryId: { type: string }
+        state: { type: string, enum: [empty] }
     HealthStatus:
       type: object
       properties:
