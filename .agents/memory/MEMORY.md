@@ -1,0 +1,1 @@
+- [Authentication requirements](auth-requirements.md) — Managed auth requires five usable test identities; approved password fallback, seed restrictions and truthful login verification.
