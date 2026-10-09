@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "capability_level": 3,
+  "source_name": "Najm Packaging production export",
+  "format": {
+    "encoding": "auto",
+    "delimiter": "auto",
+    "decimal_separator": ",",
+    "date_format": "%d/%m/%Y",
+    "datetime_format": "%d/%m/%Y %H:%M"
+  },
+  "files": {
+    "orders": {
+      "file": "jobs.csv",
+      "columns": {
+        "order_id": "JobNo",
+        "product_code": "Product",
+        "machine_id": "Press",
+        "mold_id": "Die"
+      }
+    },
+    "records": {
+      "file": "output.csv",
+      "fixed_unit": "t",
+      "columns": {
+        "record_id": "RowNo",
+        "order_id": "JobNo",
+        "shift": "Crew",
+        "record_date": "Date",
+        "input": "RawMaterial_t",
+        "good": "Good_t",
+        "scrap": "Reject_t"
+      }
+    },
+    "events": {
+      "file": "stops.csv",
+      "columns": {
+        "event_id": "StopId",
+        "order_id": "JobNo",
+        "event_code": "Kind",
+        "start": "From",
+        "end": "To",
+        "duration_min": "Minutes"
+      }
+    }
+  },
+  "event_code_map": {
+    "MOLD": "CHANGEOVER",
+    "BREAKDOWN": "UNPLANNED_DOWNTIME"
+  },
+  "unit_factors_to_kg": {
+    "kg": "1",
+    "kgs": "1",
+    "t": "1000",
+    "tonne": "1000",
+    "lb": "0.45359237",
+    "g": "0.001"
+  },
+  "tolerances": {
+    "imbalance_warn_pct": "1",
+    "imbalance_error_pct": "5"
+  }
+}

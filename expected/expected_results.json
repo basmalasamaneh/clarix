@@ -1,0 +1,456 @@
+{
+  "_meta": {
+    "purpose": "Golden set. Hand-written expected outputs for every test dataset. The app's calculation engine must reproduce these values exactly.",
+    "conventions": {
+      "numbers": "Strings holding exact decimals ('10', '7.5', '-2'). Compare as decimals, never as floats. null = not available / not computable (never 0).",
+      "status": "green | yellow | red per metric group (volume, changeover, downtime). 'overall' = worst of the three.",
+      "comparison": "value = run B minus run A. comparable=false when either side is null or either group is red.",
+      "source_lines": "'<file>:<physical line number>' with the header row as line 1. These are the lineage links behind each number.",
+      "excluded_source_lines": "Rows left out of the totals but kept visible: identical duplicates and events with an unmapped code.",
+      "quarantined_source_lines": "Rows that are unusable (missing id, invalid time range, conflicting duplicates). They make the affected group's value N/A.",
+      "extends": "A scenario inherits everything from the named scenario and overrides only what it lists (objects merge, arrays and scalars replace)."
+    }
+  },
+  "datasets": {
+    "ethmar-plastics": {
+      "00_baseline": {
+        "description": "The clean case from the brief.",
+        "capability_level": 3,
+        "runs": {
+          "E-01": {
+            "volume": {
+              "status": "green",
+              "input_kg": "1000", "good_kg": "950", "scrap_kg": "50",
+              "scrap_rate_pct": "5", "good_rate_pct": "95", "material_balance_kg": "0",
+              "record_ids": ["PR-5001", "PR-5002"],
+              "source_lines": ["production_records.csv:2", "production_records.csv:3"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "changeover": {
+              "status": "green", "minutes": "240",
+              "event_ids": ["EV-1001"], "source_lines": ["events.csv:2"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "downtime": {
+              "status": "green", "minutes": "0", "event_count": 0,
+              "event_ids": [], "source_lines": [],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "overlaps": [],
+            "issues": [],
+            "overall": "green"
+          },
+          "E-02": {
+            "volume": {
+              "status": "green",
+              "input_kg": "1000", "good_kg": "900", "scrap_kg": "100",
+              "scrap_rate_pct": "10", "good_rate_pct": "90", "material_balance_kg": "0",
+              "record_ids": ["PR-5003", "PR-5004", "PR-5005"],
+              "source_lines": ["production_records.csv:4", "production_records.csv:5", "production_records.csv:6"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "changeover": {
+              "status": "green", "minutes": "360",
+              "event_ids": ["EV-2001"], "source_lines": ["events.csv:3"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "downtime": {
+              "status": "green", "minutes": "45", "event_count": 1,
+              "event_ids": ["EV-2002"], "source_lines": ["events.csv:4"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "overlaps": [],
+            "issues": [],
+            "overall": "green"
+          }
+        },
+        "comparison": {
+          "pair": ["E-01", "E-02"],
+          "metrics": {
+            "scrap_rate_pp": { "value": "5", "comparable": true },
+            "good_rate_pp": { "value": "-5", "comparable": true },
+            "changeover_min": { "value": "120", "comparable": true },
+            "downtime_min": { "value": "45", "comparable": true }
+          }
+        },
+        "file_issues": [],
+        "formula_like_cells": []
+      },
+
+      "01_duplicate_event_same_id": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "downtime": { "status": "yellow", "excluded_source_lines": ["events.csv:5"] },
+          "issues": ["DUPLICATE_EVENT_ID_IDENTICAL:warning"],
+          "overall": "yellow"
+        } }
+      },
+
+      "02_suspected_duplicate_event": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "downtime": {
+            "status": "yellow", "minutes": "90", "event_count": 2,
+            "event_ids": ["EV-2002", "EV-2003"],
+            "source_lines": ["events.csv:4", "events.csv:5"],
+            "alternatives": { "minutes_if_suspected_excluded": "45" }
+          },
+          "issues": ["SUSPECTED_DUPLICATE_EVENT:warning"],
+          "overall": "yellow"
+        } },
+        "comparison": { "metrics": { "downtime_min": { "value": "90", "comparable": true } } }
+      },
+
+      "03_conflicting_duplicate_event_id": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "downtime": {
+            "status": "red", "minutes": null, "event_count": 0,
+            "event_ids": [], "source_lines": [],
+            "quarantined_source_lines": ["events.csv:4", "events.csv:5"]
+          },
+          "issues": ["DUPLICATE_EVENT_ID_CONFLICT:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": { "downtime_min": { "value": null, "comparable": false } } }
+      },
+
+      "04_duplicate_record_identical": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": { "status": "yellow", "excluded_source_lines": ["production_records.csv:7"] },
+          "issues": ["DUPLICATE_RECORD_ID_IDENTICAL:warning"],
+          "overall": "yellow"
+        } }
+      },
+
+      "05_suspected_duplicate_record": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red",
+            "input_kg": "1350", "good_kg": "1215", "scrap_kg": "135",
+            "scrap_rate_pct": "10", "good_rate_pct": "90", "material_balance_kg": "0",
+            "record_ids": ["PR-5003", "PR-5004", "PR-5005", "PR-5009"],
+            "source_lines": ["production_records.csv:4", "production_records.csv:5", "production_records.csv:6", "production_records.csv:7"],
+            "alternatives": { "exclude_suspected": {
+              "input_kg": "1000", "good_kg": "900", "scrap_kg": "100", "scrap_rate_pct": "10" } }
+          },
+          "issues": ["SUSPECTED_DUPLICATE_RECORD:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      },
+
+      "06_conflicting_duplicate_record_id": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red",
+            "input_kg": null, "good_kg": null, "scrap_kg": null,
+            "scrap_rate_pct": null, "good_rate_pct": null, "material_balance_kg": null,
+            "record_ids": ["PR-5003", "PR-5005"],
+            "source_lines": ["production_records.csv:4", "production_records.csv:6"],
+            "quarantined_source_lines": ["production_records.csv:5", "production_records.csv:7"]
+          },
+          "issues": ["DUPLICATE_RECORD_ID_CONFLICT:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      },
+
+      "07_missing_scrap_value": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red", "scrap_kg": null, "scrap_rate_pct": null, "material_balance_kg": null
+          },
+          "issues": ["MISSING_VALUE:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      },
+
+      "08_zero_input": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red", "input_kg": "0", "good_kg": "0", "scrap_kg": "0",
+            "scrap_rate_pct": null, "good_rate_pct": null, "material_balance_kg": "0"
+          },
+          "issues": ["ZERO_INPUT:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      },
+
+      "09_material_imbalance": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "yellow", "good_kg": "875", "good_rate_pct": "87.5", "material_balance_kg": "25"
+          },
+          "issues": ["MATERIAL_IMBALANCE:warning"],
+          "overall": "yellow"
+        } },
+        "comparison": { "metrics": { "good_rate_pp": { "value": "-7.5", "comparable": true } } }
+      },
+
+      "10_incompatible_unit": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red",
+            "input_kg": null, "good_kg": null, "scrap_kg": null,
+            "scrap_rate_pct": null, "good_rate_pct": null, "material_balance_kg": null
+          },
+          "issues": ["INCOMPATIBLE_UNIT:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      },
+
+      "11_unit_converted_tonnes": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "issues": ["UNIT_CONVERTED:info"]
+        } }
+      },
+
+      "12_possible_overlap": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "changeover": { "status": "yellow" },
+          "downtime": { "status": "yellow" },
+          "overlaps": [ { "stop_event_id": "EV-2002", "changeover_event_id": "EV-2001", "overlap_min": "45" } ],
+          "issues": ["POSSIBLE_OVERLAP:warning"],
+          "overall": "yellow"
+        } }
+      },
+
+      "13_duration_mismatch": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "changeover": { "status": "yellow" },
+          "issues": ["DURATION_MISMATCH:warning"],
+          "overall": "yellow"
+        } }
+      },
+
+      "14_missing_event_id": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "changeover": {
+            "status": "red", "minutes": null, "event_ids": [], "source_lines": [],
+            "quarantined_source_lines": ["events.csv:3"]
+          },
+          "issues": ["MISSING_REQUIRED_FIELD:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": { "changeover_min": { "value": null, "comparable": false } } }
+      },
+
+      "15_invalid_time_range": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "changeover": {
+            "status": "red", "minutes": null, "event_ids": [], "source_lines": [],
+            "quarantined_source_lines": ["events.csv:3"]
+          },
+          "issues": ["INVALID_TIME_RANGE:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": { "changeover_min": { "value": null, "comparable": false } } }
+      },
+
+      "16_missing_record_id": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red",
+            "input_kg": null, "good_kg": null, "scrap_kg": null,
+            "scrap_rate_pct": null, "good_rate_pct": null, "material_balance_kg": null,
+            "record_ids": ["PR-5003", "PR-5005"],
+            "source_lines": ["production_records.csv:4", "production_records.csv:6"],
+            "quarantined_source_lines": ["production_records.csv:5"]
+          },
+          "issues": ["MISSING_REQUIRED_FIELD:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      },
+
+      "17_multiple_changeover_events": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "changeover": {
+            "event_ids": ["EV-2001", "EV-2004"],
+            "source_lines": ["events.csv:3", "events.csv:5"]
+          },
+          "issues": ["MULTIPLE_CHANGEOVER_EVENTS:info"]
+        } }
+      },
+
+      "18_unmapped_and_planned_events": {
+        "extends": "00_baseline",
+        "runs": { "E-01": {
+          "downtime": { "status": "yellow", "excluded_source_lines": ["events.csv:6"] },
+          "issues": ["PLANNED_EVENT_IGNORED:info", "UNMAPPED_EVENT_CODE:warning"],
+          "overall": "yellow"
+        } }
+      },
+
+      "19_totals_only_level1": {
+        "extends": "00_baseline",
+        "capability_level": 1,
+        "runs": {
+          "E-01": {
+            "volume": { "status": "yellow", "record_ids": [], "source_lines": ["run_totals.csv:2"] },
+            "changeover": { "status": "yellow", "event_ids": [], "source_lines": ["run_totals.csv:2"] },
+            "downtime": { "status": "yellow", "event_count": null, "event_ids": [], "source_lines": ["run_totals.csv:2"] },
+            "issues": ["LEVEL1_TOTALS_ONLY:warning"],
+            "overall": "yellow"
+          },
+          "E-02": {
+            "volume": { "status": "yellow", "record_ids": [], "source_lines": ["run_totals.csv:3"] },
+            "changeover": { "status": "yellow", "event_ids": [], "source_lines": ["run_totals.csv:3"] },
+            "downtime": { "status": "yellow", "event_count": null, "event_ids": [], "source_lines": ["run_totals.csv:3"] },
+            "issues": ["LEVEL1_TOTALS_ONLY:warning"],
+            "overall": "yellow"
+          }
+        }
+      },
+
+      "20_duplicate_file_upload": {
+        "extends": "00_baseline",
+        "import_checks": {
+          "duplicate_of": "00_baseline",
+          "second_upload_result": "duplicate_file",
+          "note": "Folder content is byte-identical to 00_baseline. Uploading it again must be detected by content hash (DUPLICATE_FILE, warning) and must not add a second set of rows."
+        }
+      },
+
+      "21_arabic_cp1256": {
+        "extends": "00_baseline",
+        "event_reasons": {
+          "EV-1001": "تغيير قالب إلى MLD-114",
+          "EV-2001": "تغيير قالب إلى MLD-207",
+          "EV-2002": "توقف غير مخطط - انقطاع التغذية"
+        }
+      },
+
+      "22_csv_injection_cells": {
+        "extends": "00_baseline",
+        "formula_like_cells": ["events.csv:2:recorded_reason", "events.csv:4:recorded_reason"],
+        "file_issues": ["FORMULA_LIKE_CELL:info"],
+        "export_rule": "Any exported cell that starts with = + - @ TAB or CR must be prefixed with a single quote (or otherwise neutralised) in CSV/Excel exports."
+      },
+
+      "23_no_changeover_event": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "changeover": { "status": "yellow", "minutes": null, "event_ids": [], "source_lines": [] },
+          "downtime": { "source_lines": ["events.csv:3"] },
+          "issues": ["NO_CHANGEOVER_EVENT:warning"],
+          "overall": "yellow"
+        } },
+        "comparison": { "metrics": { "changeover_min": { "value": null, "comparable": false } } }
+      },
+
+      "24_no_production_records": {
+        "extends": "00_baseline",
+        "runs": { "E-02": {
+          "volume": {
+            "status": "red",
+            "input_kg": null, "good_kg": null, "scrap_kg": null,
+            "scrap_rate_pct": null, "good_rate_pct": null, "material_balance_kg": null,
+            "record_ids": [], "source_lines": []
+          },
+          "issues": ["NO_PRODUCTION_RECORDS:error"],
+          "overall": "red"
+        } },
+        "comparison": { "metrics": {
+          "scrap_rate_pp": { "value": null, "comparable": false },
+          "good_rate_pp": { "value": null, "comparable": false } } }
+      }
+    },
+
+    "najm-packaging": {
+      "00_baseline": {
+        "description": "Second factory. Semicolon CSV, decimal comma, dd/mm/yyyy, tonnes. Job id E-01 collides with Ethmar's E-01 and must stay separate (uniqueness is scoped to factory + source).",
+        "capability_level": 3,
+        "runs": {
+          "E-01": {
+            "volume": {
+              "status": "green",
+              "input_kg": "2500", "good_kg": "2300", "scrap_kg": "200",
+              "scrap_rate_pct": "8", "good_rate_pct": "92", "material_balance_kg": "0",
+              "record_ids": ["1", "2"],
+              "source_lines": ["output.csv:2", "output.csv:3"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "changeover": {
+              "status": "green", "minutes": "180",
+              "event_ids": ["S-01"], "source_lines": ["stops.csv:2"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "downtime": {
+              "status": "green", "minutes": "0", "event_count": 0,
+              "event_ids": [], "source_lines": [],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "overlaps": [],
+            "issues": ["UNIT_CONVERTED:info"],
+            "overall": "green"
+          },
+          "B-102": {
+            "volume": {
+              "status": "green",
+              "input_kg": "2000", "good_kg": "1880", "scrap_kg": "120",
+              "scrap_rate_pct": "6", "good_rate_pct": "94", "material_balance_kg": "0",
+              "record_ids": ["3"],
+              "source_lines": ["output.csv:4"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "changeover": {
+              "status": "green", "minutes": "150",
+              "event_ids": ["S-02"], "source_lines": ["stops.csv:3"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "downtime": {
+              "status": "green", "minutes": "20", "event_count": 1,
+              "event_ids": ["S-03"], "source_lines": ["stops.csv:4"],
+              "excluded_source_lines": [], "quarantined_source_lines": [], "alternatives": {}
+            },
+            "overlaps": [],
+            "issues": ["UNIT_CONVERTED:info"],
+            "overall": "green"
+          }
+        },
+        "comparison": {
+          "pair": ["E-01", "B-102"],
+          "metrics": {
+            "scrap_rate_pp": { "value": "-2", "comparable": true },
+            "good_rate_pp": { "value": "2", "comparable": true },
+            "changeover_min": { "value": "-30", "comparable": true },
+            "downtime_min": { "value": "20", "comparable": true }
+          }
+        },
+        "file_issues": [],
+        "formula_like_cells": []
+      }
+    }
+  }
+}

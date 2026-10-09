@@ -1,0 +1,3 @@
+﻿record_id,order_id,machine_id,mold_id,shift,record_date,material_input,good_output,scrap,unit
+PR-5001,E-01,INJ-03,MLD-114,A,2026-09-01,600,570,30,kg
+PR-5002,E-01,INJ-03,MLD-114,B,2026-09-01,400,380,20,kg

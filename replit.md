@@ -1,45 +1,21 @@
-# [Project name]
+# Clarix — project rules for the agent
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Clarix is a read-only, multi-factory web app that turns approved ERP CSV exports into checkable comparisons of
+scrap, changeover time and machine stops. **Full specification: `docs/CLARIX_SPEC.md` — read it before every phase.**
 
-## Run & Operate
+## Working rules
+1. Build **only** the phase requested in the current prompt. Do not start later waves (AI, advanced charts, reports) early.
+2. Metric formulas, issue codes and status rules are **locked** in the spec. Do not change or "improve" them.
+3. Code calculates; AI only explains (and only in wave 3). Never compute numbers in the browser or with a language model.
+4. Use exact decimal arithmetic for quantities, rates and durations. Never floats.
+5. Missing data is "Not available", never 0. Never derive a missing field from other fields.
+6. Every number must link to its source rows (file + physical line number).
+7. Every query is scoped to the authenticated user's factory on the server.
+8. Treat `test-data/` and `expected/expected_results.json` as read-only fixtures. The app's tests must load each
+   `test-data/**` folder through the real import pipeline and match the expected values exactly.
+9. UI: Arabic (RTL) + English (LTR), light + dark theme, green brand, tokens in spec §12. Not colour alone for meaning.
+10. Before finishing a phase: run the tests, list what you built and what you deliberately did not build.
+    If anything in the prompt conflicts with the spec, stop and ask.
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
-
-## Stack
-
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
-
-## Where things live
-
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
-
-## Architecture decisions
-
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
-
-## Product
-
-_Describe the high-level user-facing capabilities of this app once they exist._
-
-## User preferences
-
-_Populate as you build — explicit user instructions worth remembering across sessions._
-
-## Gotchas
-
-_Populate as you build — sharp edges, "always run X before Y" rules._
-
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+## Quick check of the fixtures
+`python3 tools/verify.py` must print `ALL ... CHECKS PASSED`.

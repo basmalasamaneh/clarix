@@ -1,0 +1,3 @@
+﻿order_id,material_input_kg,good_output_kg,scrap_kg,changeover_hours,unplanned_downtime_min
+E-01,1000,950,50,4,0
+E-02,1000,900,100,6,45

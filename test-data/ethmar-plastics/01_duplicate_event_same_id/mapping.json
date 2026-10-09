@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "capability_level": 3,
+  "source_name": "Ethmar ERP export",
+  "format": {
+    "encoding": "auto",
+    "delimiter": "auto",
+    "decimal_separator": ".",
+    "date_format": "%Y-%m-%d",
+    "datetime_format": "%Y-%m-%d %H:%M"
+  },
+  "files": {
+    "orders": {
+      "file": "orders.csv",
+      "columns": {
+        "order_id": "order_id",
+        "product_code": "product_code",
+        "line_id": "line_id",
+        "machine_id": "machine_id",
+        "mold_id": "mold_id"
+      }
+    },
+    "records": {
+      "file": "production_records.csv",
+      "columns": {
+        "record_id": "record_id",
+        "order_id": "order_id",
+        "machine_id": "machine_id",
+        "mold_id": "mold_id",
+        "shift": "shift",
+        "record_date": "record_date",
+        "input": "material_input",
+        "good": "good_output",
+        "scrap": "scrap",
+        "unit": "unit"
+      }
+    },
+    "events": {
+      "file": "events.csv",
+      "columns": {
+        "event_id": "event_id",
+        "order_id": "order_id",
+        "machine_id": "machine_id",
+        "mold_id": "mold_id",
+        "shift": "shift",
+        "event_code": "event_code",
+        "start": "start_time",
+        "end": "end_time",
+        "duration_min": "duration_min",
+        "reason": "recorded_reason"
+      }
+    }
+  },
+  "event_code_map": {
+    "CHG": "CHANGEOVER",
+    "UDT": "UNPLANNED_DOWNTIME",
+    "PMT": "PLANNED_STOP"
+  },
+  "unit_factors_to_kg": {
+    "kg": "1",
+    "kgs": "1",
+    "t": "1000",
+    "tonne": "1000",
+    "lb": "0.45359237",
+    "g": "0.001"
+  },
+  "tolerances": {
+    "imbalance_warn_pct": "1",
+    "imbalance_error_pct": "5"
+  }
+}

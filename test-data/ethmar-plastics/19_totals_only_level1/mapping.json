@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "capability_level": 1,
+  "source_name": "Ethmar totals-only export",
+  "format": {
+    "encoding": "auto",
+    "delimiter": "auto",
+    "decimal_separator": ".",
+    "date_format": "%Y-%m-%d",
+    "datetime_format": "%Y-%m-%d %H:%M"
+  },
+  "files": {
+    "orders": {
+      "file": "orders.csv",
+      "columns": {
+        "order_id": "order_id",
+        "product_code": "product_code",
+        "line_id": "line_id",
+        "machine_id": "machine_id",
+        "mold_id": "mold_id"
+      }
+    },
+    "totals": {
+      "file": "run_totals.csv",
+      "columns": {
+        "order_id": "order_id",
+        "input": "material_input_kg",
+        "good": "good_output_kg",
+        "scrap": "scrap_kg",
+        "changeover_hours": "changeover_hours",
+        "downtime_min": "unplanned_downtime_min"
+      }
+    }
+  },
+  "event_code_map": {
+    "CHG": "CHANGEOVER",
+    "UDT": "UNPLANNED_DOWNTIME",
+    "PMT": "PLANNED_STOP"
+  },
+  "unit_factors_to_kg": {
+    "kg": "1",
+    "kgs": "1",
+    "t": "1000",
+    "tonne": "1000",
+    "lb": "0.45359237",
+    "g": "0.001"
+  },
+  "tolerances": {
+    "imbalance_warn_pct": "1",
+    "imbalance_error_pct": "5"
+  }
+}

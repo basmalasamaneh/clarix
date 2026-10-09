@@ -1,0 +1,5 @@
+﻿event_id,order_id,machine_id,mold_id,shift,event_code,start_time,end_time,duration_min,recorded_reason
+EV-1001,E-01,INJ-03,MLD-114,A,CHG,2026-09-01 06:00,2026-09-01 10:00,240,Mold change to MLD-114
+EV-2001,E-02,INJ-03,MLD-207,A,CHG,2026-09-02 06:00,2026-09-02 12:00,360,Mold change to MLD-207
+EV-2002,E-02,INJ-03,MLD-207,B,UDT,2026-09-02 15:10,2026-09-02 15:55,45,Unplanned stop - feed interruption
+EV-2002,E-02,INJ-03,MLD-207,B,UDT,2026-09-02 15:10,2026-09-02 15:50,40,Unplanned stop - feed interruption
