@@ -1,0 +1,10 @@
+Add the section below to replit.md under the heading "STANDING RULES (apply to every phase)". Do not change anything else and do not build any feature now.
+
+1. UI/UX verification (mandatory before reporting any phase that touches the UI): open the app in the browser and check every screen you changed at 360px, 768px and 1280px wide, in light and dark theme, in Arabic (RTL) and English (LTR). Fix before reporting: overflow, truncated text, wrong mirroring of icons/layout, low contrast, missing focus ring, touch targets under 44px, dead buttons. State in the final report exactly which screens and combinations you checked.
+2. User-friendly by default: plain wording (no jargon; formulas go in a "?" tooltip), one primary action per screen, designed empty/loading/error/success states, inline form validation with helpful messages, confirmation for destructive actions, no feature visible that does not work yet.
+3. All visible text lives in i18n files with both Arabic and English. No hard-coded strings. Latin digits with tabular numbers in both languages.
+4. Scalability and flexibility: configuration over code (mappings, event-code maps, units, thresholds are per-factory settings; never per-factory code branches). Put replaceable parts behind interfaces: source adapters, auth provider, notifier (email/manual link), file storage, background jobs, AI provider. Paginate every list. Index factory_id plus common filters. Heavy work goes through a job interface with progress.
+5. Security: authorisation on the server for every request, tenant scope derived from the authenticated membership, no secrets in code, logs or the repo.
+6. Exact decimals for all quantities. Missing is "Not available", never 0. Metric formulas and issue rules are locked in the spec.
+7. Never change test-data/, expected/ or tools/. python3 tools/verify.py must keep passing.
+8. Final report format: What I built / What I deliberately did not build / Checks that actually ran (and which ones I could not run) / Decisions I made that are not in the spec.
