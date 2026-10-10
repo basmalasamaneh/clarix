@@ -1,3 +1,4 @@
+import "../testing/require-isolation";
 import {test} from "node:test";
 import assert from "node:assert/strict";
 import {eventCodes,mappingIdentity} from "../imports/review";

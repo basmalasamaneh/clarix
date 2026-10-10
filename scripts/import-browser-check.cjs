@@ -6,7 +6,7 @@ const assert=require("node:assert/strict");
  const browser=await chromium.launch({executablePath:"/repl/tools/bin/chromium",headless:true,args:["--no-sandbox"]});
  try {
   const page=await browser.newPage({viewport:{width:1280,height:900}});
-  const base="http://localhost:80";
+  const base=require("./isolated-browser-guard.cjs");
   await page.goto(base+"/login");
   await page.getByTestId("input-email").waitFor({timeout:10000}).catch(()=>{});
   if (await page.getByTestId("input-email").count()) {
@@ -24,6 +24,7 @@ const assert=require("node:assert/strict");
   const label="browser-"+Date.now();
   await page.goto(base+"/imports?id=new");
   console.log("new import route:",page.url(),"source field count:",await page.getByTestId("input-source-name").count(),"page text:",(await page.locator("body").innerText()).slice(0,900));
+  await page.getByTestId("toggle-source-new").click();
   await page.getByTestId("input-source-name").fill(label);
   const uploadFiles=await Promise.all(["orders.csv","production_records.csv","events.csv"].map(async name=>({
     name,mimeType:"text/csv",buffer:Buffer.from((await fs.readFile(fixture+name,"utf8")).replaceAll("E-01",label+"-1").replaceAll("E-02",label+"-2")),

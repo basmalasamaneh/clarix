@@ -13,3 +13,9 @@ history with immutable approved imports and explicitly prohibited further writes
 **How to apply:** Apply to all automated writers, including browser verification.
 Do not add an app delete button or API or weaken immutability. Any reset is
 privileged, development-only, explicitly factory-scoped and confirmed.
+
+The user approved one narrow reset exception: clear only `sourceArchives` and
+`sourceArchiveEvents` in the selected factory's settings. Preserve all other
+factory fields and settings.
+**Why:** Retaining archive flags after deleting imports would block reusing old
+source names, despite an otherwise empty factory.

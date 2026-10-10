@@ -14,3 +14,17 @@ mtime_ms = 1791624838766
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/d3850856-e83d-4db6-8b08-ecfea60bc857/6f98b06a-bc2d-44b0-99d5-82138f3741a8"
 storage_version_token = "1791625038906474"
 content_type = "text/csv"
+
+[[outputs]]
+id = "uwIppmpONt7mTXHdiEx1G"
+uri = "file://generated-artifacts/reset-results/report.html"
+type = "html"
+title = "Development reset results"
+description = "Actual before/after table counts, isolation checks, safeguards and repeatable commands."
+logical_id = "2f64fa2d-21c3-43af-9b0d-4291b801afb6"
+content_hash = "sha256:f2247b793d0998c7dea1740764c6ed410cb590f4a9e9d7d637dd90fa34667b54"
+size = 4415
+mtime_ms = 1791626305870
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/2f64fa2d-21c3-43af-9b0d-4291b801afb6/407cf5eb-6a03-4f55-a9e0-0d7e83d026c6"
+storage_version_token = "1791626306395232"
+content_type = "text/html"

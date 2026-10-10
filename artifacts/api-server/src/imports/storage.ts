@@ -15,7 +15,18 @@ function object(key:string) {
   const dir=process.env.PRIVATE_OBJECT_DIR;
   if(!dir) throw new Error("Private storage is not configured");
   const [bucket,...prefix]=dir.replace(/^\/+/,"").split("/");
-  return client.bucket(bucket).file([...prefix,key].join("/"));
+  const isolated=process.env.CLARIX_TEST_SCHEMA;
+  if(isolated&&!/^clarix_test_[a-f0-9]+$/.test(isolated)) throw new Error("Invalid test storage namespace");
+  return client.bucket(bucket).file([...prefix,...(isolated?["__tests",isolated]:[]),key].join("/"));
+}
+export async function cleanupTestStorage(schema:string) {
+  if(!/^clarix_test_[a-f0-9]+$/.test(schema)||schema!==process.env.CLARIX_TEST_SCHEMA) throw new Error("Only current test storage may be removed");
+  const marker=object("");
+  const [files]=await marker.bucket.getFiles({prefix:marker.name});
+  for(const f of files) {
+    if(!f.name.startsWith(marker.name)) throw new Error("Storage namespace mismatch");
+    await f.delete({ignoreNotFound:true});
+  }
 }
 export const fileStorage:FileStorage={
   async uploadUrl(key) {

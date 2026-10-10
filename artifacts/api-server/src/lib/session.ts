@@ -16,7 +16,7 @@ declare module "express-session" {
 const secret = process.env.SESSION_SECRET;
 if (!secret) throw new Error("SESSION_SECRET is required");
 export const sessionStore = new (connectPgSimple(session))({
-  pool, tableName: "sessions", createTableIfMissing: false,
+  pool, schemaName: process.env.CLARIX_TEST_SCHEMA || "public", tableName: "sessions", createTableIfMissing: false,
 });
 export const sessionMiddleware = session({
   name: "clarix.sid", secret, store: sessionStore,

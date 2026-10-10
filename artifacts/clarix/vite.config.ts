@@ -65,6 +65,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    ...(process.env.CLARIX_TEST_SCHEMA && process.env.CLARIX_TEST_API_PORT ? {
+      proxy: { '/api': `http://127.0.0.1:${Number(process.env.CLARIX_TEST_API_PORT)}` },
+    } : {}),
     port,
     strictPort: true,
     host: '0.0.0.0',

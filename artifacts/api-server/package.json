@@ -10,10 +10,10 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed:test": "tsx src/scripts/seed.ts",
     "setup:rls": "tsx src/scripts/setup-rls.ts",
-    "test:clean-seed": "tsx src/scripts/verify-clean-seed.ts",
-    "test:foundation": "tsx --test src/tests/foundation.test.ts",
+    "test:clean-seed": "tsx src/scripts/test-isolated.ts src/tests/foundation.test.ts",
+    "test:foundation": "tsx src/scripts/test-isolated.ts src/tests/foundation.test.ts",
     "inspect:tenancy": "tsx src/scripts/inspect-tenancy.ts",
-    "test": "tsx --test src/tests/*.test.ts"
+    "test": "tsx src/scripts/test-isolated.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^8.3.0",

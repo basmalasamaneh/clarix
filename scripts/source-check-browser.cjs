@@ -2,7 +2,7 @@ const {chromium}=require("playwright-core"),fs=require("node:fs/promises"),asser
 (async()=>{
  const browser=await chromium.launch({executablePath:"/repl/tools/bin/chromium",args:["--no-sandbox"]});
  try{
-  const page=await browser.newPage({viewport:{width:1280,height:1000}}),base="http://localhost:80";
+  const page=await browser.newPage({viewport:{width:1280,height:1000}}),base=require("./isolated-browser-guard.cjs");
   await page.goto(base+"/login");await page.getByTestId("input-email").fill("ethmar.manager@clarix.test");
   await page.getByTestId("input-password").fill(process.env.SEED_TEST_PASSWORD);await page.getByTestId("button-login").click();await page.waitForURL("**/overview");
   const session=await(await page.request.get(base+"/api/auth/session")).json(),headers={"X-CSRF-Token":session.csrfToken};
