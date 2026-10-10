@@ -1,0 +1,37 @@
+Phase 10 — MVP polish and publish readiness. Read docs/CLARIX_SPEC.md, replit.md and the Phase 8, 9 and 9b reports first. Build ONLY this phase. Do not add product features (no charts, PDF/export, AI, snapshots, reconciliation, resolve workflow).
+
+Goal
+Make the existing MVP safe and understandable for real people, and ready to publish. A person who is not technical must be able to sign in, import, check data quality, compare two runs and see where each number came from, in Arabic or English.
+
+1. Language and theme reliability
+ - Investigate why one Arabic capture rendered in English in Phase 9b. Find the cause (language not persisted? SSR/default? cookie vs storage? direct link?) and fix it. Language and theme must persist across reloads, sign-out/sign-in, and direct links. Add a test for it.
+ - No mixed-language screens: find any hard-coded English string or missing translation key across all pages (a script that fails the build on missing keys in either language).
+
+2. First-run experience
+ - The onboarding tour must be dismissible by click, Esc and keyboard, must never block the page, and must not reappear after being dismissed (remember per user). Keep it short (max 4 steps).
+ - Every page has a helpful empty state with the next step (e.g. "No imports yet — start with Data imports").
+ - Plain wording: review all error and warning messages in both languages for non-technical readers; each says what happened and what to do. List every message you changed.
+ - A short in-app Help page (AR + EN) explaining: the three steps (import, check, compare), what green/yellow/red mean, what "Not available" means, and that downtime is never assumed to be a cause.
+
+3. Production bootstrap (REQUIRED because seeded test accounts must be OFF in production)
+ - With SEED_TEST_USERS=false there must still be a safe way to create the first factory and its first Factory manager in production. Build a documented one-time setup command run through the privileged connection (not reachable from the app role or UI): create factory (name, slug) and output a one-time, expiring invitation link for the first manager (same hashed-token mechanism as Phase 8). Refuse to run if the factory already has a manager unless an explicit flag is given.
+ - Prove that with SEED_TEST_USERS=false and NODE_ENV=production the seeded identities are rejected and the bootstrap flow works end to end.
+ - Optional demo: a documented command that creates a clearly labelled "Demo factory" and imports the Ethmar baseline through the real pipeline, so I can show the product. Only runs when explicitly invoked.
+
+4. Publish readiness (report each item PASS/FAIL, fix what fails)
+ - Secrets: nothing secret in the repo, logs, client bundle or error messages. List every required secret by NAME only and what it is for.
+ - Cookies: Secure, HttpOnly, SameSite; CSRF on state-changing requests; sensible session lifetime; security headers (CSP, frame protection, no-sniff, referrer policy).
+ - Production database: confirm migrations apply cleanly to an empty production database, the runtime role is created with least privilege, RLS is enabled and forced on all tenant tables, and the startup privilege check passes. Show the exact order of steps to prepare production.
+ - Errors: friendly error pages (404, 403, 500) in both languages with no stack traces or internals; a health-check endpoint that reveals nothing sensitive.
+ - Logging: no passwords, tokens, CSV cell contents or personal data in logs.
+ - Limits: upload size and row limits enforced with clear messages; request rate limits on login, invitation acceptance and uploads.
+ - Backups/rollback: document how to restore the production database and roll back a bad deploy on this platform.
+
+5. Final acceptance run (isolated target; never write to Ethmar/Najm dev data)
+ - Run the whole automated suite: all 26 fixture folders vs expected/expected_results.json, 52 verifier checks, tenancy T1-T12, role tests, accounts tests, pagination, performance spot-check (50,000-row import, Runs, Comparison).
+ - Show before/after counts and fingerprints for Ethmar and Najm dev data.
+ - Provide screenshots of the key pages at 360px and 1280px, Arabic and English, light and dark (best effort: if the driver fails, list exactly which are missing; do not report a partial set as complete). State clearly that you cannot judge visual quality.
+
+Do NOT change the engine, calculation rules, test-data/, expected/ or tools/. Do NOT build new features.
+
+Final report: what changed; the language-bug cause; messages changed; the PASS/FAIL publish-readiness table; the acceptance-run table; what is still not done and why; and exact manual steps for me, including the exact steps to publish.
