@@ -1,0 +1,51 @@
+Phase 16 — AI foundation (Gemini). Read docs/CLARIX_SPEC.md (§14 AI, test data AI test suite, T11 in docs/TENANCY_TESTS.md), docs/PHASE15_REPORTS.md and replit.md first. Build ONLY this phase.
+
+Core rule (locked): CODE calculates, AI only explains and suggests. The model never computes, never sees raw files, never decides a status, and its output is never trusted without validation.
+
+0. Facts first
+ - Check Google's CURRENT official Gemini API documentation (free tier models, rate limits, and terms on how free-tier content may be used) and report what you found, with links. Do not rely on memory. Make the model name configurable (GEMINI_MODEL) and never hard-code limits. Tell me plainly if free-tier terms allow Google to use submitted content to improve its products.
+
+1. Provider interface (swappable)
+ - An AIProvider interface (generate structured output, with timeout and cancellation). GeminiProvider implements it using the server-side secret GEMINI_API_KEY (never sent to the browser, never logged). A FakeProvider for tests (deterministic, scriptable). Adding another provider later must need no change outside the provider module.
+
+2. Consent and control
+ - Per-factory setting "Use AI assistant", default OFF, changeable only by a Factory manager, audited (who/when/old/new). When OFF: the AI buttons are replaced with a plain explanation, and the server makes NO network call (tested).
+ - Before a manager turns it ON, show a plain-language disclosure (AR + EN) of exactly what is sent (summary numbers, labels, issue codes, statuses, order ids) and what is never sent (raw rows, file contents, cell text, names, emails, file names), plus the free-tier data-use note you verified. They must confirm.
+ - Platform Admin has no AI access to tenant data. Viewer/Analyst/Manager may use AI when the factory has it ON.
+
+3. Facts package (data minimisation)
+ - A server-side builder creates a "facts package" from already-computed server values only (comparison, snapshot, quality summary, reconciliation). Each fact has an id, a label, the exact decimal value as a string, a unit, and a link target for the source. The model receives ONLY this package plus a fixed instruction set plus the user's question (for later phases).
+ - Never include free text that came from user files (event reasons, notes, titles, cell contents). Strip them. User-typed questions are untrusted input.
+ - Scope strictly to the signed-in user's factory (T11): a question mentioning another factory's runs gets an answer from this factory's facts only or "I don't have enough information".
+
+4. Structured output and validator (the safety core)
+ - The model must return JSON that matches a fixed schema: a list of statements, each typed FACT, HYPOTHESIS or SUGGESTION, in the requested language (AR or EN). A FACT must cite fact ids. Add a validator that REJECTS the whole answer if: any number in a FACT or SUGGESTION is not exactly (after normalising digits/format/rounding rules) in the cited facts; any FACT cites no fact id; a HYPOTHESIS contains a number not in the facts or is not labelled; a statement claims or implies that downtime, changeover or any factor CAUSED scrap or any other result as a fact; a status (OK/Check/Blocked) is stated that differs from the server status; it mentions entities not in the package; it contains links, markup or instructions to the user to run anything.
+ - Hypotheses are allowed ONLY as clearly labelled "possible explanation to check", with a suggested way to check it in the data, never as a conclusion.
+ - On failure: retry once with a corrective instruction; if it still fails, return the code-template explanation already in the app plus a short note "AI explanation unavailable". Never show unvalidated model text.
+ - Prompt-injection hardening: fixed system instructions; user question and facts are passed as data; anything in them that tries to change the rules has no effect. Add adversarial tests.
+
+5. Quota, cost and reliability
+ - Per-factory daily cap and per-user per-minute limit (configurable). Handle 429 / quota exhaustion / timeouts / network errors with a friendly message and a retry-after; a circuit breaker so failures do not hammer the API. Cache identical requests (hash of facts package + task + language + model) to save quota; the cache is factory-scoped.
+ - Do NOT log prompts or responses. Log metadata only (factory id, user id, task, status, latency, token counts if available). No key in logs or error messages.
+ - The app must work fully with AI OFF or the key missing.
+
+6. First end-to-end use (proof of the pipeline only)
+ - One button "Explain in simple words" on the Comparison page and on a snapshot. It returns 3 to 5 short plain sentences in the user's language: facts with "Show source" links to the existing Source Drawer, optional labelled hypothesis, optional suggestion of what to check next. Clearly labelled "AI-generated, verified against the numbers" with a visible list of the facts it used. Loading, error, quota, consent-off and unavailable states. Not saved into snapshots in this phase.
+ - Keep the standing sentence that downtime is recorded separately and not assumed to explain the difference.
+
+7. UI/UX
+ - Reusable AIPanel component; plain wording AR RTL + EN LTR; light + dark; tokens only; 360/768/1280px; keyboard accessible; not colour alone. Help entry about the AI assistant and its limits. Use the corrected Arabic terminology (تشغيلة) and number/unit formatting already implemented.
+
+8. Tests (isolated target; never write to Ethmar/Najm dev data; show before/after counts and fingerprints). Use the FakeProvider for everything except one optional live smoke test.
+ - Consent OFF: zero outbound calls. Consent changes audited. Platform Admin and cross-factory requests denied (identical error shape).
+ - Facts package contains no raw rows, file text, names or emails (assert on the serialised package for all fixtures).
+ - Validator: reject a wrong number, a missing fact id, an unlabelled hypothesis, a causal claim ("downtime caused the scrap", in AR and EN), a status mismatch, an invented entity, markup/links. Accept a correct answer for baseline (5% / 10% / +5 pp / 240 / 360 / +120 min / 45 min) and for blocked fixtures (05, 07: the answer must say the metric is not available, never invent a value).
+ - Injection tests: instructions hidden in a user question or in a fixture's event reason cannot change behaviour or leak other data; cross-factory question (T11).
+ - Quota/429/timeout/circuit-breaker behaviour; cache hit; missing key fallback.
+ - Optional live smoke test: only if GEMINI_API_KEY is present, make ONE real call on the baseline facts and report PASS/FAIL, tokens and latency, without printing any key or full prompt. If it fails or is skipped, say so; do not mark live behaviour as verified.
+ - Existing suite still passes (fixtures vs expected_results.json, 52 verifier checks, tenancy, accounts, platform, snapshots, reports).
+ - Screenshots at 360/1280px, Arabic/English, light/dark of the consent dialog, the AI panel states (off, loading, answer, error, quota). Best effort; list what is missing; state clearly that you cannot judge visual quality.
+
+Do NOT build: chat, free-form questions, quality assistant, mapping suggestions, saving AI text into snapshots/PDF, trends, extra providers, images, voice. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Final report: what Google's current free-tier docs say (with links), built / not built, validator rules and test table, before/after counts and fingerprints, the live smoke-test result, and exact manual steps for me.
