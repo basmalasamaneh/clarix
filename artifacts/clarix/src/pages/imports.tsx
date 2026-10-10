@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearch } from 'wouter';
-import { ArrowLeft, CloudOff, Copy, FileStack, Plus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, CloudOff, Copy, FileStack, GitBranch, Plus, RotateCcw } from 'lucide-react';
 import { getGetImportQueryKey, getListImportsQueryKey, useGetImport, useListImports, type ImportDetail, type Session } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/empty-page';
 import { PAGE_ICONS } from '@/components/app-shell';
 import { errorStatus } from '@/lib/session';
 import { formatDate } from '@/lib/import-model';
+import type { ImportDetailX } from '@/lib/import-api';
+import { cn } from '@/lib/utils';
 import { ErrorNote, Pager, Raw, StatusBadge, Stepper, type StepKey } from '@/components/imports/shared';
 import { NewImport, UploadReview } from '@/components/imports/upload-step';
 import { MapStep } from '@/components/imports/map-step';
@@ -72,7 +74,7 @@ function History() {
                 {q.data.items.map((it) => (
                   <tr key={it.id} className="hover-elevate" data-testid={`row-import-${it.id}`}>
                     <td className="max-w-[16rem] px-4 py-2">
-                      <Raw className="block truncate font-sans text-sm font-medium">{it.sourceName}</Raw>
+                      <Raw className="block break-words font-sans text-sm font-medium">{it.sourceName}</Raw>
                       {it.duplicateOf && (
                         <Link href={`/imports?id=${it.duplicateOf}`} className="mt-0.5 inline-flex min-h-11 items-center gap-1 text-xs text-status-amber underline-offset-2 hover:underline" data-testid={`link-duplicate-${it.id}`}>
                           <Copy className="size-3" aria-hidden="true" />
@@ -108,7 +110,7 @@ function defaultStep(d: ImportDetail): StepKey {
   return 'check';
 }
 
-function Wizard({ id, step, canEdit, go }: { id: string; step: StepKey | null; canEdit: boolean; go: (id: string, s?: StepKey) => void }) {
+function Wizard({ id, step, focus, canEdit, go }: { id: string; step: StepKey | null; focus: string | null; canEdit: boolean; go: (id: string, s?: StepKey, focus?: string) => void }) {
   const { t } = useTranslation();
   const q = useGetImport(id, { query: { queryKey: getGetImportQueryKey(id), retry: 1 }, request: { credentials: 'include' } });
 
@@ -136,7 +138,10 @@ function Wizard({ id, step, canEdit, go }: { id: string; step: StepKey | null; c
       </div>
     );
 
-  const d = q.data;
+  const d = q.data as ImportDetailX;
+  const reason = d.duplicateReason ?? (d.duplicateOf ? 'CURRENT_SAME_MAPPING' : null);
+  const dupKey = reason === 'MAPPING_DIFFERS' ? 'differs' : reason === 'FULLY_SUPERSEDED' ? 'superseded' : 'same';
+  const dupBlocking = reason === 'CURRENT_SAME_MAPPING';
   const current = step ?? defaultStep(d);
   const readOnly = d.status === 'approved' || d.status === 'rejected' || !canEdit;
   const effective: StepKey = !d.finalized ? 'upload' : current;
@@ -144,8 +149,8 @@ function Wizard({ id, step, canEdit, go }: { id: string; step: StepKey | null; c
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-center gap-3">
-          <Raw className="truncate font-sans text-lg font-semibold">{d.sourceName}</Raw>
+        <div className="flex min-w-0 flex-wrap items-center gap-3">
+          <Raw className="min-w-0 break-words font-sans text-lg font-semibold">{d.sourceName}</Raw>
           <StatusBadge status={d.status} testId="status-current-import" />
         </div>
       </div>
@@ -155,21 +160,30 @@ function Wizard({ id, step, canEdit, go }: { id: string; step: StepKey | null; c
         done={{ upload: d.finalized, map: d.status !== 'draft', check: d.status === 'approved' || d.status === 'rejected' }}
         onStep={(s) => go(d.id, s)}
       />
-      {d.duplicateOf && (
-        <div className="fade-up flex flex-col gap-3 rounded-xl border border-[color-mix(in_srgb,var(--status-amber)_40%,transparent)] bg-[color-mix(in_srgb,var(--status-amber)_7%,var(--card))] p-4 sm:flex-row sm:items-center" role="status" data-testid="banner-duplicate">
-          <Copy className="size-5 shrink-0 text-status-amber" aria-hidden="true" />
+      {reason && !readOnly && (
+        <div
+          className={cn(
+            'fade-up flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center',
+            dupBlocking
+              ? 'border-[color-mix(in_srgb,var(--status-amber)_40%,transparent)] bg-[color-mix(in_srgb,var(--status-amber)_7%,var(--card))]'
+              : 'border-[color-mix(in_srgb,var(--series-good)_35%,transparent)] bg-[color-mix(in_srgb,var(--series-good)_6%,var(--card))]',
+          )}
+          role="status"
+          data-testid={`banner-duplicate-${dupKey}`}
+        >
+          {dupBlocking ? <Copy className="size-5 shrink-0 text-status-amber" aria-hidden="true" /> : <GitBranch className="size-5 shrink-0 text-[var(--series-good)]" aria-hidden="true" />}
           <div className="min-w-0 flex-1">
-            <p className="font-semibold">{t('imp.duplicate.title')}</p>
-            <p className="text-sm text-muted-foreground">{t('imp.duplicate.body')}</p>
+            <p className="font-semibold">{t(`imp.duplicate.${dupKey}Title`)}</p>
+            <p className="text-sm text-muted-foreground">{t(`imp.duplicate.${dupKey}Body`)}</p>
           </div>
-          <Link href={`/imports?id=${d.duplicateOf}`} className={`${linkBtn} border bg-card hover-elevate`} data-testid="link-duplicate-existing">
+          {d.duplicateOf && <Link href={`/imports?id=${d.duplicateOf}`} className={`${linkBtn} border bg-card hover-elevate`} data-testid="link-duplicate-existing">
             {t('imp.duplicate.open')}
-          </Link>
+          </Link>}
         </div>
       )}
       {effective === 'upload' && <UploadReview detail={d} canEdit={canEdit} onContinue={() => go(d.id, 'map')} />}
-      {d.finalized && <div hidden={effective !== 'map'}><MapStep key={d.id} detail={d} readOnly={readOnly} onChecked={() => go(d.id, 'check')} /></div>}
-      {effective === 'check' && <CheckStep detail={d} canEdit={canEdit} onEditMapping={() => go(d.id, 'map')} />}
+      {d.finalized && <div hidden={effective !== 'map'}><MapStep key={d.id} detail={d} readOnly={readOnly} focus={focus} visible={effective === 'map'} onChecked={() => go(d.id, 'check')} /></div>}
+      {effective === 'check' && <CheckStep detail={d} canEdit={canEdit} onEditMapping={(f) => go(d.id, 'map', f)} />}
     </div>
   );
 }
@@ -181,11 +195,13 @@ export default function ImportsPage({ session }: { session: Session }) {
   const params = new URLSearchParams(search);
   const id = params.get('id');
   const stepParam = params.get('step');
+  const focus = params.get('focus') ? `${params.get('focus')}#${params.get('n') ?? ''}` : null;
   const step: StepKey | null = stepParam === 'upload' || stepParam === 'map' || stepParam === 'check' ? stepParam : null;
   const factory = session.memberships.find((m) => m.factoryId === session.activeFactoryId);
   const canEdit = session.user?.platformAdmin || factory?.role === 'analyst' || factory?.role === 'factory_manager';
 
-  const go = (nid: string, s?: StepKey) => setLocation(`/imports?id=${encodeURIComponent(nid)}${s ? `&step=${s}` : ''}`);
+  const go = (nid: string, s?: StepKey, f?: string) =>
+    setLocation(`/imports?id=${encodeURIComponent(nid)}${s ? `&step=${s}` : ''}${f ? `&focus=${encodeURIComponent(f)}&n=${Date.now() % 100000}` : ''}`);
 
   return (
     <div data-testid="page-imports" className="space-y-8">
@@ -204,7 +220,7 @@ export default function ImportsPage({ session }: { session: Session }) {
           {id === 'new' ? (
             canEdit ? <NewImport onCreated={(d) => go(d.id, 'upload')} /> : null
           ) : (
-            <Wizard key={id} id={id} step={step} canEdit={!!canEdit} go={go} />
+            <Wizard key={id} id={id} step={step} focus={focus} canEdit={!!canEdit} go={go} />
           )}
         </div>
       ) : (

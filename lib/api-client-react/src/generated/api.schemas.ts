@@ -87,6 +87,10 @@ export interface ImportDetail {
   replacementCount: number;
   /** @nullable */
   duplicateOf?: string | null;
+  /** @nullable */
+  duplicateReason?: string | null;
+  replacementOrders?: string[];
+  replacedOrders?: string[];
   mapping?: JsonObject;
   result?: JsonObject;
   samples?: MappingSample[];
@@ -111,6 +115,7 @@ export interface MappingInput {
 
 export interface ApprovalInput {
   confirmReplacement: boolean;
+  confirmErrors?: boolean;
   /** @minimum 0 */
   replacementCount: number;
 }

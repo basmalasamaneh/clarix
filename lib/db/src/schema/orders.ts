@@ -22,6 +22,7 @@ export const orders = pgTable("orders", {
   index().on(t.factoryId, t.machine),
   index().on(t.factoryId, t.mold),
   index().on(t.factoryId, t.line),
+  index("orders_current_import_idx").on(t.factoryId, t.currentImportId),
 ]);
 export const insertOrderSchema = createInsertSchema(orders);
 export type Order = typeof orders.$inferSelect;

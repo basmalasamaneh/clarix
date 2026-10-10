@@ -1,15 +1,19 @@
 import { fmt } from "@workspace/calculation";
 import { ImportError } from "./model";
+import {replacementOrders,assertChoices,issues} from "./review";
 import { duplicate,replacementCount,runEngine,loadRaw,getRow,view,type Context,type ImportRow } from "./service";
 
-export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacement:boolean;replacementCount:number}) {
+export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacement:boolean;replacementCount:number;confirmErrors?:boolean}) {
   if(row.status!=="checked") throw new ImportError("CHECK_REQUIRED",409);
   // Serializes approvals in a factory, including different sources, to close
   // duplicate-hash and replacement-confirmation races. RLS remains in force.
   await ctx.db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[ctx.factory]);
+  await assertChoices(ctx,row);
+  if((row.counts?.error??0)>0 && !input.confirmErrors) throw new ImportError("ERROR_CONFIRMATION_REQUIRED",409,{errors:(await issues(ctx,row,1,true)).items});
   const existing=await duplicate(ctx,row);
   if(existing) throw new ImportError("DUPLICATE_FILE",409,{existingImportId:existing});
   const replacing=await replacementCount(ctx,row);
+  const replaced=await replacementOrders(ctx,row);
   if(replacing!==input.replacementCount || replacing>0 && !input.confirmReplacement) throw new ImportError("REPLACEMENT_CONFIRMATION_REQUIRED",409,{replacementCount:replacing});
   const {canonical,result}=await runEngine(ctx,row);
   if(JSON.stringify(result)!==JSON.stringify(row.result)) {
@@ -59,6 +63,6 @@ export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacemen
     }
     await ctx.db.query("UPDATE data_issues SET order_id=$4 WHERE factory_id=$1 AND import_id=$2 AND source_order_id=$3",[ctx.factory,row.id,sourceId,current.id]);
   }
-  await ctx.db.query("UPDATE imports SET status='approved',approved_at=now() WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id]);
+  await ctx.db.query("UPDATE imports SET status='approved',approved_at=now(),replaced_orders=$3 WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(replaced)]);
   return view(ctx,await getRow(ctx,row.id));
 }

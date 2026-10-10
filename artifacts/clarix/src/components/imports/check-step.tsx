@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { AlertTriangle, Ban, CheckCircle2, CircleAlert, Info, Loader2, PlayCircle, ShieldCheck, XCircle } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Ban, CheckCircle2, CircleAlert, Info, Lightbulb, Loader2, PlayCircle, ShieldCheck, XCircle } from 'lucide-react';
 import {
   getGetImportQueryKey,
   getListImportIssuesQueryKey,
@@ -19,7 +20,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { useCsrfRequest } from '@/lib/session';
 import { cn } from '@/lib/utils';
-import { errCodeOf, errData, issueText } from '@/lib/import-model';
+import i18n from '@/lib/i18n';
+import { FIELDS, PAGE_SIZE, errCodeOf, errData, formatDate, issueText, nextStepText } from '@/lib/import-model';
+import { rowCells, useImportErrors, type ApprovalInputX, type ImportDetailX, type ImportIssueX, type IssueDetails, type SampleRow } from '@/lib/import-api';
 import { ErrorNote, Pager, Raw, Section } from './shared';
 
 const SEV_STYLE: Record<string, { icon: typeof Info; cls: string }> = {
@@ -35,7 +38,159 @@ function detectedLevel(d: ImportDetail): string | undefined {
   return v == null ? undefined : String(v);
 }
 
-function Issues({ id }: { id: string }) {
+type JumpFn = (target: string) => void;
+
+function resolveTarget(code: string, det: IssueDetails | undefined, mapping: Record<string, unknown> | undefined): string | null {
+  if (['UNMAPPED_EVENT_CODE', 'MULTIPLE_CHANGEOVER_EVENTS', 'PLANNED_EVENT_IGNORED'].includes(code)) return 'codes';
+  if (code === 'NO_CHANGEOVER_EVENT') return 'codes';
+  if (code === 'UNREADABLE_NUMBER') return 'format.decimal';
+  if (code === 'UNREADABLE_DATE') return 'format.date_format';
+  if (code === 'DURATION_MISMATCH' || code === 'INVALID_TIME_RANGE' || code === 'POSSIBLE_OVERLAP') return 'events.start';
+  const files = ((mapping?.files ?? {}) as Record<string, { columns?: Record<string, string> } | undefined>);
+  const field = det?.field ?? (code === 'INCOMPATIBLE_UNIT' || code === 'UNIT_CONVERTED' ? 'unit' : code === 'ZERO_INPUT' || code === 'MATERIAL_IMBALANCE' ? 'input' : undefined);
+  if (!field) return null;
+  if (field.includes('.')) return field;
+  const role = (['records', 'totals', 'events', 'orders'] as const).find((r) => files[r] && FIELDS[r].some((f) => f.key === field));
+  return role ? `${role}.${field}` : null;
+}
+
+function fieldLabel(t: TFunction, field: string): string {
+  const key = field.includes('.') ? field.split('.').pop()! : field;
+  return i18n.exists(`imp.map.fields.${key}`) ? t(`imp.map.fields.${key}`) : field;
+}
+
+function valueText(v: unknown): string {
+  if (v == null || v === '') return '—';
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v);
+}
+
+function RowsTable({ rows, title }: { rows: SampleRow[]; title: string }) {
+  const { t } = useTranslation();
+  const [all, setAll] = useState(false);
+  const shown = all ? rows : rows.slice(0, 3);
+  return (
+    <div className="min-w-0">
+      <p className="mb-1 text-xs font-medium text-muted-foreground">{title}</p>
+      <ul className="space-y-1">
+        {shown.map((r, i) => (
+          <li key={`${r.file}-${r.line}-${i}`} className="flex min-w-0 flex-wrap items-baseline gap-1 rounded border bg-background px-2 py-1 text-xs">
+            <Raw className="text-xs text-muted-foreground">{r.file}</Raw>
+            <span className="num text-muted-foreground">· {t('imp.issueX.line')} {r.line}</span>
+            {rowCells(r).map(([k, v]) => (
+              <span key={k} className="min-w-0 break-all rounded bg-muted px-1">
+                <Raw className="text-[11px] text-muted-foreground">{k}</Raw>=<Raw className="text-xs">{v || '—'}</Raw>
+              </span>
+            ))}
+          </li>
+        ))}
+      </ul>
+      {rows.length > 3 && !all && (
+        <Button variant="ghost" className="mt-1 min-h-11 px-2 text-xs" onClick={() => setAll(true)} data-testid="button-more-rows">
+          {t('imp.issueX.more', { count: rows.length - 3 })}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+export function IssueCard({ it, idx, mapping, onJump, compact }: { it: ImportIssueX; idx: number; mapping?: Record<string, unknown>; onJump?: JumpFn; compact?: boolean }) {
+  const { t, i18n: inst } = useTranslation();
+  const s = SEV_STYLE[it.severity] ?? SEV_STYLE.info;
+  const Icon = s.icon;
+  const det = it.details;
+  const codes = det?.eventCodes ?? [];
+  const target = onJump ? resolveTarget(it.code, det, mapping) : null;
+  const showHint = it.code === 'NO_CHANGEOVER_EVENT' && det?.hasUnmappedEvents;
+  const values = det?.values ? Object.entries(det.values) : [];
+  const headline =
+    it.code === 'UNMAPPED_EVENT_CODE' && codes.length > 0
+      ? codes.map((c) => t(c.ignored ? 'imp.issueX.ignored' : 'imp.issueX.unmapped', { code: c.code, count: c.count })).join(' ')
+      : issueText(t, it.code);
+  return (
+    <li className="grid gap-2 p-3 sm:grid-cols-[7.5rem_minmax(0,1fr)] sm:gap-4" data-testid={`row-issue-${idx}`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 sm:flex-col sm:items-start">
+        <span className={cn('inline-flex items-center gap-1.5 text-sm font-medium', s.cls)}>
+          <Icon className="size-4" aria-hidden="true" />
+          {t(`imp.check.severity.${it.severity}`, { defaultValue: it.severity })}
+        </span>
+        <span className="text-xs text-muted-foreground">{it.group.split(',').map((g) => t(`imp.check.groups.${g}`, { defaultValue: g })).join(' / ')}</span>
+        {it.order && (
+          <span className="text-xs">
+            <span className="text-muted-foreground">{t('imp.check.colOrder')}: </span>
+            <Raw className="text-xs font-semibold">{it.order}</Raw>
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 space-y-2">
+        <div>
+          <p className="text-sm font-medium" data-testid={`text-issue-${idx}`}>{headline}</p>
+          {showHint && (
+            <p className="mt-1 flex items-start gap-1.5 text-sm text-status-amber" data-testid={`text-issue-hint-${idx}`}>
+              <Lightbulb className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              {t('imp.issueX.unmappedHint')}
+            </p>
+          )}
+          <p className="num mt-0.5 font-mono text-[11px] text-muted-foreground">{it.code}</p>
+        </div>
+        {(det?.field || values.length > 0) && (
+          <dl className="flex flex-wrap gap-1.5 text-xs">
+            {det?.field && (
+              <div className="rounded border bg-muted px-1.5 py-0.5">
+                <dt className="inline text-muted-foreground">{t('imp.issueX.field')}: </dt>
+                <dd className="inline font-medium">{fieldLabel(t, det.field)}</dd>
+              </div>
+            )}
+            {values.map(([k, v]) => (
+              <div key={k} className="min-w-0 break-all rounded border bg-muted px-1.5 py-0.5">
+                <dt className="inline text-muted-foreground">{fieldLabel(t, k)}: </dt>
+                <dd className="inline">
+                  <Raw className="text-xs">{valueText(v)}</Raw>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {codes.some((c) => c.ignored && c.chosenBy) && (
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            {codes.filter((c) => c.ignored && c.chosenBy).map((c) => (
+              <li key={c.code}>
+                <Raw className="text-xs">{c.code}</Raw>: {t('imp.map.codes.chosenBy', { by: c.chosenBy, at: c.chosenAt ? formatDate(c.chosenAt, inst.language) : '—' })}
+              </li>
+            ))}
+          </ul>
+        )}
+        {det?.rows && det.rows.length > 0 ? (
+          <RowsTable rows={det.rows} title={codes.some((c) => c.ignored) ? t('imp.issueX.excludedRows') : t('imp.issueX.rows')} />
+        ) : it.refs.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {it.refs.map((r) => (
+              <span key={r} className="rounded border bg-muted px-1.5 py-0.5">
+                <Raw className="text-xs">{r}</Raw>
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {!compact && (
+          <div className="flex flex-col gap-2 rounded-md bg-accent px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm">
+              <span className="font-medium">{t('imp.issueX.nextStep')}: </span>
+              {nextStepText(t, it.code)}
+            </p>
+            {target && onJump && (
+              <Button variant="outline" className="min-h-11 shrink-0 gap-1.5 bg-card" onClick={() => onJump(target)} data-testid={`button-jump-${idx}`}>
+                {target === 'codes' ? t('imp.issueX.jumpCodes') : t('imp.issueX.jump')}
+                <ArrowRight className="size-4 rtl-flip" aria-hidden="true" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function Issues({ id, mapping, onJump }: { id: string; mapping?: Record<string, unknown>; onJump?: JumpFn }) {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const q = useListImportIssues(id, page, { query: { queryKey: getListImportIssuesQueryKey(id, page) }, request: { credentials: 'include' } });
@@ -43,8 +198,8 @@ function Issues({ id }: { id: string }) {
   if (q.isLoading)
     return (
       <div className="space-y-2" aria-busy="true">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-11 animate-pulse rounded-md bg-muted" />
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-20 animate-pulse rounded-md bg-muted" />
         ))}
       </div>
     );
@@ -59,7 +214,7 @@ function Issues({ id }: { id: string }) {
         }
       />
     );
-  const items = q.data?.items ?? [];
+  const items = (q.data?.items ?? []) as ImportIssueX[];
   if (items.length === 0)
     return (
       <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed p-8 text-center" data-testid="text-issues-empty">
@@ -69,56 +224,67 @@ function Issues({ id }: { id: string }) {
     );
   return (
     <>
-      <div className="min-w-0 overflow-x-auto rounded-lg border" data-testid="table-issues">
-        <table className="w-full min-w-[640px] text-sm">
-          <thead className="bg-muted text-xs text-muted-foreground">
-            <tr>
-              <th className="px-3 py-2 text-start font-medium">{t('imp.check.colSeverity')}</th>
-              <th className="px-3 py-2 text-start font-medium">{t('imp.check.colIssue')}</th>
-              <th className="px-3 py-2 text-start font-medium">{t('imp.check.colOrder')}</th>
-              <th className="px-3 py-2 text-start font-medium">{t('imp.check.colGroup')}</th>
-              <th className="px-3 py-2 text-start font-medium">{t('imp.check.colRefs')}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {items.map((it, i) => {
-              const s = SEV_STYLE[it.severity] ?? SEV_STYLE.info;
-              const Icon = s.icon;
-              return (
-                <tr key={`${it.code}-${i}`} data-testid={`row-issue-${i}`} className="align-top">
-                  <td className="whitespace-nowrap px-3 py-2.5">
-                    <span className={cn('inline-flex items-center gap-1.5 font-medium', s.cls)}>
-                      <Icon className="size-4" aria-hidden="true" />
-                      {t(`imp.check.severity.${it.severity}`, { defaultValue: it.severity })}
-                    </span>
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <p>{issueText(t, it.code)}</p>
-                    <p className="num mt-0.5 font-mono text-[11px] text-muted-foreground">{it.code}</p>
-                  </td>
-                  <td className="whitespace-nowrap px-3 py-2.5">{it.order ? <Raw>{it.order}</Raw> : <span className="text-muted-foreground">—</span>}</td>
-                  <td className="px-3 py-2.5 text-muted-foreground">{it.group.split(',').map(g=>t(`imp.check.groups.${g}`)).join(' / ')}</td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex flex-wrap gap-1">
-                      {it.refs.map((r) => (
-                        <span key={r} className="rounded border bg-muted px-1.5 py-0.5">
-                          <Raw className="text-xs">{r}</Raw>
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <ul className={cn('divide-y rounded-lg border', q.isFetching && 'opacity-70')} data-testid="table-issues">
+        {items.map((it, i) => (
+          <IssueCard key={`${it.code}-${(page - 1) * PAGE_SIZE + i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} mapping={mapping} onJump={onJump} />
+        ))}
+      </ul>
       <Pager page={page} total={q.data?.total ?? 0} onPage={setPage} testId="pager-issues" />
     </>
   );
 }
 
-export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDetail; canEdit: boolean; onEditMapping: () => void }) {
+function ErrorList({ id }: { id: string }) {
+  const { t } = useTranslation();
+  const q = useImportErrors(id, true);
+  const [page, setPage] = useState(1);
+  if (q.isLoading)
+    return (
+      <div className="space-y-2" aria-busy="true">
+        <span className="sr-only">{t('imp.check.errorsLoading')}</span>
+        {[0, 1].map((i) => (
+          <div key={i} className="h-16 animate-pulse rounded-md bg-muted" />
+        ))}
+      </div>
+    );
+  if (q.isError)
+    return (
+      <ErrorNote
+        error={q.error}
+        action={
+          <Button variant="outline" className="min-h-11" onClick={() => q.refetch()} data-testid="button-retry-errors">
+            {t('imp.errors.retry')}
+          </Button>
+        }
+      />
+    );
+  const items = q.data?.items ?? [];
+  return (
+    <>
+      <ul className="max-h-[40dvh] divide-y overflow-y-auto rounded-lg border" data-testid="list-approve-errors">
+        {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((it, i) => (
+          <IssueCard key={`${it.code}-${i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} compact />
+        ))}
+      </ul>
+      <Pager page={page} total={items.length} onPage={setPage} testId="pager-approve-errors" />
+    </>
+  );
+}
+
+function OrderChips({ orders, testId }: { orders: string[]; testId: string }) {
+  return (
+    <ul className="flex max-h-40 flex-wrap gap-1 overflow-y-auto" data-testid={testId}>
+      {orders.map((o) => (
+        <li key={o} className="rounded border bg-background px-1.5 py-0.5">
+          <Raw className="text-xs">{o}</Raw>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: ImportDetail; canEdit: boolean; onEditMapping: (focus?: string) => void }) {
+  const detail = d0 as ImportDetailX;
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -129,17 +295,27 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
   const [approveOpen, setApproveOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
+  const [confirmedErrors, setConfirmedErrors] = useState(false);
 
   const status = detail.status;
   const readOnly = status === 'approved' || status === 'rejected' || !canEdit;
   const checked = status !== 'draft';
   const level = detectedLevel(detail);
   const rc = detail.replacementCount;
+  const errCount = detail.counts?.error ?? 0;
+  const dupBlocked = detail.duplicateReason === 'CURRENT_SAME_MAPPING' || (detail.duplicateReason === undefined && !!detail.duplicateOf);
+  const toReplace = detail.replacementOrders ?? [];
+  const replaced = detail.replacedOrders ?? [];
 
   const apply = (d: ImportDetail) => {
     qc.setQueryData(getGetImportQueryKey(d.id), d);
     void qc.invalidateQueries({ queryKey: getListImportsQueryKey() });
-    void qc.invalidateQueries({ predicate: (q) => String(q.queryKey[0]).startsWith(`/api/imports/${d.id}/issues`) });
+    void qc.resetQueries({
+      predicate: (q) => {
+        const k = String(q.queryKey[0]);
+        return k.startsWith(`/api/imports/${d.id}/issues`) || k === `/api/imports/${d.id}/errors`;
+      },
+    });
   };
 
   const approveErr = approve.error;
@@ -151,9 +327,16 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
       {status === 'approved' && (
         <div className="fade-up flex items-start gap-3 rounded-xl border border-[color-mix(in_srgb,var(--status-green)_35%,transparent)] bg-[color-mix(in_srgb,var(--status-green)_7%,var(--card))] p-4" data-testid="banner-approved">
           <ShieldCheck className="size-5 shrink-0 text-status-green" aria-hidden="true" />
-          <div>
+          <div className="min-w-0">
             <p className="font-semibold">{t('imp.check.approvedTitle')}</p>
+            <p className="text-sm" data-testid="text-replaced-past">{rc > 0 ? t('imp.check.replacedPast', { count: rc }) : t('imp.check.noReplacedPast')}</p>
             <p className="text-sm text-muted-foreground">{t('imp.check.approvedBody')}</p>
+            {replaced.length > 0 && (
+              <div className="mt-2">
+                <p className="mb-1 text-xs font-medium text-muted-foreground">{t('imp.check.ordersReplaced')}</p>
+                <OrderChips orders={replaced} testId="list-replaced-orders" />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -182,7 +365,7 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
               </Button>
             )}
             {!readOnly && (
-              <Button variant="outline" className="min-h-11" onClick={onEditMapping} data-testid="button-edit-mapping">
+              <Button variant="outline" className="min-h-11" onClick={() => onEditMapping()} data-testid="button-edit-mapping">
                 {t('imp.check.changeSettings')}
               </Button>
             )}
@@ -198,7 +381,7 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
                 <div key={k} className="min-w-0 rounded-lg border bg-background p-3 sm:p-4">
                   <p className={cn('flex items-center gap-1.5 text-xs font-medium sm:text-sm', s.cls)}>
                     <Icon className="size-4 shrink-0" aria-hidden="true" />
-                    <span className="truncate">{t(`imp.check.counts.${k}`)}</span>
+                    <span className="break-words">{t(`imp.check.counts.${k}`)}</span>
                   </p>
                   <p className="num mt-1 text-2xl font-semibold sm:text-3xl" data-testid={`count-${k}`}>
                     {detail.counts?.[k] ?? '—'}
@@ -216,17 +399,25 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
                 </span>
               </p>
             )}
+            {status !== 'approved' && (
             <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2" data-testid="text-replacement">
               <CircleAlert className={cn('mt-0.5 size-4 shrink-0', rc > 0 ? 'text-status-amber' : 'text-muted-foreground')} aria-hidden="true" />
               {rc > 0 ? t('imp.check.replacement', { count: rc }) : t('imp.check.noReplacement')}
             </p>
+            )}
+            {status !== 'approved' && status !== 'rejected' && errCount > 0 && (
+              <p className="flex items-start gap-2 rounded-md bg-[color-mix(in_srgb,var(--status-red)_7%,var(--card))] px-3 py-2 sm:col-span-2" data-testid="text-errors-hint">
+                <XCircle className="mt-0.5 size-4 shrink-0 text-status-red" aria-hidden="true" />
+                {t('imp.check.errorsHint', { count: errCount })}
+              </p>
+            )}
           </div>
         </Section>
       )}
 
       {checked && (
         <Section title={t('imp.check.issuesTitle')} testId="section-issues">
-          <Issues id={detail.id} />
+          <Issues id={detail.id} mapping={detail.mapping as Record<string, unknown> | undefined} onJump={readOnly ? undefined : (f) => onEditMapping(f)} />
         </Section>
       )}
 
@@ -235,7 +426,7 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
       {!readOnly && (
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           {checked && (
-            <Button variant="outline" className="min-h-11" onClick={onEditMapping} data-testid="button-change-settings">
+            <Button variant="outline" className="min-h-11" onClick={() => onEditMapping()} data-testid="button-change-settings">
               {t('imp.check.changeSettings')}
             </Button>
           )}
@@ -246,10 +437,12 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
           {checked && (
             <Button
               className="min-h-11 gap-2"
-              disabled={!!detail.duplicateOf}
+              disabled={dupBlocked}
+              title={dupBlocked ? t('imp.check.duplicateBlocked') : undefined}
               onClick={() => {
                 approve.reset();
                 setConfirmed(false);
+                setConfirmedErrors(false);
                 setApproveOpen(true);
               }}
               data-testid="button-approve"
@@ -262,7 +455,7 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
       )}
 
       <Dialog open={approveOpen} onOpenChange={(o) => !approve.isPending && setApproveOpen(o)}>
-        <DialogContent className="w-[calc(100%-2rem)]">
+        <DialogContent className="max-h-[90dvh] w-[calc(100%-2rem)] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{t('imp.check.approveTitle')}</DialogTitle>
             <DialogDescription>{t('imp.check.approveBody')}</DialogDescription>
@@ -270,6 +463,23 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
           <p className="rounded-md bg-muted px-3 py-2 text-sm" data-testid="text-approve-replacement">
             {rc > 0 ? t('imp.check.replacement', { count: rc }) : t('imp.check.noReplacement')}
           </p>
+          {toReplace.length > 0 && (
+            <div>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">{t('imp.check.ordersToReplace')}</p>
+              <OrderChips orders={toReplace} testId="list-orders-to-replace" />
+            </div>
+          )}
+          {errCount > 0 && approveOpen && (
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-status-red">{t('imp.check.errorsTitle')}</p>
+              <p className="text-xs text-muted-foreground">{t('imp.check.errorsBody')}</p>
+              <ErrorList id={detail.id} />
+              <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
+                <Checkbox checked={confirmedErrors} onCheckedChange={(v) => setConfirmedErrors(v === true)} className="mt-0.5" data-testid="checkbox-confirm-errors" />
+                <span>{t('imp.check.confirmErrors', { count: errCount })}</span>
+              </label>
+            </div>
+          )}
           {rc > 0 && (
             <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm">
               <Checkbox checked={confirmed} onCheckedChange={(v) => setConfirmed(v === true)} className="mt-0.5" data-testid="checkbox-confirm-replacement" />
@@ -294,10 +504,17 @@ export function CheckStep({ detail, canEdit, onEditMapping }: { detail: ImportDe
             </Button>
             <Button
               className="min-h-11 gap-2"
-              disabled={approve.isPending || (rc > 0 && !confirmed)}
+              disabled={approve.isPending || (rc > 0 && !confirmed) || (errCount > 0 && !confirmedErrors)}
               onClick={() =>
                 approve.mutate(
-                  { id: detail.id, data: { confirmReplacement: rc > 0 ? confirmed : false, replacementCount: rc } },
+                  {
+                    id: detail.id,
+                    data: {
+                      confirmReplacement: rc > 0 ? confirmed : false,
+                      replacementCount: rc,
+                      ...(errCount > 0 ? { confirmErrors: confirmedErrors } : {}),
+                    } satisfies ApprovalInputX,
+                  },
                   {
                     onSuccess: (d) => {
                       apply(d);

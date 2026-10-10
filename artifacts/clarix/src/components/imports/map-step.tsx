@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowRight, BookmarkPlus, Check, Info, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { ArrowRight, BookmarkPlus, Check, Info, Loader2, Save } from 'lucide-react';
 import {
   getGetImportQueryKey,
   getListImportTemplatesQueryKey,
@@ -19,8 +19,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { useCsrfRequest } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { useEventCodes } from '@/lib/import-api';
+import { EventCodes } from './event-codes';
 import {
-  EVENT_TYPES,
   FIELDS,
   HAS_UNIT,
   ROLES,
@@ -28,15 +29,14 @@ import {
   hasErrors,
   levelOf,
   mappingFromDraft,
-  newRowId,
   validateDraft,
   type Draft,
-  type EventType,
+  type CodeChoiceM,
   type Role,
 } from '@/lib/import-model';
 import { ErrorNote, NativeSelect, Raw, Section } from './shared';
 
-export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail; readOnly: boolean; onChecked: () => void }) {
+export function MapStep({ detail, readOnly, onChecked, focus, visible }: { detail: ImportDetail; readOnly: boolean; onChecked: () => void; focus?: string | null; visible: boolean }) {
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -71,6 +71,75 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
   const headers = useMemo(() => Object.fromEntries(detail.files.map((f) => [f.name, f.header ?? []])), [detail.files]);
   const level = levelOf(draft.files);
 
+  const eventsFile = draft.files.events?.file;
+  const eventsCol = draft.files.events?.columns.event_code;
+  const codesQ = useEventCodes(detail.id, eventsFile, eventsCol, mappingFromDraft(draft, detail.sourceName), req);
+  const [suggested, setSuggested] = useState<Set<string>>(() => new Set());
+  const [showBlocked, setShowBlocked] = useState(false);
+  const readOnlyRef = useRef(readOnly);
+  const touchedCodes = useRef(new Set<string>());
+  readOnlyRef.current = readOnly;
+
+  // Merge server-provided choices / suggestions for codes that have no local choice yet.
+  useEffect(() => {
+    const items = codesQ.data?.items;
+    if (!items) return;
+    const sug = new Set<string>();
+    let changed = false;
+    setDraft((d) => {
+      const codes = { ...d.codes };
+      for (const it of items) {
+        if (codes[it.code] || touchedCodes.current.has(`${eventsFile}:${eventsCol}:${it.code}`)) continue;
+        if (it.choice) {
+          codes[it.code] = it.choice;
+          changed = true;
+        } else if (it.suggestion && !readOnlyRef.current) {
+          codes[it.code] = it.suggestion;
+          sug.add(it.code);
+          changed = true;
+        }
+      }
+      return changed ? { ...d, codes } : d;
+    });
+    if (sug.size > 0) {
+      setSuggested((prev) => new Set([...prev, ...sug]));
+      setDirty(true);
+    }
+  }, [codesQ.data]);
+
+  const missingCodes = useMemo(() => (codesQ.data?.items ?? []).filter((it) => !draft.codes[it.code]).length, [codesQ.data, draft.codes]);
+
+  function chooseCode(code: string, choice: CodeChoiceM | '') {
+    touchedCodes.current.add(`${eventsFile}:${eventsCol}:${code}`);
+    setSuggested((prev) => {
+      if (!prev.has(code)) return prev;
+      const n = new Set(prev);
+      n.delete(code);
+      return n;
+    });
+    update((d) => {
+      const codes = { ...d.codes };
+      if (choice) codes[code] = choice;
+      else delete codes[code];
+      return { ...d, codes };
+    });
+  }
+
+  // Jump to a mapping field requested from the check step.
+  useEffect(() => {
+    if (!focus || !visible) return;
+    const fx = focus.split('#')[0];
+    const id = fx === 'codes' ? 'section-event-codes' : fx.startsWith('format.') ? `fmt-${fx === 'format.decimal' ? 'decimal' : fx === 'format.datetime_format' ? 'dt' : 'date'}` : `col-${fx}`;
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById(id) ?? document.getElementById(`unit-${fx.split('.')[0]}`);
+      if (el) {
+        el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        el.focus({ preventScroll: true });
+      }
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [focus, visible]);
+
   const update = (fn: (d: Draft) => Draft) => {
     setDraft((d) => fn(d));
     setDirty(true);
@@ -102,8 +171,10 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
     try {
       const d = await save.mutateAsync({ id: detail.id, data: { mapping: mappingFromDraft(draft, detail.sourceName) } });
       qc.setQueryData(getGetImportQueryKey(d.id), d);
+      await codesQ.refetch();
       void qc.invalidateQueries({ queryKey: getListImportsQueryKey() });
       setDirty(false);
+      if (draft.files.events && missingCodes > 0) toast({ title: t('imp.map.codes.savedIncomplete') });
       return d;
     } catch (e) {
       setError(e);
@@ -112,12 +183,20 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
   }
 
   async function saveAndCheck() {
+    if (codesBlocking) {
+      setShowBlocked(true);
+      setShowErrors(true);
+      document.getElementById('section-event-codes')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      if (dirty) await persist();
+      return;
+    }
     const saved = dirty || !detail.samples?.length ? await persist() : detail;
     if (!saved) return;
     try {
       const d = await check.mutateAsync({ id: detail.id });
       qc.setQueryData(getGetImportQueryKey(d.id), d);
       void qc.invalidateQueries({ queryKey: getListImportsQueryKey() });
+      await qc.resetQueries({ predicate: (q) => { const k = String(q.queryKey[0]); return k.startsWith(`/api/imports/${d.id}/issues`) || k === `/api/imports/${d.id}/errors`; } });
       onChecked();
     } catch (e) {
       setError(e);
@@ -161,6 +240,7 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
   }
 
   const busy = save.isPending || check.isPending;
+  const codesBlocking = !!draft.files.events && (!eventsCol || codesQ.isLoading || codesQ.isError || missingCodes > 0);
   const fe = (k: string) => (showErrors ? errors.fields[k] : undefined);
 
   return (
@@ -203,7 +283,7 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
         <div className="grid gap-3 md:grid-cols-2">
           {detail.files.map((f, i) => (
             <div key={f.id} className="min-w-0 space-y-1.5">
-              <Label htmlFor={`role-${i}`} className="block truncate">
+              <Label htmlFor={`role-${i}`} className="block break-all">
                 {t('imp.map.role', { name: f.name })}
               </Label>
               <NativeSelect id={`role-${i}`} value={roleOf(f.name)} disabled={readOnly} onChange={(e) => setRole(f.name, e.target.value as Role | 'none')} data-testid={`select-role-${i}`}>
@@ -339,75 +419,23 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
       </Section>
 
       {draft.files.events && (
-        <Section
-          title={t('imp.map.eventsTitle')}
-          body={t('imp.map.eventsBody')}
-          testId="section-event-codes"
-          aside={
-            !readOnly && (
-              <Button variant="outline" className="min-h-11 gap-2" onClick={() => update((d) => ({ ...d, codes: [...d.codes, { id: newRowId(), code: '', type: 'CHANGEOVER' }] }))} data-testid="button-add-code">
-                <Plus className="size-4" aria-hidden="true" />
-                {t('imp.map.addCode')}
-              </Button>
-            )
-          }
-        >
-          <div className="space-y-3">
-            {draft.codes.map((c, i) => {
-              const err = showErrors ? errors.codes[c.id] : undefined;
-              return (
-                <div key={c.id} className="grid grid-cols-[1fr_auto] gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-start">
-                  <div className="min-w-0">
-                    <Label htmlFor={`code-${c.id}`} className={cn('mb-1 block text-xs text-muted-foreground', i > 0 && 'sm:sr-only')}>
-                      {t('imp.map.code')}
-                    </Label>
-                    <Input
-                      id={`code-${c.id}`}
-                      dir="auto"
-                      className={cn('h-11 font-mono', err && 'border-status-red')}
-                      value={c.code}
-                      disabled={readOnly}
-                      aria-invalid={err ? true : undefined}
-                      onChange={(e) => update((d) => ({ ...d, codes: d.codes.map((x) => (x.id === c.id ? { ...x, code: e.target.value } : x)) }))}
-                      data-testid={`input-code-${i}`}
-                    />
-                    {err && <p className="mt-1 text-xs text-status-red">{err}</p>}
-                  </div>
-                  <div className="col-span-2 row-start-2 min-w-0 sm:col-span-1 sm:row-start-auto">
-                    <Label htmlFor={`type-${c.id}`} className={cn('mb-1 block text-xs text-muted-foreground', i > 0 && 'sm:sr-only')}>
-                      {t('imp.map.meaning')}
-                    </Label>
-                    <NativeSelect
-                      id={`type-${c.id}`}
-                      value={c.type}
-                      disabled={readOnly}
-                      onChange={(e) => update((d) => ({ ...d, codes: d.codes.map((x) => (x.id === c.id ? { ...x, type: e.target.value as EventType } : x)) }))}
-                      data-testid={`select-code-type-${i}`}
-                    >
-                      {EVENT_TYPES.map((et) => (
-                        <option key={et} value={et}>
-                          {t(`imp.map.types.${et}`)}
-                        </option>
-                      ))}
-                    </NativeSelect>
-                  </div>
-                  {!readOnly && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={cn('size-11', i === 0 && 'mt-5')}
-                      onClick={() => update((d) => ({ ...d, codes: d.codes.filter((x) => x.id !== c.id) }))}
-                      aria-label={t('imp.map.removeCode', { code: c.code })}
-                      data-testid={`button-remove-code-${i}`}
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </Section>
+        <div id="section-event-codes" tabIndex={-1} className="scroll-mt-24 outline-none">
+          <Section title={t('imp.map.codes.title')} body={t('imp.map.codes.body')} testId="section-event-codes">
+            <EventCodes
+              items={codesQ.data?.items}
+              total={codesQ.data?.total ?? 0}
+              loading={codesQ.isLoading}
+              error={codesQ.error}
+              onRetry={() => void codesQ.refetch()}
+              hasColumn={!!eventsCol}
+              choices={draft.codes}
+              suggested={suggested}
+              readOnly={readOnly}
+              showBlocked={showBlocked}
+              onChoose={chooseCode}
+            />
+          </Section>
+        </div>
       )}
 
       <Section title={t('imp.map.samplesTitle')} body={t('imp.map.samplesBody')} testId="section-samples">
@@ -479,7 +507,7 @@ export function MapStep({ detail, readOnly, onChecked }: { detail: ImportDetail;
               {save.isPending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
               {t('imp.map.save')}
             </Button>
-            <Button className="min-h-11 gap-2" disabled={busy} onClick={() => void saveAndCheck()} data-testid="button-save-and-check">
+            <Button className="min-h-11 gap-2" disabled={busy || codesBlocking} onClick={() => void saveAndCheck()} data-testid="button-save-and-check">
               {check.isPending ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <ArrowRight className="size-4 rtl-flip" aria-hidden="true" />}
               {t('imp.map.toCheck')}
             </Button>

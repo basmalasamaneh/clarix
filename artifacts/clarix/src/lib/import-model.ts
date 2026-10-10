@@ -2,6 +2,7 @@ import type { TFunction } from 'i18next';
 import i18n from '@/lib/i18n';
 import { localizeError } from '@/lib/session';
 import '@/lib/imports-i18n';
+import '@/lib/imports-i18n-fix';
 
 export const PAGE_SIZE = 20;
 export const ROLES = ['orders', 'records', 'events', 'totals'] as const;
@@ -45,17 +46,15 @@ export const HAS_UNIT: Record<Role, boolean> = { orders: false, records: true, e
 
 export type FileMap = { file: string; columns: Record<string, string>; fixed_unit?: string };
 export type Format = { encoding: string; delimiter: string; decimal_separator: string; date_format: string; datetime_format: string };
-export type CodeRow = { id: number; code: string; type: EventType };
+export type CodeChoiceM = EventType | 'IGNORE';
 
 export type Draft = {
   base: Record<string, unknown>;
   format: Format;
   files: Partial<Record<Role, FileMap>>;
-  codes: CodeRow[];
+  /** Explicit choice per distinct event code (server-scanned). */
+  codes: Record<string, CodeChoiceM>;
 };
-
-let rowSeq = 1;
-export const newRowId = () => rowSeq++;
 
 const DEFAULT_FORMAT: Format = {
   encoding: 'auto',
@@ -75,11 +74,10 @@ export function draftFromMapping(m: Record<string, unknown> | undefined | null):
     if (f && typeof f.file === 'string') files[r] = { file: f.file, columns: { ...(f.columns ?? {}) }, ...(f.fixed_unit ? { fixed_unit: f.fixed_unit } : {}) };
   }
   const ecm = (src.event_code_map ?? {}) as Record<string, string>;
-  const codes: CodeRow[] = Object.entries(ecm).map(([code, type]) => ({
-    id: newRowId(),
-    code,
-    type: (EVENT_TYPES as readonly string[]).includes(type) ? (type as EventType) : 'CHANGEOVER',
-  }));
+  const codes: Record<string, CodeChoiceM> = {};
+  for (const [code, type] of Object.entries(ecm)) if ((EVENT_TYPES as readonly string[]).includes(type)) codes[code] = type as EventType;
+  const ign = Array.isArray(src.ignored_event_codes) ? (src.ignored_event_codes as unknown[]) : [];
+  for (const c of ign) if (typeof c === 'string') codes[c] = 'IGNORE';
   return { base: src, format: fmt, files, codes };
 }
 
@@ -107,16 +105,16 @@ export function mappingFromDraft(d: Draft, sourceName: string): Record<string, u
     source_name: (d.base.source_name as string) || sourceName,
     format: d.format,
     files,
-    event_code_map: Object.fromEntries(d.codes.filter((c) => c.code.trim()).map((c) => [c.code.trim(), c.type])),
+    event_code_map: Object.fromEntries(Object.entries(d.codes).filter(([, v]) => v !== 'IGNORE')),
+    ignored_event_codes: Object.entries(d.codes).filter(([, v]) => v === 'IGNORE').map(([k]) => k),
   };
 }
 
-export type DraftErrors = { general: string[]; fields: Record<string, string>; codes: Record<number, string> };
+export type DraftErrors = { general: string[]; fields: Record<string, string> };
 
 export function validateDraft(t: TFunction, d: Draft): DraftErrors {
   const general: string[] = [];
   const fields: Record<string, string> = {};
-  const codes: Record<number, string> = {};
   if (!d.files.orders) general.push(t('imp.map.errors.ordersRole'));
   if (!d.files.records && !d.files.totals) general.push(t('imp.map.errors.dataRole'));
   if (d.files.records && d.files.totals) general.push(t('imp.map.errors.recordsTotals'));
@@ -129,17 +127,10 @@ export function validateDraft(t: TFunction, d: Draft): DraftErrors {
     }
   }
   if (!d.format.date_format.trim()) fields['format.date_format'] = t('imp.map.errors.dateFormat');
-  const seen = new Set<string>();
-  for (const c of d.codes) {
-    const k = c.code.trim();
-    if (!k) codes[c.id] = t('imp.map.codeRequired');
-    else if (seen.has(k)) codes[c.id] = t('imp.map.codeDuplicate');
-    seen.add(k);
-  }
-  return { general, fields, codes };
+  return { general, fields };
 }
 
-export const hasErrors = (e: DraftErrors) => e.general.length > 0 || Object.keys(e.fields).length > 0 || Object.keys(e.codes).length > 0;
+export const hasErrors = (e: DraftErrors) => e.general.length > 0 || Object.keys(e.fields).length > 0;
 
 type ErrData = { error?: unknown; details?: { file?: unknown; line?: unknown; column?: unknown; existingImportId?: unknown } };
 
@@ -171,6 +162,11 @@ export function importError(t: TFunction, err: unknown): { message: string; loca
 
 export function issueText(t: TFunction, code: string): string {
   return i18n.exists(`imp.issues.${code}`) ? t(`imp.issues.${code}`) : t('imp.issues.unknown', { code });
+}
+
+/** Next-step text for an issue code (plain language). */
+export function nextStepText(t: TFunction, code: string): string {
+  return i18n.exists(`imp.next.${code}`) ? t(`imp.next.${code}`) : t('imp.next.default');
 }
 
 const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 1 });

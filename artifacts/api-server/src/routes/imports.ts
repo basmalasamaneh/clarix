@@ -6,6 +6,7 @@ import { withRequestTenant,TenantAccessError } from "../lib/tenancy";
 import { ImportError,limitConfig,validateMapping } from "../imports/model";
 import * as service from "../imports/service";
 import { approve } from "../imports/approval";
+import {eventCodes,issues} from "../imports/review";
 const router=Router();
 type Action=(ctx:service.Context,req:Request,res:Response)=>Promise<void>;
 function route(action:Action) {
@@ -21,7 +22,7 @@ function route(action:Action) {
       await withRequestTenant(req,async db=>{
         const {rows}=await db.query("SELECT m.role,f.settings FROM memberships m JOIN factories f ON m.factory_id=f.id WHERE m.user_id=$1 AND m.factory_id=$2",[req.session.userId,req.session.activeFactoryId]);
         if(!["factory_manager","analyst"].includes(rows[0]?.role)) throw new ImportError("FORBIDDEN",403);
-        await action({db,factory:req.session.activeFactoryId!,user:req.session.userId!,settings:rows[0].settings??{}},req,output);
+        await action({db,factory:req.session.activeFactoryId!,user:req.session.userId!,userName:res.locals.identity?.user?.name,settings:rows[0].settings??{}},req,output);
       });
       res.status(code).json(payload);
     } catch(e) {
@@ -52,6 +53,12 @@ router.get("/imports/:id",route(async(ctx,req,res)=>{res.json(await service.view
 router.post("/imports/:id/finalize",route(async(ctx,req,res)=>{res.json(await service.finalize(ctx,await service.getRow(ctx,id(req),true)));}));
 router.put("/imports/:id/mapping",route(async(ctx,req,res)=>{res.json(await service.saveMapping(ctx,await service.getRow(ctx,id(req),true),SaveImportMappingBody.parse(req.body).mapping));}));
 router.post("/imports/:id/check",route(async(ctx,req,res)=>{res.json(await service.check(ctx,await service.getRow(ctx,id(req),true)));}));
+router.post("/imports/:id/event-codes",route(async(ctx,req,res)=>{
+  const row=await service.getRow(ctx,id(req));
+  const mapping=z.object({files:z.object({events:z.object({file:z.string(),columns:z.record(z.string())}).optional()}),event_code_map:z.record(z.string()).default({}),ignored_event_codes:z.array(z.string()).default([])}).parse(req.body.mapping);
+  res.json(await eventCodes(ctx,row,mapping as any));
+}));
+router.get("/imports/:id/errors",route(async(ctx,req,res)=>{res.json(await issues(ctx,await service.getRow(ctx,id(req)),1,true));}));
 router.post("/imports/:id/approve",route(async(ctx,req,res)=>{res.json(await approve(ctx,await service.getRow(ctx,id(req),true),ApproveImportBody.parse(req.body)));}));
 router.post("/imports/:id/reject",route(async(ctx,req,res)=>{
   const row=await service.getRow(ctx,id(req),true);service.editable(row);
@@ -59,12 +66,7 @@ router.post("/imports/:id/reject",route(async(ctx,req,res)=>{
   res.json(await service.view(ctx,await service.getRow(ctx,row.id)));
 }));
 router.get("/imports/:id/issues/:page",route(async(ctx,req,res)=>{
-  await service.getRow(ctx,id(req)); const p=page(req.params.page);
-  const {rows}=await ctx.db.query(`SELECT code,severity,source_order_id AS "order","group",
-    ARRAY(SELECT r.file||':'||r.line_number FROM raw_rows r WHERE r.factory_id=d.factory_id AND r.id=ANY(d.raw_row_ids) ORDER BY r.file,r.line_number) AS refs
-    FROM data_issues d WHERE factory_id=$1 AND import_id=$2 ORDER BY code,id LIMIT 20 OFFSET $3`,[ctx.factory,id(req),(p-1)*20]);
-  const total=(await ctx.db.query("SELECT count(*)::int AS n FROM data_issues WHERE factory_id=$1 AND import_id=$2",[ctx.factory,id(req)])).rows[0].n;
-  res.json({items:rows,page:p,total});
+  res.json(await issues(ctx,await service.getRow(ctx,id(req)),page(req.params.page)));
 }));
 router.get("/import-templates",route(async(ctx,req,res)=>{
   const p=page(req.query.page),source=typeof req.query.source==="string"?req.query.source:null;

@@ -13,6 +13,16 @@ without weakening the Phase 2 uniqueness constraints.
 **How to apply:** Archive and replace atomically, test cross-factory denial and
 immutability. Raw source references use FIRST physical line; retain both ends.
 
+Duplicate detection requires the same files AND mapping, and a prior import
+still current for at least one order. Different mapping or fully superseded
+imports must remain approvable through replacement confirmation.
+**Why:** The user corrected the earlier hash-only policy to support reprocessing.
+
+Explicitly ignored event codes retain the engine's exclusion warning. Display
+the code, count, excluded rows, acting user and time. Do not change the engine
+or fixtures to turn this into an informational note; that is a post-MVP idea.
+**Why:** The user explicitly chose preserving the warning.
+
 On an existing Phase 2 schema, Drizzle push attempted to drop referenced composite
 uniques. Use additive migrations rather than cascading those constraints.
 **Why:** Dropping dependent keys would weaken tenant-safe foreign references.

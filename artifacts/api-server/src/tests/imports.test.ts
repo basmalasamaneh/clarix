@@ -32,15 +32,70 @@ test("real API import/approval, isolation, originals, replacement history and un
     return {id:draft.body.id,ready:ready.body,mapping:JSON.parse(readFileSync(dir+"/mapping.json","utf8"))};
   }
   async function check(who:typeof eth,u:Awaited<ReturnType<typeof upload>>) {
+    const codes=(await who.a.post(`/api/imports/${u.id}/event-codes`).set("X-CSRF-Token",who.token).send({mapping:u.mapping}).expect(200)).body.items;
+    u.mapping.ignored_event_codes=codes.filter((c:any)=>!u.mapping.event_code_map[c.code]).map((c:any)=>c.code);
     await who.a.put(`/api/imports/${u.id}/mapping`).set("X-CSRF-Token",who.token).send({mapping:u.mapping}).expect(200);
     return (await who.a.post(`/api/imports/${u.id}/check`).set("X-CSRF-Token",who.token).expect(200)).body;
   }
   async function approve(who:typeof eth,id:string,count:number) {
-    return (await who.a.post(`/api/imports/${id}/approve`).set("X-CSRF-Token",who.token).send({confirmReplacement:true,replacementCount:count}).expect(200)).body;
+    return (await who.a.post(`/api/imports/${id}/approve`).set("X-CSRF-Token",who.token).send({confirmReplacement:true,replacementCount:count,confirmErrors:true}).expect(200)).body;
   }
   // The same approved fixture may already exist from a previous test execution.
   // Only isolated source orders created on this run are used for replacement checks.
   let first:Awaited<ReturnType<typeof upload>>;
+  await t.test("wizard gates, ignored decisions, current mapping duplicates and reversible versions",async()=>{
+    const name="mapping-versions-"+randomUUID();
+    const mutate=(files:{name:string;bytes:Buffer}[])=>files.forEach(f=>{f.bytes=Buffer.from(f.bytes.toString().replaceAll("E-01",name+"-1").replaceAll("E-02",name+"-2"));});
+    const a=await upload(eth,"ethmar-plastics/00_baseline",name,mutate);
+    const original=structuredClone(a.mapping);
+    a.mapping.event_code_map={};
+    await eth.a.put(`/api/imports/${a.id}/mapping`).set("X-CSRF-Token",eth.token).send({mapping:a.mapping}).expect(200);
+    const gate=await eth.a.post(`/api/imports/${a.id}/check`).set("X-CSRF-Token",eth.token).expect(422);
+    assert.equal(gate.body.error,"EVENT_CHOICES_REQUIRED");
+    const inventory=(await eth.a.post(`/api/imports/${a.id}/event-codes`).set("X-CSRF-Token",eth.token).send({mapping:a.mapping}).expect(200)).body;
+    assert.equal(inventory.items.find((x:any)=>x.code==="CHG").count,2);
+    assert.ok(inventory.items.every((x:any)=>x.sample.cells && x.sample.line && x.refs.length));
+    a.mapping=structuredClone(original);
+    assert.deepEqual((await check(eth,a)).counts,{info:0,warning:0,error:0});
+    a.mapping.event_code_map.UDT="PLANNED_STOP";
+    await check(eth,a);await approve(eth,a.id,0);
+    const b=await upload(eth,"ethmar-plastics/00_baseline",name,mutate);
+    const bCheck=await check(eth,b);
+    assert.equal(bCheck.duplicateOf,null);
+    assert.equal(bCheck.duplicateReason,"MAPPING_DIFFERS");
+    assert.equal(bCheck.replacementOrders.length,2);
+    const bApproved=await approve(eth,b.id,2);
+    assert.equal(bApproved.replacementCount,2);
+    assert.equal(bApproved.replacedOrders.length,2);
+    const againA=await upload(eth,"ethmar-plastics/00_baseline",name,mutate);
+    againA.mapping.event_code_map.UDT="PLANNED_STOP";
+    assert.equal((await check(eth,againA)).duplicateOf,null);
+    await approve(eth,againA.id,2);
+    const duplicate=await upload(eth,"ethmar-plastics/00_baseline",name,mutate);
+    duplicate.mapping.event_code_map.UDT="PLANNED_STOP";
+    assert.ok((await check(eth,duplicate)).duplicateOf);
+    await eth.a.post(`/api/imports/${duplicate.id}/approve`).set("X-CSRF-Token",eth.token).send({replacementCount:2,confirmReplacement:true}).expect(409);
+    const ignored=await upload(eth,"ethmar-plastics/00_baseline",name,mutate);
+    delete ignored.mapping.event_code_map.UDT;
+    await check(eth,ignored);
+    const report=(await eth.a.get(`/api/imports/${ignored.id}/issues/1`).expect(200)).body;
+    const entry=report.items.find((i:any)=>i.code==="UNMAPPED_EVENT_CODE").details.eventCodes[0];
+    assert.equal(entry.ignored,true);assert.equal(entry.count,1);assert.ok(entry.chosenBy && entry.chosenAt && entry.refs.length);
+    ignored.mapping=structuredClone(original);
+    assert.deepEqual((await check(eth,ignored)).counts,{info:0,warning:0,error:0});
+    assert.equal((await eth.a.get(`/api/imports/${ignored.id}/issues/1`).expect(200)).body.total,0);
+    // Different bytes replace the version; the old file set becomes reusable.
+    const changed=await upload(eth,"ethmar-plastics/00_baseline",name,files=>{mutate(files);files.forEach(f=>{f.bytes=Buffer.concat([f.bytes,Buffer.from("\n")]);});});
+    await check(eth,changed);await approve(eth,changed.id,2);
+    const fullyOld=await upload(eth,"ethmar-plastics/00_baseline",name,mutate);
+    assert.equal((await check(eth,fullyOld)).duplicateReason,"FULLY_SUPERSEDED");
+    await approve(eth,fullyOld.id,2);
+    const errorCase=await upload(eth,"ethmar-plastics/07_missing_scrap_value",name+"-error",mutate);
+    const checked=await check(eth,errorCase);assert.ok(checked.counts.error>0);
+    const deny=await eth.a.post(`/api/imports/${errorCase.id}/approve`).set("X-CSRF-Token",eth.token).send({replacementCount:0,confirmReplacement:false}).expect(409);
+    assert.equal(deny.body.error,"ERROR_CONFIRMATION_REQUIRED");assert.ok(deny.body.details.errors.length);
+    assert.equal((await approve(eth,errorCase.id,0)).status,"approved");
+  });
   await t.test("Ethmar baseline: exact checked numbers and no draft canonical rows",async()=>{
     first=await upload(eth,"ethmar-plastics/00_baseline");
     const r=await check(eth,first);
@@ -48,12 +103,11 @@ test("real API import/approval, isolation, originals, replacement history and un
     assert.equal(r.result.runs["E-02"].changeover.minutes,"360");
     assert.equal(r.result.runs["E-02"].downtime.minutes,"45");
     await withTenant(eth.user,eth.factory,async db=>assert.equal((await db.query("SELECT id FROM orders WHERE source_name=$1",[source])).rowCount,0));
-    if(!first.ready.duplicateOf) assert.equal((await approve(eth,first.id,0)).status,"approved");
+    if(!r.duplicateOf) assert.equal((await approve(eth,first.id,0)).status,"approved");
   });
   await t.test("scenario20 cannot be approved twice; cross-factory visibility denied; viewer denied",async()=>{
     const dupe=await upload(eth,"ethmar-plastics/20_duplicate_file_upload");
-    assert.ok(dupe.ready.duplicateOf);
-    await check(eth,dupe);
+    assert.ok((await check(eth,dupe)).duplicateOf);
     const r=await eth.a.post(`/api/imports/${dupe.id}/approve`).set("X-CSRF-Token",eth.token).send({confirmReplacement:true,replacementCount:0}).expect(409);
     assert.equal(r.body.error,"DUPLICATE_FILE");
     await najm.a.get(`/api/imports/${first.id}`).expect(404);
@@ -64,12 +118,13 @@ test("real API import/approval, isolation, originals, replacement history and un
     const u=await upload(najm,"najm-packaging/00_baseline"),r=await check(najm,u);
     assert.equal(r.result.runs["E-01"].volume.input_kg,"2500");
     assert.equal(r.result.runs["B-102"].downtime.minutes,"20");
-    if(!u.ready.duplicateOf) await approve(najm,u.id,0);
+    if(!r.duplicateOf) await approve(najm,u.id,0);
     const sameBytes=await upload(najm,"ethmar-plastics/00_baseline",source+"-cross-factory-bytes");
-    if(!sameBytes.ready.duplicateOf) {
-      await check(najm,sameBytes);await approve(najm,sameBytes.id,0);
+    const sameChecked=await check(najm,sameBytes);
+    if(!sameChecked.duplicateOf) {
+      await approve(najm,sameBytes.id,0);
     } else {
-      const own=await najm.a.get(`/api/imports/${sameBytes.ready.duplicateOf}`).expect(200);
+      const own=await najm.a.get(`/api/imports/${sameChecked.duplicateOf}`).expect(200);
       assert.equal(own.body.status,"approved","duplicate link stays in Najm, never Ethmar");
     }
   });
@@ -142,7 +197,7 @@ test("real API import/approval, isolation, originals, replacement history and un
         const u=await upload(who,`${dataset}/${name}`,`${source}-${name}`);
         const r=await check(who,u),exp=resolve(name);
         for(const key of ["capability_level","runs","comparison","file_issues","formula_like_cells"]) assert.deepEqual(r.result[key],exp[key],`${dataset}/${name}/${key}`);
-        if(!u.ready.duplicateOf) {
+        if(!r.duplicateOf) {
           const approved=await approve(who,u.id,r.replacementCount);
           assert.deepEqual(approved.result,r.result);
           await withTenant(who.user,who.factory,async db=>{

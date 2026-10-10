@@ -157,6 +157,33 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MappingTemplate" }
+  /imports/{id}/event-codes:
+    post:
+      operationId: inspectEventCodes
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MappingInput" }
+      responses:
+        "200":
+          description: Complete distinct event-code inventory for the selected column
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JsonObject" }
+  /imports/{id}/errors:
+    get:
+      operationId: getImportErrors
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Errors requiring explicit approval acknowledgement
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssuePage" }
   /healthz:
     get:
       operationId: healthCheck
@@ -296,6 +323,9 @@ components:
         finalized: { type: boolean }
         replacementCount: { type: integer }
         duplicateOf: { type: [string, "null"] }
+        duplicateReason: { type: [string, "null"] }
+        replacementOrders: { type: array, items: { type: string } }
+        replacedOrders: { type: array, items: { type: string } }
         mapping: { $ref: "#/components/schemas/JsonObject" }
         result: { $ref: "#/components/schemas/JsonObject" }
         samples:
@@ -343,6 +373,7 @@ components:
       required: [confirmReplacement, replacementCount]
       properties:
         confirmReplacement: { type: boolean }
+        confirmErrors: { type: boolean }
         replacementCount: { type: integer, minimum: 0 }
     TemplateInput:
       type: object

@@ -13,6 +13,7 @@ export const mappingSchema=z.object({
     date_format:z.string().min(1),datetime_format:z.string().min(1)}),
   files:z.object({orders:fileMap,records:fileMap.optional(),events:fileMap.optional(),totals:fileMap.optional()}),
   event_code_map:z.record(z.string(),z.enum(["CHANGEOVER","UNPLANNED_DOWNTIME","PLANNED_STOP"])),
+  ignored_event_codes:z.array(z.string()).default([]),
   unit_factors_to_kg:z.record(z.string(),z.string()),
   tolerances:z.object({imbalance_warn_pct:z.string(),imbalance_error_pct:z.string()}),
 });

@@ -1,5 +1,9 @@
 # Phase 4 — Data Imports
 
+This is the initial implementation report. For subsequent wizard fixes,
+current-aware file-plus-mapping duplicate detection and newer verification,
+see PHASE4_FIXES_REPORT.md.
+
 ## What I built
 
 - Analyst/Factory Manager import wizard: upload, map, check and approve.

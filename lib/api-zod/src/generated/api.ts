@@ -48,6 +48,9 @@ export const ListImportsResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -120,6 +123,9 @@ export const CreateImportResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -181,6 +187,9 @@ export const GetImportResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -235,6 +244,9 @@ export const FinalizeImportResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -293,6 +305,9 @@ export const SaveImportMappingResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -347,6 +362,9 @@ export const CheckImportResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -375,6 +393,7 @@ export const approveImportBodyReplacementCountMin = 0;
 
 export const ApproveImportBody = zod.object({
   "confirmReplacement": zod.boolean(),
+  "confirmErrors": zod.boolean().optional(),
   "replacementCount": zod.number().int().min(approveImportBodyReplacementCountMin)
 })
 
@@ -410,6 +429,9 @@ export const ApproveImportResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -464,6 +486,9 @@ export const RejectImportResponse = zod.object({
   "finalized": zod.boolean(),
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
+  "duplicateReason": zod.string().nullish(),
+  "replacementOrders": zod.array(zod.string()).optional(),
+  "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
   "result": zod.record(zod.string(), zod.unknown()).optional(),
   "samples": zod.array(zod.object({
@@ -557,6 +582,34 @@ export const CreateImportTemplateResponse = zod.object({
   "id": zod.string(),
   "version": zod.number().int()
 }))
+
+
+export const InspectEventCodesParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const InspectEventCodesBody = zod.object({
+  "mapping": zod.record(zod.string(), zod.unknown())
+})
+
+export const InspectEventCodesResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetImportErrorsParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetImportErrorsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "code": zod.string(),
+  "severity": zod.string(),
+  "order": zod.string().nullable(),
+  "group": zod.string(),
+  "refs": zod.array(zod.string())
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
 
 
 /**

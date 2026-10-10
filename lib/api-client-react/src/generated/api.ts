@@ -29,6 +29,7 @@ import type {
   ImportLimits,
   ImportPage,
   IssuePage,
+  JsonObject,
   ListImportTemplatesParams,
   ListImportsParams,
   MappingInput,
@@ -974,6 +975,160 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       > => {
       return useMutation(getCreateImportTemplateMutationOptions(options));
     }
+
+export const getInspectEventCodesUrl = (id: string,) => {
+
+
+
+
+  return `/api/imports/${id}/event-codes`
+}
+
+export const inspectEventCodes = async (id: string,
+    mappingInput: MappingInput, options?: Parameters<typeof customFetch>[1]): Promise<JsonObject> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<JsonObject>(getInspectEventCodesUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(mappingInput)
+  }
+);}
+
+
+
+
+
+export const getInspectEventCodesMutationKey = () => ['inspectEventCodes'] as const;
+
+export const getInspectEventCodesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inspectEventCodes>>, TError,InspectEventCodesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof inspectEventCodes>>, TError,InspectEventCodesMutationVariables, TContext> => {
+
+const mutationKey = getInspectEventCodesMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof inspectEventCodes>>, InspectEventCodesMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  inspectEventCodes(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type InspectEventCodesMutationResult = NonNullable<Awaited<ReturnType<typeof inspectEventCodes>>>
+    export type InspectEventCodesMutationBody = BodyType<MappingInput>
+    export type InspectEventCodesMutationError = ErrorType<unknown>
+    export type InspectEventCodesMutationVariables = {id: string;data: BodyType<MappingInput>}
+
+    export const useInspectEventCodes = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof inspectEventCodes>>, TError,InspectEventCodesMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof inspectEventCodes>>,
+        TError,
+        InspectEventCodesMutationVariables,
+        TContext
+      > => {
+      return useMutation(getInspectEventCodesMutationOptions(options));
+    }
+
+export const getGetImportErrorsUrl = (id: string,) => {
+
+
+
+
+  return `/api/imports/${id}/errors`
+}
+
+export const getImportErrors = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<IssuePage> => {
+
+  return customFetch<IssuePage>(getGetImportErrorsUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetImportErrorsQueryKey = (id: string,) => {
+    return [
+    `/api/imports/${id}/errors`
+    ] as const;
+    }
+
+
+export const getGetImportErrorsQueryOptions = <TData = Awaited<ReturnType<typeof getImportErrors>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetImportErrorsQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getImportErrors>>> = ({ signal }) => getImportErrors(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetImportErrorsQueryResult = NonNullable<Awaited<ReturnType<typeof getImportErrors>>>
+export type GetImportErrorsQueryError = ErrorType<unknown>
+
+
+
+export function useGetImportErrors<TData = Awaited<ReturnType<typeof getImportErrors>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetImportErrorsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 

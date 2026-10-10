@@ -16,6 +16,8 @@ export const imports = pgTable("imports", {
   mapping: jsonb("mapping"),
   result: jsonb("result"),
   counts: jsonb("counts"),
+  decisionAudit: jsonb("decision_audit").notNull().default([]),
+  replacedOrders: jsonb("replaced_orders").$type<string[]>().notNull().default([]),
   progress: integer("progress").notNull().default(0),
   finalized: boolean("finalized").notNull().default(false),
   approvedAt: timestamp("approved_at", { mode:"string" }),
@@ -25,7 +27,7 @@ export const imports = pgTable("imports", {
 }, (t) => [
   unique().on(t.factoryId, t.id),
   unique().on(t.factoryId, t.sourceName, t.id),
-  uniqueIndex("imports_approved_hash_unique").on(t.factoryId,t.contentHash).where(sql`${t.status} = 'approved'`),
+  index("imports_hash_lookup_idx").on(t.factoryId,t.contentHash),
   index().on(t.factoryId, t.status, t.createdAt),
   foreignKey({ columns: [t.factoryId, t.sourceName, t.mappingId], foreignColumns: [columnMappings.factoryId, columnMappings.sourceName, columnMappings.id] }),
 ]);

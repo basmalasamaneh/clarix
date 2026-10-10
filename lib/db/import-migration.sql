@@ -8,13 +8,17 @@ ALTER TABLE imports ADD COLUMN IF NOT EXISTS finalized boolean NOT NULL DEFAULT 
 ALTER TABLE imports ADD COLUMN IF NOT EXISTS approved_at timestamp;
 ALTER TABLE imports ALTER COLUMN status SET DEFAULT 'draft';
 ALTER TABLE imports DROP CONSTRAINT IF EXISTS imports_factory_id_content_hash_unique;
-CREATE UNIQUE INDEX IF NOT EXISTS imports_approved_hash_unique ON imports(factory_id,content_hash) WHERE status='approved';
+DROP INDEX IF EXISTS imports_approved_hash_unique;
+CREATE INDEX IF NOT EXISTS imports_hash_lookup_idx ON imports(factory_id,content_hash);
+ALTER TABLE imports ADD COLUMN IF NOT EXISTS decision_audit jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE imports ADD COLUMN IF NOT EXISTS replaced_orders jsonb NOT NULL DEFAULT '[]';
 ALTER TABLE column_mappings ADD COLUMN IF NOT EXISTS name text NOT NULL DEFAULT 'Default';
 ALTER TABLE raw_rows ADD COLUMN IF NOT EXISTS record_end_line integer;
 ALTER TABLE raw_rows ADD COLUMN IF NOT EXISTS start_line integer GENERATED ALWAYS AS (line_number) STORED;
 ALTER TABLE raw_rows ADD COLUMN IF NOT EXISTS end_line integer GENERATED ALWAYS AS (coalesce(record_end_line,line_number)) STORED;
 CREATE UNIQUE INDEX IF NOT EXISTS raw_rows_factory_import_id_unique ON raw_rows(factory_id,import_id,id);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS current_import_id uuid;
+CREATE INDEX IF NOT EXISTS orders_current_import_idx ON orders(factory_id,current_import_id);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS metrics jsonb;
 ALTER TABLE data_issues ADD COLUMN IF NOT EXISTS source_order_id text;
 DO $$
@@ -43,4 +47,13 @@ BEGIN
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY',tbl);
   END LOOP;
 END $$;
+-- Recover historical counts for approvals made before replaced_orders existed.
+UPDATE imports i SET replaced_orders=(
+  SELECT jsonb_agg(source_id ORDER BY source_id) FROM (
+    SELECT DISTINCT h.source_id FROM orders_history h
+    WHERE h.factory_id=i.factory_id AND h.superseded_by_import_id=i.id
+  ) previous_orders
+)
+WHERE i.status='approved' AND i.replaced_orders='[]'::jsonb
+AND EXISTS(SELECT 1 FROM orders_history h WHERE h.factory_id=i.factory_id AND h.superseded_by_import_id=i.id);
 COMMIT;

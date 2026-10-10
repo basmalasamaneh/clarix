@@ -3,11 +3,14 @@ import type { PoolClient } from "pg";
 import { calculate,csvAdapter,contentHash,parseCsv,decodeBytes,D,fmt,type Mapping,type SourceFile,type EngineResult,type CanonicalDataset } from "@workspace/calculation";
 import { fileStorage } from "./storage";
 import { importJobs } from "./jobs";
+import {duplicateState,replacementOrders,eventCodes,recordDecisions,assertChoices,type ReviewMapping} from "./review";
 import { ImportError,inspect,limitConfig,suggestMapping,validateMapping,type StoredFile } from "./model";
-export interface Context { db:PoolClient; factory:string; user:string; settings:Record<string,unknown> }
+export interface Context { db:PoolClient; factory:string; user:string; userName?:string; settings:Record<string,unknown> }
 export interface ImportRow {
   id:string;source_name:string;status:string;created_at:string;files:StoredFile[];
-  content_hash:string;mapping:Mapping|null;result:EngineResult|null;counts:Record<string,number>|null;
+  content_hash:string;mapping:ReviewMapping|null;result:EngineResult|null;counts:Record<string,number>|null;
+  decision_audit:{code:string;choice:string|null;chosenBy:string;chosenAt:string}[];
+  replaced_orders:string[];
   finalized:boolean;progress:number;
 }
 export async function getRow(ctx:Context,id:string,lock=false):Promise<ImportRow> {
@@ -24,14 +27,16 @@ export async function replacementCount(ctx:Context,row:ImportRow) {
   return r.rows[0].n as number;
 }
 export async function duplicate(ctx:Context,row:ImportRow) {
-  const r=await ctx.db.query("SELECT id FROM imports WHERE factory_id=$1 AND content_hash=$2 AND status='approved' AND id<>$3 LIMIT 1",[ctx.factory,row.content_hash,row.id]);
-  return r.rows[0]?.id??null;
+  return (await duplicateState(ctx,row)).duplicateOf;
 }
 export async function view(ctx:Context,row:ImportRow,uploads=false) {
   const files=await Promise.all(row.files.map(async({stage,original,...f})=>({...f,...(uploads && !row.finalized ? {uploadUrl:await fileStorage.uploadUrl(stage)}:{})})));
   return {id:row.id,sourceName:row.source_name,status:row.status,createdAt:row.created_at,files,
-    finalized:row.finalized,progress:importJobs.progress(row.id)??row.progress,replacementCount:await replacementCount(ctx,row),
-    duplicateOf:await duplicate(ctx,row),...(row.mapping?{mapping:row.mapping}:{}),...(row.result?{result:row.result}:{}),
+    finalized:row.finalized,progress:importJobs.progress(row.id)??row.progress,
+    replacementCount:row.status==="approved"?(row.replaced_orders??[]).length:await replacementCount(ctx,row),
+    replacementOrders:row.status==="approved"?[]:await replacementOrders(ctx,row),replacedOrders:row.replaced_orders??[],
+    ...(row.status==="approved"||row.status==="rejected"?{duplicateOf:null,duplicateReason:null}:await duplicateState(ctx,row)),
+    ...(row.mapping?{mapping:row.mapping}:{}),...(row.result?{result:row.result}:{}),
     ...(row.counts?{counts:row.counts}:{}),
   };
 }
@@ -95,7 +100,10 @@ export async function sources(ctx:Context,row:ImportRow):Promise<SourceFile[]> {
 }
 export async function saveMapping(ctx:Context,row:ImportRow,input:unknown) {
   editable(row);
-  const mapping=validateMapping(input,row.source_name,row.files.map(f=>f.name));
+  const mapping=validateMapping(input,row.source_name,row.files.map(f=>f.name)) as ReviewMapping;
+  // Explicit ignore is an audited wizard choice, NOT a new engine event type.
+  for(const code of mapping.ignored_event_codes??[]) delete mapping.event_code_map[code];
+  const decisions=await recordDecisions(ctx,row,mapping);
   const files=await sources(ctx,row);
   const canonical=csvAdapter.read(files,mapping);
   const samples=[];
@@ -112,7 +120,7 @@ export async function saveMapping(ctx:Context,row:ImportRow,input:unknown) {
     }
   }
   await ctx.db.query("DELETE FROM data_issues WHERE factory_id=$1 AND import_id=$2",[ctx.factory,row.id]);
-  await ctx.db.query("UPDATE imports SET mapping=$3,result=NULL,counts=NULL,status='draft' WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(mapping)]);
+  await ctx.db.query("UPDATE imports SET mapping=$3,decision_audit=$4,result=NULL,counts=NULL,status='draft' WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(mapping),JSON.stringify(decisions)]);
   return {...await view(ctx,await getRow(ctx,row.id)),samples};
 }
 export async function runEngine(ctx:Context,row:ImportRow) {
@@ -124,6 +132,7 @@ export async function runEngine(ctx:Context,row:ImportRow) {
 }
 export async function check(ctx:Context,row:ImportRow) {
   editable(row);
+  await assertChoices(ctx,row);
   return importJobs.run(row.id,async progress=>{
     progress(15);
     const {canonical,result,collected}=await runEngine(ctx,row);

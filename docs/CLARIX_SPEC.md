@@ -116,7 +116,10 @@ triggers blocking UPDATE, DELETE and TRUNCATE. No user deletion operation exists
 
 Import states are `draft`, `checked`, `approved`, `rejected`. Rechecking an editable
 draft replaces its derived validation report, never its raw rows or original
-files. Only approved file-set hashes block reapproval within the same factory.
+files. Duplicate detection requires identical file-set contents AND mapping
+settings, and the earlier import must still be current for at least one order
+in the same factory. Different mappings or fully superseded imports can be
+approved through normal replacement confirmation listing the affected orders.
 File-set hashes use sorted SHA-256 file hashes, independent of filename/order.
 Raw rows store both `start_line` and `end_line`; all displayed references use
 the first physical line. Existing `line_number` is the first-line alias.
@@ -172,7 +175,7 @@ Severity: `info` (shown, no effect on status), `warning` (→ yellow), `error` (
 | `NO_CHANGEOVER_EVENT` | warning | changeover | No changeover event → N/A |
 | `LEVEL1_TOTALS_ONLY` | warning | all | Totals-only source |
 | `FORMULA_LIKE_CELL` | info | file | Text cell starts with `= + - @ TAB CR` → stored as plain text; exports must neutralise (prefix `'`) |
-| `DUPLICATE_FILE` | warning | import | Same content hash uploaded again → flagged, not counted twice |
+| `DUPLICATE_FILE` | warning | import | Same contents and mapping as an import still current for at least one order in the factory → flagged, not counted twice |
 
 Order of checks (events): required fields → time range → duplicate ids → code mapping → duration → suspected duplicates → overlap. Records: required fields → duplicate ids → suspected duplicates → units → missing values → balance.
 
@@ -213,6 +216,20 @@ Wording rules for all generated text: state recorded facts; never "because", "ca
 Mapping JSON format: see `test-data/ethmar-plastics/00_baseline/mapping.json` (comma, `.` decimals, ISO dates) and `test-data/najm-packaging/00_baseline/mapping.json` (semicolon, decimal comma, `dd/mm/yyyy`, tonnes).
 
 ---
+
+### Phase 4 wizard clarification
+
+Every distinct value in the selected event-code column requires an explicit
+choice before checking. “Ignore, do not count” is recorded with the acting user
+and timestamp, but remains unmapped for the unchanged engine: its events are
+excluded and its warning remains. Show the concrete code, count and excluded
+rows. Imports with errors can be approved only after an explicit acknowledgement
+of the listed errors; this does not change red metric or comparison rules.
+Approved imports display their historical replacement count, not a live estimate.
+
+### Post-MVP ideas
+
+Explicitly ignored event codes could become an info-level note instead of a warning.
 
 ## 10. Pages
 

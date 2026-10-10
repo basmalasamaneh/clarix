@@ -8,6 +8,7 @@
 
 export interface ApprovalInput {
   confirmReplacement: boolean;
+  confirmErrors?: boolean;
   /** @minimum 0 */
   replacementCount: number;
 }
