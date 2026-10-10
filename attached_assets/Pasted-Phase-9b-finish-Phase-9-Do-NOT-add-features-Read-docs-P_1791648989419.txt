@@ -1,0 +1,28 @@
+Phase 9b — finish Phase 9. Do NOT add features. Read docs/PHASE9_REPORT.md and docs/CLARIX_SPEC.md first.
+
+Close the open items from Phase 9, in this order. Do not weaken any target. Do not change the engine, test-data/, expected/ or tools/.
+
+1. Import speed (target: 50,000-row import under 60 s p95 without blocking other users)
+ - Profile first: show where the 118 s goes (parsing, validation, per-row queries, raw-row inserts, issue detection, calculation, indexes/triggers). Report the breakdown before changing anything.
+ - Fix the measured bottlenecks (e.g. batched/multi-row inserts or COPY, no per-row round trips, set-based issue detection). Keep every correctness guarantee: immutable raw rows, exact decimals, file:line:column references, RLS, factory scoping.
+ - If 60 s still cannot be met on this host, say so with the measured bottleneck and the best achieved time, and propose a background import with a visible progress state; do not mark the target as passed.
+ - Re-run the correctness checks: all 26 fixture folders must still match expected/expected_results.json exactly.
+
+2. Runs list (target: under 1 s p95 at the synthetic volume)
+ - Profile the query, add or adjust an index via a migration only where the measurement shows it helps. Report before/after.
+
+3. Pagination
+ - Add server-side pagination (with stable ordering and a hard maximum page size) to every remaining unbounded import-review collection. List each endpoint you checked and its max page size. Add a test that fails if an endpoint can return unbounded rows.
+
+4. Colliding IDs over HTTP
+ - Through the real API with real logins, import records with the SAME record ids and the same order id (E-01) into Ethmar and Najm. Show that both succeed, each factory sees only its own, and neither affects the other's counts or comparisons.
+
+5. UI matrix
+ - Re-run the screenshot matrix for Najm and Ethmar: 360/768/1280px, Arabic/English, light/dark, on Runs, Comparison, Data Quality, Members, Import steps. If the test driver fails, fix the driver or report exactly which combinations are missing; do not report a partial matrix as complete. If an onboarding tour overlay blocks the driver, tell me whether it can also block a real user (can it be dismissed with a click, Esc, and keyboard?).
+ - Also re-run the 24 Source Drawer bounds checks from Phase 7 and report the result.
+
+6. Measure again
+ - Repeat the scale measurement with the final code and show a table: operation | p50 | p95 | target | PASS/FAIL (honest).
+ - Before/after counts and fingerprints of Ethmar and Najm dev data (all test data and synthetic data removed afterwards).
+
+Final report: what changed, bottleneck breakdown, the measurement table, items still not met (if any) and why, and exact manual steps for me.

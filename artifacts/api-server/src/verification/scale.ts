@@ -1,4 +1,5 @@
 import "../testing/require-isolation";
+import {profile,timed,startCpu,stopCpu} from "./profile";
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
 import {randomUUID,createHash} from "node:crypto";
@@ -23,7 +24,7 @@ const base=`http://127.0.0.1:${(server.address() as any).port}`;
 after(async()=>{save();sessionStore.close();await new Promise<void>(r=>server.close(()=>r()));await closeTenantPools();await admin.end();});
 type Client={cookie:string;csrf:string};
 async function http(c:Client,path:string,method="GET",body?:unknown,expected=200) {
-  const r=await fetch(base+"/api"+path,{method,headers:{cookie:c.cookie,"X-CSRF-Token":c.csrf,"Content-Type":"application/json"},body:body===undefined?undefined:JSON.stringify(body)});
+  const r=await timed(method+" "+path.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/g,":id"),()=>fetch(base+"/api"+path,{method,headers:{cookie:c.cookie,"X-CSRF-Token":c.csrf,"Content-Type":"application/json"},body:body===undefined?undefined:JSON.stringify(body)}));
   for(const cookie of r.headers.getSetCookie()) if(cookie.startsWith("clarix.sid=")) c.cookie=cookie.split(";")[0];
   const json:any=r.status===204?null:await r.json();
   assert.equal(r.status,expected,`${method} ${path.split("?")[0]} status`);
@@ -89,13 +90,14 @@ test("isolated 20-factory scale measurements",async()=>{
   }
   const c=await login(0),other=await login(1);
   const importTimes:number[]=[];
-  for(let attempt=0;attempt<3;attempt++) {
+  for(let attempt=0;attempt<(process.env.CLARIX_PROFILE_ONLY==="1"?1:3);attempt++) {
     const input=files(50000,attempt),started=performance.now(),delays=monitorEventLoopDelay({resolution:10});
     const probe=spawn(process.execPath,["-e",`
       let stop=false;process.on('message',()=>{stop=true});
       (async()=>{const samples=[];while(!stop){const t=performance.now();try{const r=await fetch(process.env.PROBE_URL,{headers:{cookie:process.env.PROBE_COOKIE}});await r.arrayBuffer();samples.push({ms:performance.now()-t,status:r.status});}catch{samples.push({ms:performance.now()-t,status:0})}await new Promise(r=>setTimeout(r,100));}
       process.send(samples);process.disconnect();})();`],{env:{...process.env,PROBE_URL:base+"/api/runs",PROBE_COOKIE:other.cookie},stdio:["ignore","ignore","ignore","ipc"]});
     delays.enable();
+    if(process.env.CLARIX_PROFILE_ONLY==="1")await startCpu();
     try {
       const draft=await http(c,"/imports","POST",{sourceName:"scale-target",files:input.map(f=>({name:f.name,size:f.bytes.length,mime:"text/csv"}))},201);
       for(const f of input) {
@@ -108,6 +110,10 @@ test("isolated 20-factory scale measurements",async()=>{
       await http(c,`/imports/${draft.id}/approve`,"POST",{confirmErrors:true,confirmReplacement:true,replacementCount:attempt?100:0});
       importTimes.push(performance.now()-started);
     } finally {
+      if(process.env.CLARIX_PROFILE_ONLY==="1"){
+        const cpu=await stopCpu();
+        writeFileSync(out+"/profile.json",JSON.stringify({...profile,cpu},null,2));
+      }
       delays.disable();
       const samples=await new Promise<any[]>(resolve=>{probe.once("message",x=>resolve(x as any[]));probe.send("stop");});
       evidence.phases.push({importAttempt:attempt,eventLoopMaxMs:delays.max/1e6,otherUser:quantiles(samples.map(s=>s.ms)),otherUserStatuses:[...new Set(samples.map(s=>s.status))]});
@@ -139,6 +145,21 @@ test("isolated 20-factory scale measurements",async()=>{
       ["source rows","SELECT id,cells FROM raw_rows WHERE factory_id=$1 AND import_id=(SELECT current_import_id FROM orders WHERE id=$2) ORDER BY file,line_number LIMIT 20",["scale-0",a]],
       ["quality","SELECT id FROM data_issues WHERE factory_id=$1 ORDER BY id LIMIT 20",["scale-0"]],
     ] as const) evidence.queries.push({name,plan:(await client.query("EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) "+sql,[...args])).rows[0]["QUERY PLAN"]});
+    // Isolated, rolled-back writes expose actual FK/trigger execution times.
+    // Never drop indexes or disable RLS to manufacture an improved measurement.
+    for(const [name,sql] of [
+      ["raw insert 1000",`INSERT INTO raw_rows(factory_id,source_name,import_id,file,line_number,record_end_line,cells)
+        SELECT factory_id,source_name,import_id,'profile-'||file,line_number,record_end_line,cells FROM raw_rows WHERE factory_id=$1 LIMIT 1000`],
+      ["production insert 1000",`INSERT INTO production_records(factory_id,source_name,record_id,order_id,shift,date,input,good,scrap,unit,raw_row_id)
+        SELECT factory_id,source_name,'profile-'||record_id,order_id,shift,date,input,good,scrap,unit,raw_row_id FROM production_records WHERE factory_id=$1 LIMIT 1000`],
+      ["event insert 1000",`INSERT INTO events(factory_id,source_name,event_id,order_id,event_code,type,start,"end",duration_min,reason,raw_row_id)
+        SELECT factory_id,source_name,'profile-'||event_id,order_id,event_code,type,start,"end",duration_min,reason,raw_row_id FROM events WHERE factory_id=$1 LIMIT 1000`],
+    ]) {
+      await client.query("SAVEPOINT profile_write");
+      evidence.queries.push({name,plan:(await client.query("EXPLAIN (ANALYZE,BUFFERS,FORMAT JSON) "+sql,["scale-0"])).rows[0]["QUERY PLAN"]});
+      await client.query("ROLLBACK TO SAVEPOINT profile_write");
+      await client.query("RELEASE SAVEPOINT profile_write");
+    }
   });
   evidence.completed=true;save();
   console.log("Scale evidence saved; timings are measurements, not target assertions.");

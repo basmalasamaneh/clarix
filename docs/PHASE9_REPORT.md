@@ -1,6 +1,11 @@
 # Phase 9 — verification report
 
 ## Status
+**Phase 9b update:** see [PHASE9B_REPORT.md](PHASE9B_REPORT.md) for the final-code
+measurements and collision proof, which now pass. The browser matrix remains
+unverified, so overall acceptance is still partial. The numbers below are
+the original Phase 9 measurements, retained rather than overwritten.
+
 Runtime separation and the Najm import path are implemented. **This phase is
 not fully accepted:** two measured performance targets were missed, the full
 responsive/language/theme matrix is incomplete, and the HTTP record-ID collision

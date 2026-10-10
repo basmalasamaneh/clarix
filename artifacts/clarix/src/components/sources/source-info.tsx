@@ -1,15 +1,14 @@
-import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Archive, Database, GitCompare, Info } from 'lucide-react';
 import { describeDifference, type OtherSourceOrder, type SettingsDifference } from '@/lib/sources-api';
-import { PAGE_SIZE } from '@/lib/import-model';
-import { Pager, Raw, Section } from '@/components/imports/shared';
+import { Raw, Section } from '@/components/imports/shared';
+import { ServerPaged } from '@/components/imports/review-paging';
+import type { ReviewKind } from '@/lib/import-api';
 
-export function PagedOrders({ orders, source, testId }: { orders: string[]; source: string; testId: string }) {
-  const [page, setPage] = useState(1);
-  const shown = orders.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+export function PagedOrders({ importId, kind, orders, total, source, testId }: { importId: string; kind: ReviewKind; orders: string[]; total?: number; source: string; testId: string }) {
   return (
-    <div>
+    <ServerPaged importId={importId} kind={kind} preview={orders} total={total ?? orders.length} testId={testId}>
+      {(shown) => (
       <ul className="flex flex-wrap gap-1" data-testid={testId}>
         {shown.map((o) => (
           <li key={o} className="inline-flex items-center gap-1 rounded border bg-background px-1.5 py-0.5 text-xs" data-testid={`${testId}-${o}`}>
@@ -19,32 +18,31 @@ export function PagedOrders({ orders, source, testId }: { orders: string[]; sour
           </li>
         ))}
       </ul>
-      <Pager page={page} total={orders.length} onPage={setPage} testId={`pager-${testId}`} />
-    </div>
+      )}
+    </ServerPaged>
   );
 }
 
-function OtherSources({ items }: { items: OtherSourceOrder[] }) {
+function OtherSources({ importId, items, total }: { importId: string; items: OtherSourceOrder[]; total: number }) {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
   return (
-    <div>
+    <ServerPaged importId={importId} kind="otherSourceOrders" preview={items} total={total} testId="other-source-orders">
+      {(shown) => (
       <ul className="space-y-1" data-testid="list-other-source-orders">
-        {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((o, i) => (
+        {shown.map((o, i) => (
           <li key={`${o.orderId}-${o.sourceName}-${i}`} className="flex items-start gap-2 text-sm" data-testid={`text-other-source-${o.orderId}`}>
             <Info className="mt-0.5 size-4 shrink-0 text-[var(--series-good)]" aria-hidden="true" />
             <span>{t('src.info.other', { order: o.orderId, source: o.sourceName })}</span>
           </li>
         ))}
       </ul>
-      <Pager page={page} total={items.length} onPage={setPage} testId="pager-other-source-orders" />
-    </div>
+      )}
+    </ServerPaged>
   );
 }
 
-export function SettingsDiff({ diffs, source }: { diffs: SettingsDifference[]; source: string | null | undefined }) {
+export function SettingsDiff({ importId, diffs, total, source }: { importId: string; diffs: SettingsDifference[]; total: number; source: string | null | undefined }) {
   const { t } = useTranslation();
-  const [page, setPage] = useState(1);
   return (
     <div data-testid="section-settings-diff">
       <p className="flex items-center gap-2 text-sm font-medium">
@@ -52,6 +50,8 @@ export function SettingsDiff({ diffs, source }: { diffs: SettingsDifference[]; s
         {t('src.info.diffTitle')}
       </p>
       <p className="mb-2 text-xs text-muted-foreground">{source ? t('src.info.diffBody', { source }) : t('src.info.diffBodyNone')}</p>
+      <ServerPaged importId={importId} kind="settingsDifferences" preview={diffs} total={total} testId="settings-diff">
+      {(shown, offset) => (
       <div className="min-w-0 overflow-x-auto rounded-lg border">
         <table className="w-full min-w-[480px] text-sm" data-testid="table-settings-diff">
           <thead className="bg-muted text-xs text-muted-foreground">
@@ -62,7 +62,8 @@ export function SettingsDiff({ diffs, source }: { diffs: SettingsDifference[]; s
             </tr>
           </thead>
           <tbody className="divide-y">
-            {diffs.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((d, i) => {
+            {shown.map((d, j) => {
+              const i = offset + j;
               const x = describeDifference(t, d);
               return (
                 <tr key={`${d.path}-${i}`} data-testid={`row-settings-diff-${i}`}>
@@ -75,12 +76,15 @@ export function SettingsDiff({ diffs, source }: { diffs: SettingsDifference[]; s
           </tbody>
         </table>
       </div>
-      <Pager page={page} total={diffs.length} onPage={setPage} testId="pager-settings-diff" />
+      )}
+      </ServerPaged>
     </div>
   );
 }
 
 export function SourceInfo({
+  importId,
+  counts = {},
   sourceName,
   archived,
   replacementOrders,
@@ -89,6 +93,8 @@ export function SourceInfo({
   comparisonSource,
   approved,
 }: {
+  importId: string;
+  counts?: { replacementOrders?: number; otherSourceOrders?: number; settingsDifferences?: number };
   sourceName: string;
   archived: boolean;
   replacementOrders: string[];
@@ -119,7 +125,7 @@ export function SourceInfo({
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">{t('src.info.replaceTitle')}</p>
             {replacementOrders.length > 0 ? (
-              <PagedOrders orders={replacementOrders} source={sourceName} testId="list-source-replacements" />
+              <PagedOrders importId={importId} kind="replacementOrders" orders={replacementOrders} total={counts.replacementOrders} source={sourceName} testId="list-source-replacements" />
             ) : (
               <p className="text-sm text-muted-foreground" data-testid="text-source-replace-none">{t('src.info.replaceNone')}</p>
             )}
@@ -128,10 +134,10 @@ export function SourceInfo({
         {otherSourceOrders.length > 0 && (
           <div>
             <p className="mb-1 text-xs font-medium text-muted-foreground">{t('src.info.otherTitle')}</p>
-            <OtherSources items={otherSourceOrders} />
+            <OtherSources importId={importId} items={otherSourceOrders} total={counts.otherSourceOrders ?? otherSourceOrders.length} />
           </div>
         )}
-        {diffs.length > 0 && <SettingsDiff diffs={diffs} source={comparisonSource} />}
+        {diffs.length > 0 && <SettingsDiff importId={importId} diffs={diffs} total={counts.settingsDifferences ?? diffs.length} source={comparisonSource} />}
       </div>
     </Section>
   );

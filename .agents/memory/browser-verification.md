@@ -34,3 +34,10 @@ detail, and never silently replace original measurements with a reconstructed su
 Preflight browser actions against the exact application state, including optional controls.
 **Why:** An approval confirmation was accidentally conditional on an error-only checkbox, and an approved read-only page was checked for an editable approval button; neither failure was an application defect.
 **How to apply:** Confirm required actions independently of optional checkboxes. Use state-specific ready markers. Capture the action's HTTP result and a failure screenshot before stopping, so a locator failure does not erase earlier verification.
+
+Persist matrix evidence after each cell, and run long isolated browser harnesses
+as background tasks rather than a bounded foreground shell.
+**Why:** A shell's 300-second timeout terminated a matrix before its final write,
+lost geometry/locale assertions and interrupted disposable-resource cleanup.
+**How to apply:** Checkpoint every result, retain successful preference-save
+responses before navigating, and verify namespace/storage cleanup after interruption.

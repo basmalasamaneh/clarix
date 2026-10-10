@@ -19,7 +19,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { useCsrfRequest } from '@/lib/session';
 import { cn } from '@/lib/utils';
-import { useEventCodes } from '@/lib/import-api';
+import { useEventCodesPage, type EventCodeItem } from '@/lib/import-api';
 import { EventCodes } from './event-codes';
 import {
   FIELDS,
@@ -73,7 +73,14 @@ export function MapStep({ detail, readOnly, onChecked, focus, visible }: { detai
 
   const eventsFile = draft.files.events?.file;
   const eventsCol = draft.files.events?.columns.event_code;
-  const codesQ = useEventCodes(detail.id, eventsFile, eventsCol, mappingFromDraft(draft, detail.sourceName), req);
+  const [codesPage, setCodesPage] = useState(1);
+  const [seen, setSeen] = useState<Record<string, { item: EventCodeItem; page: number; idx: number }>>({});
+  const codesScope = `${eventsFile ?? ''}:${eventsCol ?? ''}`;
+  useEffect(() => {
+    setCodesPage(1);
+    setSeen({});
+  }, [codesScope]);
+  const codesQ = useEventCodesPage(detail.id, eventsFile, eventsCol, mappingFromDraft(draft, detail.sourceName), req, codesPage);
   const [suggested, setSuggested] = useState<Set<string>>(() => new Set());
   const [showBlocked, setShowBlocked] = useState(false);
   const readOnlyRef = useRef(readOnly);
@@ -82,8 +89,14 @@ export function MapStep({ detail, readOnly, onChecked, focus, visible }: { detai
 
   // Merge server-provided choices / suggestions for codes that have no local choice yet.
   useEffect(() => {
-    const items = codesQ.data?.items;
+    const items = codesQ.items;
     if (!items) return;
+    const pg = codesPage;
+    setSeen((prev) => {
+      const n = { ...prev };
+      items.forEach((it, j) => (n[it.code] = { item: it, page: pg, idx: (pg - 1) * 20 + j }));
+      return n;
+    });
     const sug = new Set<string>();
     let changed = false;
     setDraft((d) => {
@@ -105,9 +118,9 @@ export function MapStep({ detail, readOnly, onChecked, focus, visible }: { detai
       setSuggested((prev) => new Set([...prev, ...sug]));
       setDirty(true);
     }
-  }, [codesQ.data]);
+  }, [codesQ.sig]);
 
-  const missingCodes = useMemo(() => (codesQ.data?.items ?? []).filter((it) => !draft.codes[it.code]).length, [codesQ.data, draft.codes]);
+  const missingCodes = useMemo(() => Object.keys(seen).filter((c) => !draft.codes[c]).length + Math.max(0, codesQ.total - Object.keys(seen).length), [seen, codesQ.total, draft.codes]);
 
   function chooseCode(code: string, choice: CodeChoiceM | '') {
     touchedCodes.current.add(`${eventsFile}:${eventsCol}:${code}`);
@@ -431,8 +444,16 @@ export function MapStep({ detail, readOnly, onChecked, focus, visible }: { detai
         <div id="section-event-codes" tabIndex={-1} className="scroll-mt-24 outline-none">
           <Section title={t('imp.map.codes.title')} body={t('imp.map.codes.body')} testId="section-event-codes">
             <EventCodes
-              items={codesQ.data?.items}
-              total={codesQ.data?.total ?? 0}
+              items={codesQ.items}
+              total={codesQ.total}
+              page={codesPage}
+              onPage={setCodesPage}
+              pageLoading={codesQ.pageLoading}
+              pageError={codesQ.pageError}
+              seen={seen}
+              scope={codesScope}
+              importId={detail.id}
+              mapping={mappingFromDraft(draft, detail.sourceName)}
               loading={codesQ.isLoading}
               error={codesQ.error}
               onRetry={() => void codesQ.refetch()}

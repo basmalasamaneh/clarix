@@ -402,6 +402,24 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/IssuePage" }
+  /imports/{id}/review-page:
+    post:
+      operationId: readImportReviewPage
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportReviewSelection" }
+      responses:
+        "200":
+          description: Stable server page, fixed maximum 20 items. Nested collections are previews and have their own selectable collection.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportReviewPage" }
+        "404":
+          description: Import or issue is not in this factory.
   /data-sources:
     get:
       operationId: listDataSources
@@ -564,6 +582,26 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    ImportReviewSelection:
+      type: object
+      required: [kind]
+      properties:
+        kind:
+          type: string
+          enum: [replacementOrders, replacedOrders, otherSourceOrders, settingsDifferences, issueRows, issueCodes, issueCodeRefs, eventCodes, eventCodeRefs, resultRuns, resultRefs]
+        page: { type: integer, minimum: 1, maximum: 1000000, default: 1 }
+        issueId: { type: string, format: uuid }
+        code: { type: string, maxLength: 1000 }
+        mapping: { $ref: "#/components/schemas/JsonObject" }
+        path: { type: array, maxItems: 10, items: { type: string, maxLength: 1000 } }
+    ImportReviewPage:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, maxItems: 20, items: {} }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer, const: 20 }
     MemberRole:
       type: string
       enum: [factory_manager, analyst, viewer]
@@ -946,6 +984,7 @@ components:
       type: object
       required: [id, sourceName, status, createdAt, files, progress, finalized, replacementCount]
       properties:
+        reviewCounts: { $ref: "#/components/schemas/JsonObject" }
         id: { type: string }
         sourceName: { type: string }
         status: { type: string, enum: [draft, checked, approved, rejected] }
@@ -1037,6 +1076,7 @@ components:
       type: object
       required: [code, severity, refs, order, group]
       properties:
+        id: { type: string, format: uuid }
         code: { type: string }
         severity: { type: string }
         order: { type: [string, "null"] }

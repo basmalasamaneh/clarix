@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle2, Loader2, RotateCcw, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,19 @@ import { cn } from '@/lib/utils';
 import { EVENT_TYPES, PAGE_SIZE, formatDate, type CodeChoiceM } from '@/lib/import-model';
 import { rowCells, type EventCodeItem } from '@/lib/import-api';
 import { ErrorNote, NativeSelect, Pager, Raw } from './shared';
+import { ServerPaged } from './review-paging';
 
 type Props = {
   items: EventCodeItem[] | undefined;
   total: number;
+  page: number;
+  onPage: (p: number) => void;
+  pageLoading: boolean;
+  pageError: unknown;
+  seen: Record<string, { item: EventCodeItem; page: number; idx: number }>;
+  scope: string;
+  importId: string;
+  mapping: Record<string, unknown>;
   loading: boolean;
   error: unknown;
   onRetry: () => void;
@@ -21,16 +29,15 @@ type Props = {
   onChoose: (code: string, choice: CodeChoiceM | '') => void;
 };
 
-export function EventCodes({ items, total, loading, error, onRetry, hasColumn, choices, suggested, readOnly, showBlocked, onChoose }: Props) {
+export function EventCodes({ items, total, page, onPage, pageLoading, pageError, seen, scope, importId, mapping, loading, error, onRetry, hasColumn, choices, suggested, readOnly, showBlocked, onChoose }: Props) {
   const { t, i18n } = useTranslation();
-  const [page, setPage] = useState(1);
   const list = items ?? [];
-  const missing = list.filter((it) => !choices[it.code]);
-  const pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
-
-  useEffect(() => {
-    if (page > pages) setPage(1);
-  }, [page, pages]);
+  const seenList = Object.values(seen).sort((a, b) => a.idx - b.idx);
+  const seenMissing = seenList.filter((s) => !choices[s.item.code]);
+  const unseen = Math.max(0, total - seenList.length);
+  const missingCount = seenMissing.length + unseen;
+  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const visited = new Set(seenList.map((s) => s.page));
 
   if (!hasColumn)
     return (
@@ -63,20 +70,22 @@ export function EventCodes({ items, total, loading, error, onRetry, hasColumn, c
         }
       />
     );
-  if (list.length === 0)
+  if (total === 0 && list.length === 0)
     return (
       <p className="rounded-md border border-dashed px-3 py-4 text-sm text-muted-foreground" data-testid="text-codes-empty">
         {t('imp.map.codes.empty')}
       </p>
     );
 
-  const slice = list.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const slice = list;
   const jumpMissing = () => {
-    const first = missing[0];
-    if (!first) return;
-    const idx = list.findIndex((x) => x.code === first.code);
-    setPage(Math.floor(idx / PAGE_SIZE) + 1);
-    requestAnimationFrame(() => document.getElementById(`code-choice-${idx}`)?.focus());
+    const first = seenMissing[0];
+    if (first) {
+      onPage(first.page);
+      requestAnimationFrame(() => document.getElementById(`code-choice-${first.idx}`)?.focus());
+      return;
+    }
+    for (let p = 1; p <= pages; p++) if (!visited.has(p)) return onPage(p);
   };
 
   return (
@@ -84,15 +93,15 @@ export function EventCodes({ items, total, loading, error, onRetry, hasColumn, c
       <div
         className={cn(
           'flex flex-col gap-2 rounded-md px-3 py-2 text-sm sm:flex-row sm:items-center sm:justify-between',
-          missing.length > 0
+          missingCount > 0
             ? 'bg-[color-mix(in_srgb,var(--status-amber)_9%,var(--card))]'
             : 'bg-[color-mix(in_srgb,var(--status-green)_8%,var(--card))]',
         )}
-        role={showBlocked && missing.length > 0 ? 'alert' : 'status'}
+        role={showBlocked && missingCount > 0 ? 'alert' : 'status'}
         data-testid="status-codes-progress"
       >
         <p className="flex items-start gap-2">
-          {missing.length > 0 ? (
+          {missingCount > 0 ? (
             <AlertTriangle className="mt-0.5 size-4 shrink-0 text-status-amber" aria-hidden="true" />
           ) : (
             <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-status-green" aria-hidden="true" />
@@ -100,17 +109,41 @@ export function EventCodes({ items, total, loading, error, onRetry, hasColumn, c
           <span>
             <span className="font-medium">{t('imp.map.codes.total', { count: total || list.length })}</span>
             {' · '}
-            {missing.length > 0 ? t('imp.map.codes.missing', { count: missing.length }) : t('imp.map.codes.allChosen')}
-            {showBlocked && missing.length > 0 && <span className="block text-status-red">{t('imp.map.codes.blocked')}</span>}
+            {missingCount > 0 ? t('imp.map.codes.missing', { count: missingCount }) : t('imp.map.codes.allChosen')}
+            {unseen > 0 && (
+              <span className="block text-xs text-muted-foreground" data-testid="text-codes-unseen">
+                {t('imp.map.codes.unseen', { count: unseen })}
+              </span>
+            )}
+            {showBlocked && missingCount > 0 && <span className="block text-status-red">{t('imp.map.codes.blocked')}</span>}
           </span>
         </p>
-        {missing.length > 0 && !readOnly && (
+        {missingCount > 0 && !readOnly && (
           <Button variant="outline" className="min-h-11 shrink-0 bg-card" onClick={jumpMissing} data-testid="button-next-missing-code">
             {t('imp.map.codes.showMissing')}
           </Button>
         )}
       </div>
 
+      {pageLoading ? (
+        <div className="space-y-2" aria-busy="true" data-testid="state-codes-page-loading">
+          <span className="sr-only">{t('imp.map.codes.pageLoading')}</span>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-14 animate-pulse rounded-md bg-muted" />
+          ))}
+        </div>
+      ) : pageError != null ? (
+        <ErrorNote
+          error={pageError}
+          testId="status-codes-page-error"
+          action={
+            <Button variant="outline" className="min-h-11 gap-2" onClick={onRetry} data-testid="button-retry-codes-page">
+              <RotateCcw className="size-4" aria-hidden="true" />
+              {t('imp.errors.retry')}
+            </Button>
+          }
+        />
+      ) : (
       <ul className="divide-y rounded-lg border" data-testid="list-event-codes">
         {slice.map((it, j) => {
           const idx = (page - 1) * PAGE_SIZE + j;
@@ -145,6 +178,21 @@ export function EventCodes({ items, total, loading, error, onRetry, hasColumn, c
                     </div>
                   ))}
                 </dl>
+                {it.refs.length > 0 && (
+                  <div className="mt-1.5">
+                    <ServerPaged importId={importId} kind="eventCodeRefs" extra={{ code: it.code, mapping }} scope={`${scope}:${it.code}`} preview={it.refs} total={it.count} testId={`code-refs-${idx}`}>
+                      {(refs) => (
+                        <div className="flex flex-wrap gap-1" data-testid={`list-code-refs-${idx}`}>
+                          {refs.map((r, k) => (
+                            <span key={`${r}-${k}`} className="rounded border bg-background px-1.5 py-0.5">
+                              <Raw className="text-xs">{r}</Raw>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </ServerPaged>
+                  </div>
+                )}
               </div>
               <div className="min-w-0 space-y-1">
                 <label htmlFor={`code-choice-${idx}`} className="sr-only">
@@ -185,7 +233,8 @@ export function EventCodes({ items, total, loading, error, onRetry, hasColumn, c
           );
         })}
       </ul>
-      {pages > 1 && <Pager page={page} total={list.length} onPage={setPage} testId="pager-codes" />}
+      )}
+      <Pager page={page} total={total} onPage={onPage} testId="pager-codes" />
     </div>
   );
 }

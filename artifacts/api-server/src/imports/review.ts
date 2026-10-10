@@ -41,7 +41,7 @@ export async function recordDecisions(ctx:Context,row:ImportRow,mapping:ReviewMa
 }
 export async function assertChoices(ctx:Context,row:ImportRow) {
   const unassigned=(await eventCodes(ctx,row,row.mapping!)).items.filter(i=>!i.choice);
-  if(unassigned.length) throw new ImportError("EVENT_CHOICES_REQUIRED",422,{codes:unassigned});
+  if(unassigned.length) throw new ImportError("EVENT_CHOICES_REQUIRED",422,{codes:unassigned,codeCount:unassigned.length});
 }
 export async function replacementOrders(ctx:Context,row:ImportRow) {
   return (await ctx.db.query("SELECT source_order_id FROM orders WHERE factory_id=$1 AND source_name=$2 AND source_order_id=ANY($3::text[]) AND current_import_id IS NOT NULL ORDER BY source_order_id",[ctx.factory,row.source_name,Object.keys(row.result?.runs??{})])).rows.map(r=>r.source_order_id as string);
@@ -73,15 +73,16 @@ export async function duplicateState(ctx:Context,row:ImportRow) {
 }
 export async function issues(ctx:Context,row:ImportRow,p=1,errorsOnly=false) {
   const filter=errorsOnly?" AND severity='error'":"";
-  const result=await ctx.db.query(`SELECT code,severity,source_order_id AS "order","group",raw_row_ids FROM data_issues
+  const result=await ctx.db.query(`SELECT id,code,severity,source_order_id AS "order","group",raw_row_ids FROM data_issues
     WHERE factory_id=$1 AND import_id=$2 ${filter} ORDER BY code,id LIMIT 20 OFFSET $3`,
     [ctx.factory,row.id,(p-1)*20]);
   const codes=(await eventCodes(ctx,row,row.mapping!)).items;
-  const raw=(await ctx.db.query("SELECT id,file,line_number AS line,cells FROM raw_rows WHERE factory_id=$1 AND import_id=$2 ORDER BY file,line_number",[ctx.factory,row.id])).rows;
+  const raw=(await ctx.db.query('SELECT id,file,line_number AS line,cells FROM raw_rows WHERE factory_id=$1 AND import_id=$2 ORDER BY file COLLATE "C",line_number,id',[ctx.factory,row.id])).rows;
   const byRef=new Map(raw.map(r=>[`${r.file}:${r.line}`,r]));
   const eventSpec=row.mapping?.files.events;
   const items=result.rows.map(issue=>{
-    const rows=raw.filter(r=>issue.raw_row_ids.includes(r.id));
+    const issueRowIds=new Set(issue.raw_row_ids);
+    const rows=raw.filter(r=>issueRowIds.has(r.id));
     const orderCodes=codes.filter(c=>raw.some(r=>eventSpec && r.file===eventSpec.file && String(r.cells[eventSpec.columns.order_id]??"").trim()===issue.order && String(r.cells[eventSpec.columns.event_code]??"").trim()===c.code));
     const relevant=orderCodes.filter(c=>issue.code==="UNMAPPED_EVENT_CODE"?(!c.choice || c.choice==="IGNORE"):true).map(c=>{
       const refs=c.refs.filter(ref=>{
@@ -105,8 +106,8 @@ export async function issues(ctx:Context,row:ImportRow,p=1,errorsOnly=false) {
     if(eventSpec && rows[0]?.file===eventSpec.file) for(const k of ["event_code","start","end","duration_min"]) {
       if(eventSpec.columns[k]) values[k]=rows[0].cells[eventSpec.columns[k]];
     }
-    return {code:issue.code,severity:issue.severity,order:issue.order,group:issue.group,refs:rows.map(r=>`${r.file}:${r.line}`),
-      details:{rows,eventCodes:relevant.map(c=>({...c,ignored:c.choice==="IGNORE"})),hasUnmappedEvents:orderCodes.some(c=>!c.choice||c.choice==="IGNORE"),field,
+    return {id:issue.id,code:issue.code,severity:issue.severity,order:issue.order,group:issue.group,refs:rows.map(r=>`${r.file}:${r.line}`),
+      details:{rows,rowCount:rows.length,eventCodeCount:relevant.length,eventCodes:relevant.map(c=>({...c,ignored:c.choice==="IGNORE"})),hasUnmappedEvents:orderCodes.some(c=>!c.choice||c.choice==="IGNORE"),field,
         values}};
   });
   const total=(await ctx.db.query(`SELECT count(*)::int AS n FROM data_issues WHERE factory_id=$1 AND import_id=$2 ${filter}`,[ctx.factory,row.id])).rows[0].n;

@@ -30,6 +30,9 @@ const en = {
       missing_other: '{{count}} codes still need a choice.',
       allChosen: 'Every code has a meaning.',
       showMissing: 'Show next open code',
+      unseen_one: '{{count}} code is on a page you have not opened yet. It counts as needing review until you open its page; saved choices are kept.',
+      unseen_other: '{{count}} codes are on pages you have not opened yet. They count as needing review until you open their pages; saved choices are kept.',
+      pageLoading: 'Loading this page of codes',
       loading: 'Reading every row of the event file',
       error: 'The event codes could not be read.',
       empty: 'No event codes were found in this column.',
@@ -38,6 +41,7 @@ const en = {
     },
   },
   issueX: {
+    refsPreviewOnly: 'First {{shown}} of {{total}} references (preview only).',
     unmapped_one: 'Code {{code}} ({{count}} row) has no meaning assigned.',
     unmapped_other: 'Code {{code}} ({{count}} rows) has no meaning assigned.',
     ignored_one: 'Code {{code}} is set to be ignored ({{count}} row). These events are not counted in any metric.',
@@ -125,6 +129,8 @@ const ar = {
       ...arPl('missing', 'رمز واحد ما زال يحتاج إلى اختيار.', 'رمزان ما زالا يحتاجان إلى اختيار.', '{{count}} رموز ما زالت تحتاج إلى اختيار.'),
       allChosen: 'لكل رمز معنى محدد.',
       showMissing: 'عرض الرمز التالي بلا اختيار',
+      ...arPl('unseen', 'رمز واحد في صفحة لم تفتحها بعد، ويُعدّ بحاجة إلى مراجعة حتى تفتح صفحته؛ الاختيارات المحفوظة تبقى كما هي.', 'رمزان في صفحات لم تفتحها بعد، ويُعدّان بحاجة إلى مراجعة حتى تفتح صفحاتهما؛ الاختيارات المحفوظة تبقى كما هي.', '{{count}} رموز في صفحات لم تفتحها بعد، وتُعدّ بحاجة إلى مراجعة حتى تفتح صفحاتها؛ الاختيارات المحفوظة تبقى كما هي.'),
+      pageLoading: 'جارٍ تحميل هذه الصفحة من الرموز',
       loading: 'جارٍ قراءة كل صفوف ملف الأحداث',
       error: 'تعذّرت قراءة رموز الأحداث.',
       empty: 'لم يُعثر على رموز أحداث في هذا العمود.',
@@ -133,6 +139,7 @@ const ar = {
     },
   },
   issueX: {
+    refsPreviewOnly: 'أول {{shown}} من {{total}} مرجعًا (معاينة فقط).',
     ...arPl('unmapped', 'الرمز {{code}} (صف واحد) بلا معنى محدد.', 'الرمز {{code}} (صفّان) بلا معنى محدد.', 'الرمز {{code}} ({{count}} صفوف) بلا معنى محدد.'),
     ...arPl(
       'ignored',

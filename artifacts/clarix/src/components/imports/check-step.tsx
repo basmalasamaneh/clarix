@@ -22,7 +22,8 @@ import { useCsrfRequest } from '@/lib/session';
 import { cn } from '@/lib/utils';
 import i18n from '@/lib/i18n';
 import { FIELDS, PAGE_SIZE, errCodeOf, errData, formatDate, issueText, nextStepText } from '@/lib/import-model';
-import { rowCells, useImportErrors, type ApprovalInputX, type ImportDetailX, type ImportIssueX, type IssueDetails, type SampleRow } from '@/lib/import-api';
+import { rowCells, useImportErrors, type ApprovalInputX, type ImportDetailX, type ImportIssueX, type ImportReviewCountsX, type IssueDetails, type IssueEventCode, type SampleRow } from '@/lib/import-api';
+import { ServerPaged } from './review-paging';
 import { ErrorNote, Pager, Raw, Section } from './shared';
 import { PagedOrders, SourceInfo } from '@/components/sources/source-info';
 import type { SourceDetailX } from '@/lib/sources-api';
@@ -67,37 +68,66 @@ function valueText(v: unknown): string {
   return String(v);
 }
 
-function RowsTable({ rows, title }: { rows: SampleRow[]; title: string }) {
+function RowsList({ rows }: { rows: SampleRow[] }) {
   const { t } = useTranslation();
-  const [all, setAll] = useState(false);
-  const shown = all ? rows : rows.slice(0, 3);
   return (
-    <div className="min-w-0">
-      <p className="mb-1 text-xs font-medium text-muted-foreground">{title}</p>
-      <ul className="space-y-1">
-        {shown.map((r, i) => (
-          <li key={`${r.file}-${r.line}-${i}`} className="flex min-w-0 flex-wrap items-baseline gap-1 rounded border bg-background px-2 py-1 text-xs">
-            <Raw className="text-xs text-muted-foreground">{r.file}</Raw>
-            <span className="num text-muted-foreground">· {t('imp.issueX.line')} {r.line}</span>
-            {rowCells(r).map(([k, v]) => (
-              <span key={k} className="min-w-0 break-all rounded bg-muted px-1">
-                <Raw className="text-[11px] text-muted-foreground">{k}</Raw>=<Raw className="text-xs">{v || '—'}</Raw>
-              </span>
-            ))}
-          </li>
-        ))}
-      </ul>
-      {rows.length > 3 && !all && (
-        <Button variant="ghost" className="mt-1 min-h-11 px-2 text-xs" onClick={() => setAll(true)} data-testid="button-more-rows">
-          {t('imp.issueX.more', { count: rows.length - 3 })}
-        </Button>
-      )}
+    <ul className="space-y-1">
+      {rows.map((r, i) => (
+        <li key={`${r.file}-${r.line}-${i}`} className="flex min-w-0 flex-wrap items-baseline gap-1 rounded border bg-background px-2 py-1 text-xs">
+          <Raw className="text-xs text-muted-foreground">{r.file}</Raw>
+          <span className="num text-muted-foreground">· {t('imp.issueX.line')} {r.line}</span>
+          {rowCells(r).map(([k, v]) => (
+            <span key={k} className="min-w-0 break-all rounded bg-muted px-1">
+              <Raw className="text-[11px] text-muted-foreground">{k}</Raw>=<Raw className="text-xs">{v || '—'}</Raw>
+            </span>
+          ))}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function RefChips({ refs, testId }: { refs: string[]; testId: string }) {
+  return (
+    <div className="flex flex-wrap gap-1" data-testid={testId}>
+      {refs.map((r, i) => (
+        <span key={`${r}-${i}`} className="rounded border bg-muted px-1.5 py-0.5">
+          <Raw className="text-xs">{r}</Raw>
+        </span>
+      ))}
     </div>
   );
 }
 
-export function IssueCard({ it, idx, mapping, onJump, compact }: { it: ImportIssueX; idx: number; mapping?: Record<string, unknown>; onJump?: JumpFn; compact?: boolean }) {
+function IssueCodes({ importId, issueId, codes, total, idx }: { importId: string; issueId: string; codes: IssueEventCode[]; total: number; idx: number }) {
   const { t, i18n: inst } = useTranslation();
+  return (
+    <ServerPaged importId={importId} kind="issueCodes" extra={{ issueId }} scope={issueId} preview={codes} total={total} testId={`issue-codes-${idx}`}>
+      {(shown) => (
+        <ul className="space-y-2 text-xs" data-testid={`list-issue-codes-${idx}`}>
+          {shown.map((c) => (
+            <li key={c.code} className="space-y-1 rounded border bg-background px-2 py-1.5">
+              <p>{t(c.ignored ? 'imp.issueX.ignored' : 'imp.issueX.unmapped', { code: c.code, count: c.count })}</p>
+              {c.ignored && c.chosenBy && (
+                <p className="text-muted-foreground">
+                  <Raw className="text-xs">{c.code}</Raw>: {t('imp.map.codes.chosenBy', { by: c.chosenBy, at: c.chosenAt ? formatDate(c.chosenAt, inst.language) : '—' })}
+                </p>
+              )}
+              {(c.refs?.length ?? 0) > 0 && (
+                <ServerPaged importId={importId} kind="issueCodeRefs" extra={{ issueId, code: c.code }} scope={`${issueId}:${c.code}`} preview={c.refs} total={c.count} testId={`issue-code-refs-${idx}-${c.code}`}>
+                  {(refs) => <RefChips refs={refs} testId={`list-issue-code-refs-${idx}-${c.code}`} />}
+                </ServerPaged>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </ServerPaged>
+  );
+}
+
+export function IssueCard({ it, idx, importId, mapping, onJump, compact }: { it: ImportIssueX; idx: number; importId: string; mapping?: Record<string, unknown>; onJump?: JumpFn; compact?: boolean }) {
+  const { t } = useTranslation();
   const s = SEV_STYLE[it.severity] ?? SEV_STYLE.info;
   const Icon = s.icon;
   const det = it.details;
@@ -105,8 +135,11 @@ export function IssueCard({ it, idx, mapping, onJump, compact }: { it: ImportIss
   const target = onJump ? resolveTarget(it.code, det, mapping) : null;
   const showHint = it.code === 'NO_CHANGEOVER_EVENT' && det?.hasUnmappedEvents;
   const values = det?.values ? Object.entries(det.values) : [];
+  const codeTotal = det?.eventCodeCount ?? codes.length;
+  const rowTotal = det?.rowCount ?? det?.rows?.length ?? 0;
+  const pagedCodes = !!it.id && codes.length > 0 && (codeTotal > codes.length || codes.some((c) => (c.refs?.length ?? 0) > 0));
   const headline =
-    it.code === 'UNMAPPED_EVENT_CODE' && codes.length > 0
+    it.code === 'UNMAPPED_EVENT_CODE' && codes.length > 0 && !pagedCodes
       ? codes.map((c) => t(c.ignored ? 'imp.issueX.ignored' : 'imp.issueX.unmapped', { code: c.code, count: c.count })).join(' ')
       : issueText(t, it.code);
   return (
@@ -153,26 +186,37 @@ export function IssueCard({ it, idx, mapping, onJump, compact }: { it: ImportIss
             ))}
           </dl>
         )}
-        {codes.some((c) => c.ignored && c.chosenBy) && (
+        {pagedCodes ? (
+          <IssueCodes importId={importId} issueId={it.id!} codes={codes} total={codeTotal} idx={idx} />
+        ) : codes.some((c) => c.ignored && c.chosenBy) ? (
           <ul className="space-y-0.5 text-xs text-muted-foreground">
             {codes.filter((c) => c.ignored && c.chosenBy).map((c) => (
               <li key={c.code}>
-                <Raw className="text-xs">{c.code}</Raw>: {t('imp.map.codes.chosenBy', { by: c.chosenBy, at: c.chosenAt ? formatDate(c.chosenAt, inst.language) : '—' })}
+                <Raw className="text-xs">{c.code}</Raw>: {t('imp.map.codes.chosenBy', { by: c.chosenBy, at: c.chosenAt ? formatDate(c.chosenAt, i18n.language) : '—' })}
               </li>
             ))}
           </ul>
-        )}
+        ) : null}
         {det?.rows && det.rows.length > 0 ? (
-          <RowsTable rows={det.rows} title={codes.some((c) => c.ignored) ? t('imp.issueX.excludedRows') : t('imp.issueX.rows')} />
-        ) : it.refs.length > 0 ? (
-          <div className="flex flex-wrap gap-1">
-            {it.refs.map((r) => (
-              <span key={r} className="rounded border bg-muted px-1.5 py-0.5">
-                <Raw className="text-xs">{r}</Raw>
-              </span>
-            ))}
+          <div className="min-w-0">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">{codes.some((c) => c.ignored) ? t('imp.issueX.excludedRows') : t('imp.issueX.rows')}</p>
+            {it.id ? (
+              <ServerPaged importId={importId} kind="issueRows" extra={{ issueId: it.id }} scope={it.id} preview={det.rows} total={rowTotal} testId={`issue-rows-${idx}`}>
+                {(rows) => <RowsList rows={rows} />}
+              </ServerPaged>
+            ) : (
+              <RowsList rows={det.rows} />
+            )}
           </div>
         ) : null}
+        {it.refs.length > 0 && !(det?.rows && det.rows.length > 0) && (
+          <div className="min-w-0">
+            <p className="mb-1 text-xs text-muted-foreground" data-testid={`text-issue-refs-preview-${idx}`}>
+              {t('imp.issueX.refsPreviewOnly', { shown: Math.min(20, it.refs.length), total: Math.max(rowTotal, it.refs.length) })}
+            </p>
+            <RefChips refs={it.refs.slice(0, 20)} testId={`list-issue-refs-${idx}`} />
+          </div>
+        )}
         {!compact && (
           <div className="flex flex-col gap-2 rounded-md bg-accent px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm">
@@ -228,7 +272,7 @@ function Issues({ id, mapping, onJump }: { id: string; mapping?: Record<string, 
     <>
       <ul className={cn('divide-y rounded-lg border', q.isFetching && 'opacity-70')} data-testid="table-issues">
         {items.map((it, i) => (
-          <IssueCard key={`${it.code}-${(page - 1) * PAGE_SIZE + i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} mapping={mapping} onJump={onJump} />
+          <IssueCard key={`${it.code}-${(page - 1) * PAGE_SIZE + i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} importId={id} mapping={mapping} onJump={onJump} />
         ))}
       </ul>
       <Pager page={page} total={q.data?.total ?? 0} onPage={setPage} testId="pager-issues" />
@@ -265,7 +309,7 @@ function ErrorList({ id }: { id: string }) {
     <>
       <ul className="max-h-[40dvh] divide-y overflow-y-auto rounded-lg border" data-testid="list-approve-errors">
         {items.map((it, i) => (
-          <IssueCard key={`${it.code}-${i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} compact />
+          <IssueCard key={`${it.code}-${i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} importId={id} compact />
         ))}
       </ul>
       <Pager page={page} total={q.data?.total ?? 0} onPage={setPage} testId="pager-approve-errors" />
@@ -273,20 +317,9 @@ function ErrorList({ id }: { id: string }) {
   );
 }
 
-function OrderChips({ orders, testId }: { orders: string[]; testId: string }) {
-  return (
-    <ul className="flex max-h-40 flex-wrap gap-1 overflow-y-auto" data-testid={testId}>
-      {orders.map((o) => (
-        <li key={o} className="rounded border bg-background px-1.5 py-0.5">
-          <Raw className="text-xs">{o}</Raw>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
 export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: ImportDetail; canEdit: boolean; onEditMapping: (focus?: string) => void }) {
-  const detail = d0 as ImportDetailX & SourceDetailX;
+  const detail = d0 as ImportDetailX & SourceDetailX & ImportReviewCountsX;
+  const counts = detail.reviewCounts ?? {};
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -338,7 +371,7 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
             {replaced.length > 0 && (
               <div className="mt-2">
                 <p className="mb-1 text-xs font-medium text-muted-foreground">{t('imp.check.ordersReplaced')}</p>
-                <OrderChips orders={replaced} testId="list-replaced-orders" />
+                <PagedOrders importId={detail.id} kind="replacedOrders" orders={replaced} total={counts.replacedOrders} source={detail.sourceName} testId="list-replaced-orders" />
               </div>
             )}
           </div>
@@ -421,6 +454,8 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
 
       {checked && (
         <SourceInfo
+          importId={detail.id}
+          counts={counts}
           sourceName={detail.sourceName}
           archived={srcArchived}
           replacementOrders={toReplace}
@@ -482,7 +517,7 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
           {toReplace.length > 0 && (
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">{t('imp.check.ordersToReplace')}</p>
-              <PagedOrders orders={toReplace} source={detail.sourceName} testId="list-orders-to-replace" />
+              <PagedOrders importId={detail.id} kind="replacementOrders" orders={toReplace} total={counts.replacementOrders} source={detail.sourceName} testId="list-orders-to-replace" />
             </div>
           )}
           {errCount > 0 && approveOpen && (

@@ -5,6 +5,51 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type ImportReviewSelectionKind = typeof ImportReviewSelectionKind[keyof typeof ImportReviewSelectionKind];
+
+
+export const ImportReviewSelectionKind = {
+  replacementOrders: 'replacementOrders',
+  replacedOrders: 'replacedOrders',
+  otherSourceOrders: 'otherSourceOrders',
+  settingsDifferences: 'settingsDifferences',
+  issueRows: 'issueRows',
+  issueCodes: 'issueCodes',
+  issueCodeRefs: 'issueCodeRefs',
+  eventCodes: 'eventCodes',
+  eventCodeRefs: 'eventCodeRefs',
+  resultRuns: 'resultRuns',
+  resultRefs: 'resultRefs',
+} as const;
+
+export interface JsonObject { [key: string]: unknown }
+
+export interface ImportReviewSelection {
+  kind: ImportReviewSelectionKind;
+  /**
+     * @minimum 1
+     * @maximum 1000000
+     */
+  page?: number;
+  issueId?: string;
+  /** @maxLength 1000 */
+  code?: string;
+  mapping?: JsonObject;
+  /**
+     * @maxItems 10
+     * @items.maxLength 1000
+     */
+  path?: string[];
+}
+
+export interface ImportReviewPage {
+  /** @maxItems 20 */
+  items: unknown[];
+  total: number;
+  page: number;
+  pageSize: 20;
+}
+
 export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
 
 
@@ -448,8 +493,6 @@ export interface QualityPage {
   summary: QualityPageSummary;
 }
 
-export interface JsonObject { [key: string]: unknown }
-
 export interface FileInput {
   /**
      * @minLength 1
@@ -520,6 +563,7 @@ export interface IssueCounts {
 }
 
 export interface ImportDetail {
+  reviewCounts?: JsonObject;
   id: string;
   sourceName: string;
   status: ImportDetailStatus;
@@ -594,6 +638,7 @@ export interface TemplatePage {
 }
 
 export interface ImportIssue {
+  id?: string;
   code: string;
   severity: string;
   /** @nullable */

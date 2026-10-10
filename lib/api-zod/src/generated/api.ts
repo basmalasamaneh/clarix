@@ -603,6 +603,7 @@ export const listImportsResponseItemsItemFilesItemOneNameMax = 180;
 
 export const ListImportsResponse = zod.object({
   "items": zod.array(zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -682,6 +683,7 @@ export const createImportResponseFilesItemOneNameMax = 180;
 
 
 export const CreateImportResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -750,6 +752,7 @@ export const getImportResponseFilesItemOneNameMax = 180;
 
 
 export const GetImportResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -811,6 +814,7 @@ export const finalizeImportResponseFilesItemOneNameMax = 180;
 
 
 export const FinalizeImportResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -876,6 +880,7 @@ export const saveImportMappingResponseFilesItemOneNameMax = 180;
 
 
 export const SaveImportMappingResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -937,6 +942,7 @@ export const checkImportResponseFilesItemOneNameMax = 180;
 
 
 export const CheckImportResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -1008,6 +1014,7 @@ export const approveImportResponseFilesItemOneNameMax = 180;
 
 
 export const ApproveImportResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -1069,6 +1076,7 @@ export const rejectImportResponseFilesItemOneNameMax = 180;
 
 
 export const RejectImportResponse = zod.object({
+  "reviewCounts": zod.record(zod.string(), zod.unknown()).optional(),
   "id": zod.string(),
   "sourceName": zod.string(),
   "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
@@ -1130,6 +1138,7 @@ export const ListImportIssuesParams = zod.object({
 
 export const ListImportIssuesResponse = zod.object({
   "items": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
   "code": zod.string(),
   "severity": zod.string(),
   "order": zod.string().nullable(),
@@ -1221,6 +1230,7 @@ export const GetImportErrorsQueryParams = zod.object({
 
 export const GetImportErrorsResponse = zod.object({
   "items": zod.array(zod.object({
+  "id": zod.string().uuid().optional(),
   "code": zod.string(),
   "severity": zod.string(),
   "order": zod.string().nullable(),
@@ -1229,6 +1239,42 @@ export const GetImportErrorsResponse = zod.object({
 })),
   "page": zod.number().int(),
   "total": zod.number().int()
+})
+
+
+export const ReadImportReviewPageParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const readImportReviewPageBodyPageDefault = 1;
+export const readImportReviewPageBodyPageMax = 1000000;
+
+export const readImportReviewPageBodyCodeMax = 1000;
+
+export const readImportReviewPageBodyPathItemMax = 1000;
+
+export const readImportReviewPageBodyPathMax = 10;
+
+
+
+export const ReadImportReviewPageBody = zod.object({
+  "kind": zod.enum(['replacementOrders', 'replacedOrders', 'otherSourceOrders', 'settingsDifferences', 'issueRows', 'issueCodes', 'issueCodeRefs', 'eventCodes', 'eventCodeRefs', 'resultRuns', 'resultRefs']),
+  "page": zod.number().int().min(1).max(readImportReviewPageBodyPageMax).default(readImportReviewPageBodyPageDefault),
+  "issueId": zod.string().uuid().optional(),
+  "code": zod.string().max(readImportReviewPageBodyCodeMax).optional(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "path": zod.array(zod.string().max(readImportReviewPageBodyPathItemMax)).max(readImportReviewPageBodyPathMax).optional()
+})
+
+export const readImportReviewPageResponseItemsMax = 20;
+
+
+
+export const ReadImportReviewPageResponse = zod.object({
+  "items": zod.array(zod.unknown()).max(readImportReviewPageResponseItemsMax),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.literal(20)
 })
 
 

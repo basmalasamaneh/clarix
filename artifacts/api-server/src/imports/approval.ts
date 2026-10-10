@@ -1,4 +1,5 @@
 import { fmt } from "@workspace/calculation";
+import {insertCanonicalBatch} from "./canonical-batch";
 import { ImportError } from "./model";
 import {replacementOrders,assertChoices,issues} from "./review";
 import {assertActiveSource} from "./sources";
@@ -11,7 +12,7 @@ export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacemen
   await ctx.db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[ctx.factory]);
   await assertActiveSource(ctx,row.source_name);
   await assertChoices(ctx,row);
-  if((row.counts?.error??0)>0 && !input.confirmErrors) throw new ImportError("ERROR_CONFIRMATION_REQUIRED",409,{errors:(await issues(ctx,row,1,true)).items});
+  if((row.counts?.error??0)>0 && !input.confirmErrors) throw new ImportError("ERROR_CONFIRMATION_REQUIRED",409,{errors:(await issues(ctx,row,1,true)).items,errorCount:row.counts!.error});
   const existing=await duplicate(ctx,row);
   if(existing) throw new ImportError("DUPLICATE_FILE",409,{existingImportId:existing});
   const replacing=await replacementCount(ctx,row);
@@ -24,7 +25,8 @@ export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacemen
     if(!same) throw new ImportError("CHECK_REQUIRED",409);
   }
   const raw=await loadRaw(ctx,row);
-  const rawId=(file:string,line:number)=>raw.find(r=>r.file===file && r.line_number===line)?.id;
+  const rawIds=new Map(raw.map(r=>[`${r.file}:${r.line_number}`,r.id]));
+  const rawId=(file:string,line:number)=>rawIds.get(`${file}:${line}`);
   const orderSpec=canonical.mapping.files.orders;
   for(const sourceId of canonical.orders) {
     let current=(await ctx.db.query("SELECT * FROM orders WHERE factory_id=$1 AND source_name=$2 AND source_order_id=$3 FOR UPDATE",[ctx.factory,row.source_name,sourceId])).rows[0];
@@ -52,17 +54,16 @@ export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacemen
         machine=excluded.machine,mold=excluded.mold,current_import_id=excluded.current_import_id,metrics=excluded.metrics RETURNING id`,
       [ctx.factory,row.source_name,sourceId,text("product_code"),text("line_id"),text("machine_id"),text("mold_id"),row.id,JSON.stringify(result.runs[sourceId])])).rows[0];
     const run=result.runs[sourceId];
-    for(const r of canonical.records.filter(r=>r.order===sourceId && run.volume.source_lines.includes(`${r.file}:${r.line}`))) {
-      await ctx.db.query(`INSERT INTO production_records(factory_id,source_name,record_id,order_id,shift,date,input,good,scrap,unit,raw_row_id)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[ctx.factory,row.source_name,r.rid,current.id,r.shift||null,r.date||null,fmt(r.input),fmt(r.good),fmt(r.scrap),r.unit,rawId(r.file,r.line)]);
-    }
+    const recordRefs=new Set(run.volume.source_lines);
+    await insertCanonicalBatch(ctx,row.source_name,current.id,"records",
+      canonical.records.filter(r=>r.order===sourceId && recordRefs.has(`${r.file}:${r.line}`)).map(r=>({
+        record_id:r.rid,shift:r.shift||null,date:r.date||null,input:fmt(r.input),good:fmt(r.good),scrap:fmt(r.scrap),unit:r.unit,raw_row_id:rawId(r.file,r.line),
+      })));
     const eventRefs=new Set([...run.changeover.source_lines,...run.downtime.source_lines]);
-    for(const e of canonical.events.filter(e=>e.order===sourceId && eventRefs.has(`${e.file}:${e.line}`))) {
+    await insertCanonicalBatch(ctx,row.source_name,current.id,"events",canonical.events.filter(e=>e.order===sourceId && eventRefs.has(`${e.file}:${e.line}`)).map(e=>{
       const stamp=(d:NonNullable<typeof e.start>)=>new Date(d.mul(1000).toNumber()).toISOString().replace("T"," ").replace("Z","");
-      await ctx.db.query(`INSERT INTO events(factory_id,source_name,event_id,order_id,event_code,type,start,"end",duration_min,reason,raw_row_id)
-        VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,[ctx.factory,row.source_name,e.eid,current.id,e.code,canonical.mapping.event_code_map[e.code],
-        stamp(e.start!),stamp(e.end!),fmt(e.duration),e.reason,rawId(e.file,e.line)]);
-    }
+      return {event_id:e.eid,event_code:e.code,type:canonical.mapping.event_code_map[e.code],start:stamp(e.start!),end:stamp(e.end!),duration_min:fmt(e.duration),reason:e.reason,raw_row_id:rawId(e.file,e.line)};
+    }));
     await ctx.db.query("UPDATE data_issues SET order_id=$4 WHERE factory_id=$1 AND import_id=$2 AND source_order_id=$3",[ctx.factory,row.id,sourceId,current.id]);
   }
   await ctx.db.query("UPDATE imports SET status='approved',approved_at=now(),replaced_orders=$3 WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(replaced)]);

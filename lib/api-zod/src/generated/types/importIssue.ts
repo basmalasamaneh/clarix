@@ -7,6 +7,7 @@
  */
 
 export interface ImportIssue {
+  id?: string;
   code: string;
   severity: string;
   /** @nullable */

@@ -40,6 +40,8 @@ import type {
   ImportInput,
   ImportLimits,
   ImportPage,
+  ImportReviewPage,
+  ImportReviewSelection,
   InvitationAcceptance,
   InvitationInput,
   InvitationLink,
@@ -2382,6 +2384,89 @@ export function useGetImportErrors<TData = Awaited<ReturnType<typeof getImportEr
 
 
 
+
+export const getReadImportReviewPageUrl = (id: string,) => {
+
+
+
+
+  return `/api/imports/${id}/review-page`
+}
+
+export const readImportReviewPage = async (id: string,
+    importReviewSelection: ImportReviewSelection, options?: Parameters<typeof customFetch>[1]): Promise<ImportReviewPage> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ImportReviewPage>(getReadImportReviewPageUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(importReviewSelection)
+  }
+);}
+
+
+
+
+
+export const getReadImportReviewPageMutationKey = () => ['readImportReviewPage'] as const;
+
+export const getReadImportReviewPageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readImportReviewPage>>, TError,ReadImportReviewPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof readImportReviewPage>>, TError,ReadImportReviewPageMutationVariables, TContext> => {
+
+const mutationKey = getReadImportReviewPageMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof readImportReviewPage>>, ReadImportReviewPageMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  readImportReviewPage(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReadImportReviewPageMutationResult = NonNullable<Awaited<ReturnType<typeof readImportReviewPage>>>
+    export type ReadImportReviewPageMutationBody = BodyType<ImportReviewSelection>
+    export type ReadImportReviewPageMutationError = ErrorType<void>
+    export type ReadImportReviewPageMutationVariables = {id: string;data: BodyType<ImportReviewSelection>}
+
+    export const useReadImportReviewPage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof readImportReviewPage>>, TError,ReadImportReviewPageMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof readImportReviewPage>>,
+        TError,
+        ReadImportReviewPageMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReadImportReviewPageMutationOptions(options));
+    }
 
 export const getListDataSourcesUrl = (params?: ListDataSourcesParams,) => {
   const normalizedParams = new URLSearchParams();

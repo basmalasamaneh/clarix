@@ -7,6 +7,8 @@ import { ImportError,limitConfig,validateMapping } from "../imports/model";
 import * as service from "../imports/service";
 import { approve } from "../imports/approval";
 import {eventCodes,issues} from "../imports/review";
+import {preview,reviewPage} from "../imports/review-pages";
+import {ReadImportReviewPageBody} from "@workspace/api-zod";
 import * as sources from "../imports/sources";
 import * as quality from "../imports/quality";
 import * as metrics from "../metrics/service";
@@ -31,7 +33,7 @@ function route(action:Action,allowViewer=false) {
       });
       res.status(code).json(payload);
     } catch(e) {
-      if(e instanceof ImportError) {res.status(e.status).json({error:e.code,details:e.details});return;}
+      if(e instanceof ImportError) {res.status(e.status).json({error:e.code,details:preview(e.details)});return;}
       if(e instanceof TenantAccessError) {res.status(403).json({error:"FORBIDDEN"});return;}
       if(e instanceof CellReadError) {res.status(422).json({error:e.code,details:{file:e.file,line:e.line,column:e.column}});return;}
       if(e instanceof z.ZodError) {res.status(400).json({error:"INVALID_INPUT"});return;}
@@ -101,9 +103,15 @@ router.post("/imports/:id/check",route(async(ctx,req,res)=>{res.json(await servi
 router.post("/imports/:id/event-codes",route(async(ctx,req,res)=>{
   const row=await service.getRow(ctx,id(req));
   const mapping=z.object({files:z.object({events:z.object({file:z.string(),columns:z.record(z.string())}).optional()}),event_code_map:z.record(z.string()).default({}),ignored_event_codes:z.array(z.string()).default([])}).parse(req.body.mapping);
-  res.json(await eventCodes(ctx,row,mapping as any));
+  const data=await eventCodes(ctx,row,mapping as any);
+  data.items.sort((a,b)=>a.code<b.code?-1:a.code>b.code?1:0);
+  const p=page(req.query.page);
+  res.json({...data,items:preview(data.items.slice((p-1)*20,p*20)),page:p,pageSize:20});
 }));
-router.get("/imports/:id/errors",route(async(ctx,req,res)=>{res.json(await issues(ctx,await service.getRow(ctx,id(req)),page(req.query.page),true));}));
+router.post("/imports/:id/review-page",route(async(ctx,req,res)=>{
+  res.json(await reviewPage(ctx,await service.getRow(ctx,id(req)),ReadImportReviewPageBody.parse(req.body)));
+}));
+router.get("/imports/:id/errors",route(async(ctx,req,res)=>{res.json(preview(await issues(ctx,await service.getRow(ctx,id(req)),page(req.query.page),true)));}));
 router.post("/imports/:id/approve",route(async(ctx,req,res)=>{res.json(await approve(ctx,await service.getRow(ctx,id(req),true),ApproveImportBody.parse(req.body)));}));
 router.post("/imports/:id/reject",route(async(ctx,req,res)=>{
   const row=await service.getRow(ctx,id(req),true);service.editable(row);
@@ -111,7 +119,7 @@ router.post("/imports/:id/reject",route(async(ctx,req,res)=>{
   res.json(await service.view(ctx,await service.getRow(ctx,row.id)));
 }));
 router.get("/imports/:id/issues/:page",route(async(ctx,req,res)=>{
-  res.json(await issues(ctx,await service.getRow(ctx,id(req)),page(req.params.page)));
+  res.json(preview(await issues(ctx,await service.getRow(ctx,id(req)),page(req.params.page))));
 }));
 router.get("/import-templates",route(async(ctx,req,res)=>{
   const p=page(req.query.page),source=typeof req.query.source==="string"?req.query.source:null;

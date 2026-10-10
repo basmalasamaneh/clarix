@@ -18,7 +18,7 @@ export type EventCodeItem = {
   chosenBy?: string;
   chosenAt?: string;
 };
-export type EventCodePage = { items: EventCodeItem[]; total: number };
+export type EventCodePage = { items: EventCodeItem[]; total: number; page?: number; pageSize?: number };
 
 export type DuplicateReason = 'CURRENT_SAME_MAPPING' | 'MAPPING_DIFFERS' | 'FULLY_SUPERSEDED';
 export type ImportDetailX = ImportDetail & {
@@ -34,8 +34,10 @@ export type IssueDetails = {
   hasUnmappedEvents?: boolean;
   field?: string;
   values?: JsonObject;
+  rowCount?: number;
+  eventCodeCount?: number;
 };
-export type ImportIssueX = ImportIssue & { details?: IssueDetails };
+export type ImportIssueX = ImportIssue & { id?: string; details?: IssueDetails };
 export type ErrorPage = { items: ImportIssueX[]; total: number; page: number };
 export type ApprovalInputX = ApprovalInput & { confirmErrors?: boolean };
 
@@ -96,4 +98,65 @@ export function useImportErrors(id: string, enabled: boolean, page=1) {
 export function rowCells(r: SampleRow): [string, string][] {
   if (Array.isArray(r.cells)) return r.cells.map((v, i) => [String(i + 1), String(v)]);
   return Object.entries(r.cells ?? {}).map(([k, v]) => [k, v == null ? '' : String(v)]);
+}
+
+/* ---------- Server review paging (POST /api/imports/:id/review-page) ---------- */
+export type ReviewKind =
+  | 'replacementOrders'
+  | 'replacedOrders'
+  | 'otherSourceOrders'
+  | 'settingsDifferences'
+  | 'issueRows'
+  | 'issueCodes'
+  | 'issueCodeRefs'
+  | 'eventCodes'
+  | 'eventCodeRefs';
+export type ReviewExtra = { issueId?: string; code?: string; mapping?: Record<string, unknown>; path?: string };
+export type ReviewPage<T> = { items: T[]; total: number; page: number; pageSize: number };
+export type ReviewCounts = Partial<Record<'replacementOrders' | 'replacedOrders' | 'otherSourceOrders' | 'settingsDifferences' | 'resultRuns', number>>;
+export type ImportReviewCountsX = { reviewCounts?: ReviewCounts };
+
+export const reviewPageKey = (id: string, kind: ReviewKind, page: number, scope: string) => ['/api/imports', id, 'review-page', kind, scope, page] as const;
+
+export function fetchReviewPage<T>(id: string, kind: ReviewKind, page: number, extra: ReviewExtra, req: Req, signal?: AbortSignal) {
+  return apiJson<ReviewPage<T>>(`/api/imports/${encodeURIComponent(id)}/review-page`, {
+    method: 'POST',
+    signal,
+    credentials: req.credentials,
+    headers: { ...req.headers, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ kind, page, ...extra }),
+  });
+}
+
+/** `scope` identifies the extra params for caching (mapping excluded on purpose, like event-codes). */
+export function useReviewPage<T>(id: string, kind: ReviewKind, page: number, extra: ReviewExtra, scope: string, req: Req, enabled: boolean) {
+  return useQuery({
+    queryKey: reviewPageKey(id, kind, page, scope),
+    enabled,
+    staleTime: 60_000,
+    retry: 1,
+    queryFn: ({ signal }) => fetchReviewPage<T>(id, kind, page, extra, req, signal),
+  });
+}
+
+/** One event-code page on demand: page 1 via /event-codes, later pages via review-page kind=eventCodes. */
+export function useEventCodesPage(id: string, file: string | undefined, column: string | undefined, mapping: Record<string, unknown>, req: Req, page: number) {
+  const first = useEventCodes(id, file, column, mapping, req);
+  const later = useReviewPage<EventCodeItem>(id, 'eventCodes', page, { mapping }, `${file ?? ''}:${column ?? ''}`, req, !!file && !!column && page > 1 && !!first.data);
+  const cur = page > 1 ? later : first;
+  return {
+    first,
+    items: cur.data?.items,
+    sig: `${page}|${cur.dataUpdatedAt}`,
+    total: first.data?.total ?? 0,
+    isLoading: first.isLoading,
+    isError: first.isError,
+    error: first.error,
+    pageLoading: page > 1 && later.isLoading,
+    pageError: page > 1 && later.isError ? later.error : null,
+    refetch: async () => {
+      await first.refetch();
+      if (page > 1) await later.refetch();
+    },
+  };
 }

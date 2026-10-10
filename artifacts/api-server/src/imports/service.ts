@@ -6,6 +6,8 @@ import { importJobs } from "./jobs";
 import {duplicateState,replacementOrders,eventCodes,recordDecisions,assertChoices,type ReviewMapping} from "./review";
 import { ImportError,inspect,limitConfig,suggestMapping,validateMapping,type StoredFile } from "./model";
 import {sourceInfo,assertActiveSource} from "./sources";
+import {preview} from "./review-pages";
+import {importCpu} from "./cpu-client";
 export interface Context { db:PoolClient; factory:string; user:string; userName?:string; settings:Record<string,unknown> }
 export interface ImportRow {
   id:string;source_name:string;status:string;created_at:string;files:StoredFile[];
@@ -32,13 +34,18 @@ export async function duplicate(ctx:Context,row:ImportRow) {
 }
 export async function view(ctx:Context,row:ImportRow,uploads=false) {
   const files=await Promise.all(row.files.map(async({stage,original,...f})=>({...f,...(uploads && !row.finalized ? {uploadUrl:await fileStorage.uploadUrl(stage)}:{})})));
+  const source=await sourceInfo(ctx,row);
+  const replacing=row.status==="approved"?[]:await replacementOrders(ctx,row);
+  const replaced=row.replaced_orders??[];
+  const duplicateInfo=row.status==="approved"||row.status==="rejected"?{duplicateOf:null,duplicateReason:null,settingsDifferences:[],comparisonSource:null}:await duplicateState(ctx,row);
   return {id:row.id,sourceName:row.source_name,status:row.status,createdAt:row.created_at,files,
-    ...await sourceInfo(ctx,row),
+    ...source,otherSourceOrders:preview(source.otherSourceOrders),
+    reviewCounts:{replacementOrders:replacing.length,replacedOrders:replaced.length,otherSourceOrders:source.otherSourceOrders.length,settingsDifferences:duplicateInfo.settingsDifferences.length,resultRuns:Object.keys(row.result?.runs??{}).length},
     finalized:row.finalized,progress:importJobs.progress(row.id)??row.progress,
     replacementCount:row.status==="approved"?(row.replaced_orders??[]).length:await replacementCount(ctx,row),
-    replacementOrders:row.status==="approved"?[]:await replacementOrders(ctx,row),replacedOrders:row.replaced_orders??[],
-    ...(row.status==="approved"||row.status==="rejected"?{duplicateOf:null,duplicateReason:null}:await duplicateState(ctx,row)),
-    ...(row.mapping?{mapping:row.mapping}:{}),...(row.result?{result:row.result}:{}),
+    replacementOrders:preview(replacing),replacedOrders:preview(replaced),
+    ...duplicateInfo,settingsDifferences:preview(duplicateInfo.settingsDifferences),
+    ...(row.mapping?{mapping:row.mapping}:{}),...(row.result?{result:preview(row.result)}:{}),
     ...(row.counts?{counts:row.counts}:{}),
   };
 }
@@ -71,7 +78,7 @@ export async function finalize(ctx:Context,row:ImportRow) {
       }
       total+=bytes.length;
       if(total>limits.maxTotalBytes || bytes.length!==f.size) throw new ImportError("FILE_SIZE_MISMATCH",400,{file:f.name});
-      const {encoding,delimiter,table}=inspect(bytes,f.name);
+      const {encoding,delimiter,table}=await importCpu("inspect",[{name:f.name,bytes}]) as ReturnType<typeof inspect>;
       const original=`originals/${ctx.factory}/${row.id}/${randomUUID()}`;
       await fileStorage.preserve(original,bytes);
       Object.assign(f,{original,sha256:createHash("sha256").update(bytes).digest("hex"),encoding,delimiter,
@@ -108,30 +115,14 @@ export async function saveMapping(ctx:Context,row:ImportRow,input:unknown) {
   for(const code of mapping.ignored_event_codes??[]) delete mapping.event_code_map[code];
   const decisions=await recordDecisions(ctx,row,mapping);
   const files=await sources(ctx,row);
-  const canonical=csvAdapter.read(files,mapping);
-  const samples=[];
-  for(const spec of [mapping.files.records,mapping.files.totals].filter(Boolean)) {
-    const source=files.find(f=>f.name===spec!.file)!;
-    const table=parseCsv(decodeBytes(source.bytes,mapping.format.encoding),mapping.format.delimiter);
-    for(const r of canonical.records.length?canonical.records.slice(0,3):canonical.totals.slice(0,3).map(t=>t.record)) {
-      if(r.file!==spec!.file) continue;
-      for(const key of ["input","good","scrap"] as const) {
-        const column=spec!.columns[key],raw=table.rows.find(t=>t.line===r.line)!.cells[column];
-        const factor=mapping.unit_factors_to_kg[r.unit];
-        samples.push({file:r.file,line:r.line,column,raw:`${raw} ${r.unit}`,value:r[key]!==null && factor?fmt(r[key]!.mul(new D(factor))):null,unit:"kg"});
-      }
-    }
-  }
+  const samples=await importCpu("mapping",files,mapping);
   await ctx.db.query("DELETE FROM data_issues WHERE factory_id=$1 AND import_id=$2",[ctx.factory,row.id]);
   await ctx.db.query("UPDATE imports SET mapping=$3,decision_audit=$4,result=NULL,counts=NULL,status='draft' WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(mapping),JSON.stringify(decisions)]);
   return {...await view(ctx,await getRow(ctx,row.id)),samples};
 }
 export async function runEngine(ctx:Context,row:ImportRow) {
   const mapping=validateMapping(row.mapping,row.source_name,row.files.map(f=>f.name));
-  const canonical=csvAdapter.read(await sources(ctx,row),mapping);
-  const collected:{order:string;code:string;severity:string;groups:string[];refs:string[]}[]=[];
-  const result=calculate(canonical,[canonical.orders[0],canonical.orders[1]??canonical.orders[0]],entries=>collected.push(...entries));
-  return {canonical,result,collected};
+  return await importCpu("calculate",await sources(ctx,row),mapping) as {canonical:CanonicalDataset;result:EngineResult;collected:{order:string;code:string;severity:string;groups:string[];refs:string[]}[]};
 }
 export async function check(ctx:Context,row:ImportRow) {
   editable(row);

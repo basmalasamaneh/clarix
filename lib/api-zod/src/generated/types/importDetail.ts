@@ -12,6 +12,7 @@ import type { JsonObject } from './jsonObject';
 import type { MappingSample } from './mappingSample';
 
 export interface ImportDetail {
+  reviewCounts?: JsonObject;
   id: string;
   sourceName: string;
   status: ImportDetailStatus;

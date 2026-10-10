@@ -33,6 +33,8 @@ function run(command:string,args:string[],extra={}) {
 }
 let created=false;
 const before=await fingerprint(c);
+const factorySnapshots=async()=>Object.fromEntries(await Promise.all(["ethmar","najm"].map(async id=>[id,await fingerprint(c,"public",id)])));
+const factoriesBefore=await factorySnapshots();
 const rolesBefore=await roleFingerprint(c);
 try {
   await c.query(`CREATE ROLE ${schema} NOLOGIN NOSUPERUSER NOBYPASSRLS`);
@@ -99,9 +101,10 @@ try {
       await c.query(`DROP ROLE ${schema}`);
     }
     const after=await fingerprint(c);
+    const factoriesAfter=await factorySnapshots();
     await mkdir(root+"generated-artifacts/test-isolation",{recursive:true});
     const rolesAfter=await roleFingerprint(c);
-    await writeFile(root+"generated-artifacts/test-isolation/latest.json",JSON.stringify({schema,unfilteredObserverVerified:true,before,after,rolesBefore,rolesAfter,unchanged:JSON.stringify(before)===JSON.stringify(after)&&JSON.stringify(rolesBefore)===JSON.stringify(rolesAfter)},null,2));
+    await writeFile(root+"generated-artifacts/test-isolation/latest.json",JSON.stringify({schema,unfilteredObserverVerified:true,before,after,factoriesBefore,factoriesAfter,rolesBefore,rolesAfter,unchanged:JSON.stringify(before)===JSON.stringify(after)&&JSON.stringify(factoriesBefore)===JSON.stringify(factoriesAfter)&&JSON.stringify(rolesBefore)===JSON.stringify(rolesAfter)},null,2));
     await barrier.query("ROLLBACK");barrier.release();c.release();await pool.end();
     if(JSON.stringify(before)!==JSON.stringify(after)) throw new Error("Development data changed during tests; inspect isolation evidence");
     if(JSON.stringify(rolesBefore)!==JSON.stringify(rolesAfter)) throw new Error("Database roles changed during tests");
