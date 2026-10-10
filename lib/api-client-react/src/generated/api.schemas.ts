@@ -171,9 +171,16 @@ export const AiAssistResultStatus = {
   error: 'error',
 } as const;
 
+export interface AiQuestionSuggestion {
+  label: string;
+  input: AiAssistInput;
+}
+
 export interface AiAssistResult {
   status: AiAssistResultStatus;
   intent: string;
+  /** @maxItems 3 */
+  suggestions?: AiQuestionSuggestion[];
   blocks: AiAssistBlock[];
   message: string;
   retryAfter: number;

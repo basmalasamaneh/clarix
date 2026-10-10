@@ -30,6 +30,7 @@ export * from './aiExplanationStatus';
 export * from './aiFact';
 export * from './aiFactSource';
 export * from './aiFactStatus';
+export * from './aiQuestionSuggestion';
 export * from './aiStatement';
 export * from './aiStatementType';
 export * from './approvalInput';

@@ -7,10 +7,13 @@
  */
 import type { AiAssistBlock } from './aiAssistBlock';
 import type { AiAssistResultStatus } from './aiAssistResultStatus';
+import type { AiQuestionSuggestion } from './aiQuestionSuggestion';
 
 export interface AiAssistResult {
   status: AiAssistResultStatus;
   intent: string;
+  /** @maxItems 3 */
+  suggestions?: AiQuestionSuggestion[];
   blocks: AiAssistBlock[];
   message: string;
   retryAfter: number;

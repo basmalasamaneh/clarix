@@ -41,9 +41,46 @@ export const AssistAiBody = zod.object({
   "useAi": zod.boolean().optional()
 })
 
+export const assistAiResponseSuggestionsItemInputQuestionMax = 500;
+
+export const assistAiResponseSuggestionsItemInputSourceMax = 200;
+
+export const assistAiResponseSuggestionsItemInputOrderMax = 200;
+
+export const assistAiResponseSuggestionsItemInputPageMax = 10000;
+
+export const assistAiResponseSuggestionsMax = 3;
+
+
+
 export const AssistAiResponse = zod.object({
   "status": zod.enum(['code', 'verified', 'off', 'consent_needed', 'unsupported', 'quota', 'unavailable', 'error']),
   "intent": zod.string(),
+  "suggestions": zod.array(zod.object({
+  "label": zod.string(),
+  "input": zod.object({
+  "task": zod.enum(['ask', 'quality', 'next']),
+  "language": zod.enum(['en', 'ar']),
+  "question": zod.string().max(assistAiResponseSuggestionsItemInputQuestionMax).optional(),
+  "intent": zod.enum(['compare', 'metric', 'extreme', 'runs', 'issues', 'status', 'counts', 'snapshot_changes', 'causal']).optional(),
+  "a": zod.string().uuid().optional(),
+  "b": zod.string().uuid().optional(),
+  "runId": zod.string().uuid().optional(),
+  "snapshotId": zod.string().uuid().optional(),
+  "importId": zod.string().uuid().optional(),
+  "issueId": zod.string().uuid().optional(),
+  "source": zod.string().max(assistAiResponseSuggestionsItemInputSourceMax).optional(),
+  "order": zod.string().max(assistAiResponseSuggestionsItemInputOrderMax).optional(),
+  "severity": zod.enum(['error', 'warning', 'info']).optional(),
+  "group": zod.enum(['volume', 'changeover', 'downtime', 'file', 'import', 'all']).optional(),
+  "includeArchived": zod.boolean().optional(),
+  "metric": zod.enum(['scrap_rate_pct', 'scrap_kg', 'changeover_min', 'downtime_min']).optional(),
+  "direction": zod.enum(['highest', 'lowest']).optional(),
+  "status": zod.enum(['red', 'yellow']).optional(),
+  "page": zod.number().int().min(1).max(assistAiResponseSuggestionsItemInputPageMax).optional(),
+  "useAi": zod.boolean().optional()
+})
+})).max(assistAiResponseSuggestionsMax).optional(),
   "blocks": zod.array(zod.object({
   "id": zod.string(),
   "type": zod.enum(['FACT', 'HYPOTHESIS', 'SUGGESTION']),

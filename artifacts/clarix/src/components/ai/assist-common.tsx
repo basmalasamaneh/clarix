@@ -177,7 +177,7 @@ function BlockCard({ block, idx, prefix }: { block: AiAssistBlock; idx: number; 
         {t(`as.blockType.${block.type}`)}
       </span>
       {block.title && <h3 className="mt-1 text-sm font-semibold" dir="auto" data-testid={`${prefix}-block-title-${idx}`}><NumText text={block.title} /></h3>}
-      {block.text && <p className="mt-1 text-sm leading-relaxed" dir="auto" data-testid={`${prefix}-block-text-${idx}`}><NumText text={block.text} /></p>}
+      {block.text && <p className="mt-1 min-w-0 whitespace-pre-wrap [overflow-wrap:anywhere] text-sm leading-relaxed" dir="auto" data-testid={`${prefix}-block-text-${idx}`}><NumText text={block.text} /></p>}
       {shown.length > 0 && (
         <dl className="mt-2 grid gap-x-4 gap-y-1 text-xs sm:grid-cols-2">
           {shown.map((f) => (
@@ -220,8 +220,8 @@ export function AssistResultView({ res, prefix, max, onRetry, footer }: { res: A
         </p>
       ) : (
         <div className="rounded-lg border bg-muted/40 p-3" data-testid={`${prefix}-status-${res.status}`}>
-          <p className="text-xs font-medium text-status-amber">{t(`as.status.${res.status}`)}</p>
-          {res.message && <p className="mt-1 text-xs text-muted-foreground" dir="auto"><NumText text={res.message} /></p>}
+          <p className="whitespace-pre-wrap [overflow-wrap:anywhere] text-xs font-medium text-status-amber" dir="auto">{res.status==='unsupported'&&res.message?res.message:t(`as.status.${res.status}`)}</p>
+          {res.status!=='unsupported'&&res.message && <p className="mt-1 whitespace-pre-wrap [overflow-wrap:anywhere] text-xs text-muted-foreground" dir="auto">{res.message}</p>}
           {res.retryAfter > 0 && <p className="mt-1 text-xs text-muted-foreground">{t('as.retryAfter', { count: res.retryAfter })}</p>}
           {onRetry && (res.status === 'quota' || res.status === 'unavailable' || res.status === 'error') && (
             <Button variant="outline" onClick={onRetry} className={`${btn44} mt-2`} data-testid={`${prefix}-again`}><RotateCcw className="size-4" aria-hidden="true" />{t('as.retry')}</Button>

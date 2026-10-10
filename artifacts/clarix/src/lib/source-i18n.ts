@@ -96,7 +96,7 @@ const ar: typeof en = {
   prev: 'الصفحة السابقة',
   next: 'الصفحة التالية',
   line: 'السطر {{n}}',
-  order: 'الطلب',
+  order: 'التشغيلة',
   noOrder: 'بلا طلب',
   import: 'الاستيراد',
   kind: { included: 'مُدرج', excluded: 'مستبعد', quarantined: 'معزول', related: 'مرتبط' },

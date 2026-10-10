@@ -76,10 +76,10 @@ export function orderStatusChart(statuses:{green:number;yellow:number;red:number
     plotValue:value,width:total.isZero()?"0":new D(value).div(total).mul(100).toFixed(6),available:true,
     status:key as ChartPoint["status"],reason:text("",""),refs:[],runId:null,sourceName:null,noEvents:false,frames:[]}));
   const status=statuses.red?"red":statuses.yellow?"yellow":"green";
-  return {key:"order_status",kind:"status_stack",unit:"count",title:text("Current orders by status","الطلبات الحالية حسب الحالة"),
+  return {key:"order_status",kind:"status_stack",unit:"count",title:text("Current orders by status","التشغيلات الحالية حسب الحالة"),
     status,series,axisMin:0,axisMax:D.max(1,total).toNumber(),direction:"unavailable",changeText:text("",""),
     caption:text(`${statuses.green} OK, ${statuses.yellow} Check, ${statuses.red} Blocked. Archived sources are excluded.`,
       `${statuses.green} سليم، ${statuses.yellow} للمراجعة، ${statuses.red} محظور. المصادر المؤرشفة مستبعدة.`),
     howToRead:text("Each segment counts current orders in one status. Labels give the exact counts.",
-      "يمثل كل جزء عدد الطلبات الحالية في حالة واحدة. تعرض التسميات الأعداد الدقيقة.")};
+      "يمثل كل جزء عدد التشغيلات الحالية في حالة واحدة. تعرض التسميات الأعداد الدقيقة.")};
 }

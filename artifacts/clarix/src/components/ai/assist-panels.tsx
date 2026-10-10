@@ -84,7 +84,7 @@ function AskInner({ chips, context }: { scope: string; chips: AskChip[]; context
 
       <form onSubmit={ask} className="space-y-2" data-testid="form-ask">
         <label htmlFor="ask-input" className="text-xs font-semibold">{t('as.ask.inputLabel')}</label>
-        <Textarea id="ask-input" value={question} onChange={(e) => setQuestion(e.target.value.slice(0, MAX + 50))} rows={2} dir="auto"
+        <Textarea id="ask-input" value={question} onChange={(e) => setQuestion(e.target.value)} rows={2} dir="auto"
           placeholder={t('as.ask.placeholder')} disabled={!typedOn} aria-invalid={tooLong} aria-describedby="ask-help"
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(e); } }}
           autoComplete="off" className="min-h-11 resize-none" data-testid="input-ask" />
@@ -108,6 +108,16 @@ function AskInner({ chips, context }: { scope: string; chips: AskChip[]; context
           : assist.isError ? <RequestError error={assist.error} onRetry={() => last && send(last)} testId="state-ask-error" />
           : assist.data ? <AssistResultView res={assist.data} prefix="ask" onRetry={() => last && send(last)} /> : null}
       </div>
+      {assist.data?.status==='unsupported'&&!!assist.data.suggestions?.length&&(
+        <div className="min-w-0 space-y-2" data-testid="ask-suggestions">
+          <p className="text-sm font-medium">{t('as.didYouMean')}</p>
+          <div className="flex min-w-0 flex-col gap-2">
+            {assist.data.suggestions.map((s,i)=><Button key={i} type="button" variant="outline"
+              className="h-auto min-h-11 w-full justify-start whitespace-normal [overflow-wrap:anywhere] text-start"
+              onClick={()=>send(s.input)} disabled={assist.isPending} data-testid={`ask-suggestion-${i}`}>{s.label}</Button>)}
+          </div>
+        </div>
+      )}
     </AssistFrame>
   );
 }

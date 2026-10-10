@@ -238,3 +238,31 @@ mtime_ms = 1791666656212
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/cd646e89-4a88-484b-ab26-afab037f5da5/3a765f84-17f5-42c0-af51-0b10e27b9080"
 storage_version_token = "1791666876122214"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "ztDSTcZqvfNiKvFVGejrl"
+uri = "file://generated-artifacts/ask-fix/string-changes.html"
+type = "html"
+title = "Exact text changes"
+description = "Old and new Arabic strings, plus code-authored suggestion labels."
+logical_id = "7981f444-1198-4f58-9b84-6435bba3cd96"
+content_hash = "sha256:78a8ad4626d5dc5ceed6001e4b29acb21d176120b1c669cf8e4251513933d731"
+size = 29000
+mtime_ms = 1791672449972
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/7981f444-1198-4f58-9b84-6435bba3cd96/350ed086-3585-42d3-933b-0c10b9b28520"
+storage_version_token = "1791672674561580"
+content_type = "text/html"
+
+[[outputs]]
+id = "MMmYnnMmAFAG0Aax7KXIT"
+uri = "file://generated-artifacts/ask-fix/phrasing-table.html"
+type = "html"
+title = "111 phrasing tests"
+description = "Every English and Arabic question, expected intent, and deliberate refusal."
+logical_id = "be323337-8d33-4587-aafe-3a616c5b24ff"
+content_hash = "sha256:e06527f8b3d3503d17d4044a2732b245152fb950a5d8aab74ab7e063690c02d3"
+size = 10132
+mtime_ms = 1791672674033
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/be323337-8d33-4587-aafe-3a616c5b24ff/6f9db836-9bf1-4f60-93b8-e0e798a0dc22"
+storage_version_token = "1791672675070070"
+content_type = "text/html"

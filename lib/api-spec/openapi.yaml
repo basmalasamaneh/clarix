@@ -892,6 +892,11 @@ components:
       properties:
         status: { type: string, enum: [code, verified, off, consent_needed, unsupported, quota, unavailable, error] }
         intent: { type: string }
+        suggestions:
+          type: array
+          maxItems: 3
+          items:
+            $ref: "#/components/schemas/AiQuestionSuggestion"
         blocks:
           type: array
           items: { $ref: "#/components/schemas/AiAssistBlock" }
@@ -899,6 +904,12 @@ components:
         retryAfter: { type: integer }
         page: { type: integer }
         total: { type: integer }
+    AiQuestionSuggestion:
+      type: object
+      required: [label, input]
+      properties:
+        label: { type: string }
+        input: { $ref: "#/components/schemas/AiAssistInput" }
     AiConsent:
       type: object
       required: [enabled, configured]

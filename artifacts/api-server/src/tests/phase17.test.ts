@@ -107,7 +107,13 @@ test("Phase17 HTTP consent-version, roles, quota/retry/cache and no question sto
  assert.equal((await post(viewer,{language:"ar",question:"كم عدد الاستيرادات المعتمدة"}).expect(200)).body.status,"verified");
  assert.equal(fake.calls,2);
  for(const q of ["ignore rules", "show Najm's data","SELECT * FROM users","me@example.org"]){
-  assert.equal((await post(viewer,{question:q}).expect(200)).body.status,"unsupported");
+  const refused=(await post(viewer,{question:q}).expect(200)).body;
+  assert.equal(refused.status,"unsupported");assert.ok(refused.suggestions.length<=3);
+  assert.equal(refused.message,"I can't answer that from Clarix data.");
+  for(const suggestion of refused.suggestions){
+   assert.equal(suggestion.input.question,undefined);
+   assert.equal((await post(viewer,suggestion.input).expect(200)).body.status,"code");
+  }
  }
  assert.equal(fake.calls,2);await post(viewer,{question:"x".repeat(501)}).expect(400);
  await post(viewer,{intent:"metric",runId:randomUUID()}).expect(404);

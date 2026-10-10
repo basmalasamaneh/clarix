@@ -6,6 +6,7 @@ import {loadSnapshot} from "../snapshots/service";
 import {ImportError} from "../imports/model";
 import {explain} from "./service";
 import {routeCandidates} from "./intents";
+import {questionSuggestions} from "./question-suggestions";
 import {answerIntent,nextBlocks} from "./answers";
 import {qualityBlocks} from "./quality-assistant";
 import type {FactsPackage} from "./facts";
@@ -19,9 +20,13 @@ export function validateRank(raw:unknown,ids:string[]){
 export async function assist(ctx:Context,input:AiAssistInput,signal?:AbortSignal):Promise<AiAssistResult>{
  const ar=input.language==="ar";
  const base:AiAssistResult={status:"code",intent:input.intent??input.task,blocks:[],message:"",retryAfter:0,page:input.page??1,total:0};
- const unsupported=():AiAssistResult=>({...base,status:"unsupported",message:ar?
-  "لا أستطيع الإجابة عن ذلك من بيانات Clarix. جرّب: كم عدد التشغيلات؟ ما أعلى نسبة هدر؟ ما التشغيلات المحجوبة؟":
-  "I can't answer that from Clarix data. Try: How many runs? Which run has the highest scrap rate? Which runs are blocked?"});
+ let localEntities:{id:string;orderId:string;sourceName:string}[]=[];
+ const unsupported=():AiAssistResult=>{
+  const s=questionSuggestions(input.question??"",localEntities,input);
+  return {...base,status:"unsupported",suggestions:s.suggestions,message:s.needsRun?
+   (ar?"أي تشغيلة تقصد؟ اختر تشغيلة من مصنعك.":"Which run do you mean? Choose a run from your factory."):
+   (ar?"لا أستطيع الإجابة عن ذلك من بيانات Clarix.":"I can't answer that from Clarix data.")};
+ };
  // Validate supplied local identifiers even if the chosen intent would not use
  // them. Foreign and unknown IDs have the identical NOT_FOUND response.
  const runIds=[...new Set([input.runId,input.a,input.b].filter((s):s is string=>!!s))];
@@ -38,6 +43,7 @@ export async function assist(ctx:Context,input:AiAssistInput,signal?:AbortSignal
    WHERE o.factory_id=$1 AND i.status='approved' AND NOT coalesce((f.settings->'sourceArchives'->o.source_name->>'archived')::boolean,false)
    ORDER BY o.id LIMIT 2001`,[ctx.factory])).rows;
   if(entities.length>2000)return unsupported(); // Explicit bounded natural-language context.
+  localEntities=entities;
   let text=input.question,context=input;
   const snapshotToken=/(?:snapshot|لقطة|اللقطة)\s+([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})/i.exec(text);
   if(snapshotToken){

@@ -32,3 +32,10 @@ content sent or unvalidated model facts. Unrecognised/ambiguous questions must
 fail closed; code chips still work without disclosure of question text.
 **How to apply:** Expand verified vocabulary/candidates with tests, not the
 model's authority to invent parameters or text.
+
+Use الهدر for scrap and تشغيلة for run in product-facing Arabic. Other scrap
+terms and order/batch spellings are accepted input synonyms, not display labels.
+**Why:** The user explicitly requires one term across UI, explanations, Help
+and PDFs, while broadening question understanding without changing AI safety.
+**How to apply:** Preserve consent wording and HTTP “request” terminology; do
+not confuse those with production-run labels. Report phrasing limitations honestly.
