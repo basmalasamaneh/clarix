@@ -1,0 +1,44 @@
+Phase 13 — Factory management for the Platform Admin. Read docs/CLARIX_SPEC.md (tenancy, roles, Platform Admin, audit sections), docs/TENANCY_TESTS.md (esp. T10), docs/ACCOUNTS.md, docs/PHASE10_PUBLISH.md and replit.md first. Build ONLY this phase.
+
+Goal
+The Platform Admin can add and manage factories from the UI, with no shell and no manual database work, WITHOUT ever being able to see a factory's production data. Factory managers can tune safe settings for their own factory. The product stays invite-only.
+
+1. Platform Admin console (/platform, Platform Admin only; hidden and 403 for everyone else)
+ - Factories list: name, slug, status (active / suspended), created date, number of active members, number of managers, date of last approved import. Metadata only. NO orders, runs, issues, raw rows, drawers or comparison data, and no way to open them (T10: denied by default; delegated, time-boxed access is NOT built in this phase).
+ - Create factory: name, slug (validated, unique, URL-safe), default language (AR/EN), and the first Factory manager's email. This creates the factory and a single-use hashed-token invitation (same mechanism as Phase 8: shown once in a copy box, expires in 7 days). Nothing is ever written to logs.
+ - Re-issue / revoke the first-manager invitation of a factory that has no active manager yet (fixes the "invitation expired" case).
+ - Suspend / reactivate a factory: suspended factory users cannot sign in, existing sessions end immediately, data is kept untouched. Nothing is hard-deleted.
+ - Per-factory limits that the Platform Admin can set with safe defaults: maximum active members, maximum upload size, maximum rows per import. Enforced on the server with clear messages. Show current usage next to each limit.
+ - Platform audit log (append-only): factory created, invitation issued/revoked/accepted, suspended/reactivated, limits changed, who and when. No secrets.
+
+2. Production first-run
+ - In production there must be a way for the very first account to be a Platform Admin without shell access. Extend the existing deployment-secret bootstrap (hashed one-time token, creates only when production has zero users, idempotent, fails closed, never logs the token or link) so that it can create the first PLATFORM ADMIN invitation instead of (or in addition to) a factory manager invitation, controlled by clearly named deployment secrets. Keep the current behaviour working and backward compatible. Update docs/PHASE10_PUBLISH.md so the publish checklist (max 15 plain-language steps, secret NAMES only) reflects this.
+
+3. Factory settings (Factory manager only, own factory only)
+ - Factory name display, default language, material-balance warning and error thresholds (defaults 1% and 5%, validated: warning < error, both between 0 and 100), and the factory's extra unit conversions (the units table already in the spec). Changes are audited (who, when, old value, new value) and take effect for NEW imports/checks only; existing approved data and past comparisons are never silently recalculated. Say this clearly in the UI.
+ - Do not add targets or benchmarks.
+
+4. Scalability and safety
+ - A new factory must work end to end with no code change: its own sources, mappings, imports, comparisons, members. All lists paginated server-side.
+ - Every query stays factory-scoped on the server with RLS. Platform Admin endpoints use their own audited, narrowly scoped code path and never the tenant data paths.
+ - Existing RLS coverage test must automatically include any new tenant table you add; the test must fail if a table with factory_id lacks forced RLS.
+
+5. UI/UX
+ - Plain words for non-technical users, Arabic RTL + English LTR, light + dark, tokens only, 360/768/1280px, loading / empty / error / success states, confirmations for destructive actions (suspend), not colour alone for meaning, keyboard accessible.
+ - Factory manager sees a Settings page; Platform Admin sees the Platform console in the side navigation; nobody else sees either.
+
+6. Tests (isolated target; never write to Ethmar/Najm dev data; show before/after counts and fingerprints)
+ - Platform Admin: can create a factory and invite its manager; the invitee accepts and sees ONLY the new, empty factory; the new factory can import the Najm baseline end to end and compare, and has its own E-01 without clashing with the others.
+ - T10: Platform Admin gets 403/404 on every tenant-data endpoint (runs, comparison, issues, drawer, imports, raw rows) of any factory.
+ - Role tests: Factory manager, Analyst and Viewer get 403 on every /platform endpoint; Analyst and Viewer get 403 on settings writes.
+ - Suspended factory: users locked out immediately; reactivation restores access; data unchanged.
+ - Limits enforced; thresholds validated; settings changes audited; past comparisons unchanged after a settings change.
+ - Re-issue invitation invalidates the previous link; used/expired/revoked links fail with a neutral message.
+ - Existence oracle: requesting another factory's object IDs returns the same error shape as non-existent IDs.
+ - Audit logs contain no secrets.
+ - Full existing suite still passes (fixtures vs expected_results.json, 52 verifier checks, tenancy T1-T12, accounts, pagination).
+ - Screenshots of Platform console and Settings at 360/1280px, Arabic/English, light/dark (best effort; if the driver fails list exactly what is missing and do not report a partial set as complete). State clearly that you cannot judge visual quality.
+
+Do NOT build: delegated/time-boxed Platform Admin access to factory data, billing, email sending, password reset, Google sign-in, snapshots, reconciliation, PDF/export, AI. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Final report: built / not built, test table, before/after counts and fingerprints, the updated publish checklist, and exact manual steps for me.
