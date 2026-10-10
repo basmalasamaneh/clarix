@@ -1,0 +1,44 @@
+Phase 5 — Data Quality Center and StatusBadge. Read docs/CLARIX_SPEC.md (§7 issue catalogue, §12 design system) and replit.md first. Build ONLY this phase.
+
+Goal
+A page where a factory user sees every data problem found in approved imports, grouped and explained, and a reusable StatusBadge (green / yellow / red) used everywhere a status is shown. Problems are shown, never hidden. Code decides statuses; nothing is computed in the browser.
+
+1. StatusBadge component (shared)
+ - Three statuses: green, yellow, red. Never colour alone: each has an icon and a text label (e.g. "OK", "Check", "Blocked") in Arabic and English.
+ - Uses the design tokens (light and dark, AA contrast). Works at 360px. Accessible name for screen readers.
+ - Overall status = the worst of its parts.
+
+2. Status rules (server-side, from the locked spec)
+ - Three groups per order: Volume (input/good/scrap), Changeover, Downtime.
+ - Each group status = worst severity of its issues: info -> green, warning -> yellow, error -> red.
+ - Overall order status = worst of the three groups.
+ - Return statuses from the API; the UI only displays them.
+
+3. Data Quality page (e.g. /quality)
+ - Summary at the top: counts of errors, warnings, notes, and how many orders are green / yellow / red.
+ - List of issues, each showing: severity badge, issue code, plain-language message (AR + EN), affected order, group (Volume / Changeover / Downtime), and the source file + physical line number(s).
+ - Filters: severity, group, order, source. Sorted with errors first.
+ - Clicking an issue shows its detail: what it means, why it matters, and the exact source rows (file:line:column). No drawer yet (that is Phase 7); a simple detail view or expandable row is enough.
+ - Empty state: a clear message when there are no issues. Loading and error states too.
+ - Only approved imports count. Archived sources are hidden by default with a toggle to show them.
+ - A "Blocked" order (e.g. SUSPECTED_DUPLICATE_RECORD) is clearly marked as not comparable, with the reason.
+
+4. Scope and security
+ - Every query is scoped to the authenticated user's factory on the server (RLS). Viewer role can read.
+ - No writes in this phase. No resolve/ignore workflow (not built yet).
+
+5. UI/UX rules
+ - Arabic RTL + English LTR, light + dark, green brand. Tokens only, no hard-coded colours.
+ - Responsive: 360px, 768px, 1280px. On mobile, issues become stacked cards, not a wide table.
+ - Keyboard navigable, visible focus, no colour-only meaning.
+
+6. Tests
+ - Status rule unit tests: info/warning/error mapping, worst-of for groups and overall.
+ - Load fixtures through the real import pipeline and compare issue codes, severities, group statuses and overall status to expected/expected_results.json for ALL 25 Ethmar scenarios. Report a table scenario | expected | actual | PASS/FAIL.
+ - Tenancy: Ethmar user never sees Najm issues (T1, T4 style).
+ - Tests must run in an isolated test target and must not write to the Ethmar or Najm dev factories.
+ - Screenshots of the page at 360px and 1280px, Arabic and English, light and dark. State clearly you cannot judge visual quality.
+
+Do NOT build: comparison page, runs page, source drawer, charts, AI, export, resolve workflow.
+
+Final report: what you built, what you deliberately did not build, the scenario table, test results, and the exact steps for me to check it manually.
