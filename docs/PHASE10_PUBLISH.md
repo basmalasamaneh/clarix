@@ -1,104 +1,82 @@
-# Clarix production operations
+# Clarix: pre-publish checklist
 
-## Do not publish until readiness exceptions are reviewed
+**Publishing is paused.** This checklist replaces the earlier custom production
+migration instructions. The local empty-database rehearsal did not verify
+Replit's managed Publish path. Full evidence: `PRE_PUBLISH_CONFIRMATION.md`.
 
-No production deployment exists at the time of this work. Production-mode
-verification used a separate disposable database, not the actual live service.
-Never run test seeding, development schema push, reset, or fixture import on production.
-
-### Required configuration (names only)
-
-* `DATABASE_URL`: managed database location and privileged setup connection.
-  Application code replaces its credentials with the restricted runtime login.
-* `CLARIX_RUNTIME_PASSWORD`: runtime database login password, at least 32 characters.
-* `SESSION_SECRET`: session-cookie signing secret; keep stable across instances.
-* `SEED_TEST_USERS=false`: required for production setup. Production rejects test
-  accounts regardless of this flag.
-* `NODE_ENV=production`: production cookies and authentication guard.
-* `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`,
-  `PUBLIC_OBJECT_SEARCH_PATHS`: managed object-storage configuration.
-* `PORT`: injected service port. Frontend `BASE_PATH=/`.
-* `SEED_TEST_PASSWORD` is development/test-only; production does not require it.
-
-Never print environment values, redirect invitation output, copy development
-secrets into production, or put credentials in command arguments or source files.
-
-## Exact first-publish order
-
-1. Open Publishing; provision/select the production database and configure the
-   production-scoped secrets above. Do not copy development data into production.
-2. In a private privileged setup environment, explicitly connect `DATABASE_URL`
-   to that **empty production database**, not the editor's default development
-   database. Confirm the selected database before executing setup. These are
-   operator-run commands, not application startup commands:
-
+1. Keep development and production separate. Do not copy development records or
+   seeded accounts into production.
+2. In Secrets, choose **More → New published app configuration** to set
+   `SEED_TEST_USERS` for production only. Disable seeding there; leave development
+   unchanged. The API artifact already enables production `NODE_ENV` when published.
+3. Review **Publishing → Adjust settings → Production app secrets**.
+   Required names: `CLARIX_RUNTIME_PASSWORD`, `SESSION_SECRET`,
+   `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`,
+   `PUBLIC_OBJECT_SEARCH_PATHS`. `SEED_TEST_PASSWORD` is not needed in production.
+   Do not display values. Replit supplies the environment-specific `DATABASE_URL`.
+4. When publishing is separately authorized, let Replit create the production
+   database. For legacy setup, enable **Create production database**; leave
+   **Set up your production database with your current development data** off.
+5. Review the Publish schema diff. Publish applies managed production schema
+   changes. **Do not run `prepare-production.ts` against managed production.**
+6. **Stop at this unresolved gate:** verify the production custom roles,
+   grants, ENABLE/FORCE RLS and immutable-row protections. Published role creation
+   has not been rehearsed. Documentation about automatically migrating roles
+   during a Neon-to-Helium upgrade is not proof of Publish behavior.
+7. Establish a private privileged setup environment with a verified production
+   connection. The ordinary editor Shell normally targets development; do not
+   paste these setup commands there without verifying the target. Supply the
+   production `CLARIX_RUNTIME_PASSWORD` privately (at least 32 characters).
+8. **Only after the role exists and the target is verified**, configure its
+   password and privileges:
    ```
-   NODE_ENV=production SEED_TEST_USERS=false pnpm --filter @workspace/api-server exec tsx src/scripts/prepare-production.ts
    NODE_ENV=production SEED_TEST_USERS=false pnpm --filter @workspace/api-server exec tsx src/scripts/configure-runtime.ts --production-setup
    ```
+   Expected: `Runtime login configured; no credential values printed.`
+   This configures an existing role; it does not create a missing role.
+9. Confirm the app connects as the restricted runtime login. Expected startup
+   log: `Runtime database identity verified`. Verify `/api/healthz` returns only
+   `{"status":"ok"}`. Startup refuses elevated roles or unsafe tenant RLS.
+10. Obtain the actual HTTPS origin from Publishing. In the verified private
+    production setup terminal, create the factory and initial manager invitation:
+    ```
+    NODE_ENV=production SEED_TEST_USERS=false pnpm --filter @workspace/api-server exec tsx src/scripts/bootstrap-production.ts --name "Your factory" --slug your-factory --email manager@example.com --origin https://YOUR-ACTUAL-PUBLISHED-HOST
+    ```
+    Substitute real factory details and the real origin. Expected:
+    `One-time invitation (expires …)` followed by a private URL. The command
+    requires an interactive terminal and refuses redirected output. Share the
+    seven-day, single-use link privately. Existing active managers cause refusal
+    unless the explicit `--allow-existing-manager` override is supplied.
+11. Accept the invitation, choose a password and sign in. Verify factory access,
+    language/theme persistence and actual HTTPS cookie/security headers. The
+    requested browser matrix is still incomplete; do not treat it as passed.
+12. Enable daily backups: **Database → production database → Settings →
+    Advanced → Scheduled backups → Keep backups for**. The first daily backup
+    is scheduled near midnight in the browser's time zone, not immediately.
+13. Rehearse safely in a separate disposable project with its own production
+    database and synthetic data. Enable backups, wait for a listed restore
+    point, change a synthetic record, restore it and compare records. Do not
+    use a legacy remix that shares a database. This rehearses the platform UI,
+    not Clarix's full real-data recovery.
+14. For a real restore, choose **Scheduled backups → View all backups →
+    Restore**, type `restore`, then choose **Continue**. This switches live
+    data to the selected restore point; services may reconnect. Restore matching
+    code separately and republish if needed. PostgreSQL recovery does not by
+    itself establish recovery of uploaded object-storage files.
+15. Resolve the production setup gate, remaining build-tool advisory and browser
+    verification gaps before giving release approval. Publishing remains a
+    separate user action. No actual publish or restore was performed.
 
-   The first command applies the checked-in initial schema and all tenant
-   policies atomically, with a checksum and migration lock. It refuses an
-   unmanaged existing schema rather than attempting destructive reconciliation.
-   Reapplying the managed initial schema is supported. Future structural schema
-   changes require a new reviewed migration, not editing the initial SQL.
-3. Build commands are configured in each artifact: frontend production build
-   (includes translation validation), API build (includes calculation worker).
-   Frontend runs `node artifacts/clarix/serve.mjs`; API runs its bundled server.
-   Both receive `PORT`. The frontend serves direct links and security headers;
-   `/api` routes to the API service.
-4. Publish through Replit's Publish action. Confirm `/api/healthz` returns only
-   `{"status":"ok"}` and the startup log confirms the restricted runtime identity.
-   Startup refuses unsafe tenant RLS or elevated runtime roles.
-5. Obtain the **actual published HTTPS origin** from Publishing. No origin is
-   assumed or constructed from the development domain.
-6. In the same private privileged production setup terminal, run:
+## Retention
 
-   ```
-   NODE_ENV=production SEED_TEST_USERS=false pnpm --filter @workspace/api-server exec tsx src/scripts/bootstrap-production.ts --name "Your factory" --slug your-factory --email manager@example.com --origin https://YOUR-ACTUAL-PUBLISHED-HOST
-   ```
+Core: up to seven days. Pro/Enterprise: up to 28 days, initially seven.
+There is no verified instant “Back up now” button in the consulted documentation.
+Point-in-time recovery is also available; it is not a harmless rehearsal against
+the live database.
 
-   Substitute real values. This creates a factory and a hashed seven-day,
-   single-use manager invitation. The URL appears once in the interactive
-   terminal only; redirected output is refused. Share it privately. The script
-   creates a non-login audit actor, not a hidden admin or usable account.
-   Existing active managers cause refusal unless `--allow-existing-manager` is
-   explicitly supplied; even that flag never resets an existing account.
-   A live pending invitation cannot be silently overwritten.
-7. Accept the invitation, choose a password, sign out and sign in. Check Arabic,
-   English, both themes, Help, factory scoping and one small real import.
-   Confirm frontend and API CSP/frame/no-sniff/referrer headers over published
-   HTTPS and verify Secure/HttpOnly/SameSite=Lax cookies.
+## Official sources
 
-## Backup, restore and rollback
-
-Consulted official Replit documentation:
-* https://docs.replit.com/features/data-and-storage/data-recovery
+* https://docs.replit.com/core-concepts/project-editor/app-setup/secrets
 * https://docs.replit.com/features/data-and-storage/development-and-production
-* https://docs.replit.com/features/version-control/checkpoints-and-rollbacks
-* https://docs.replit.com/build/troubleshooting
-
-Production database point-in-time recovery retention is plan-dependent (Core
-7 days; Pro/Enterprise up to 28 days per current documentation). Before a
-schema/data operation, confirm the available recovery point and record the
-matching code checkpoint. Restoring the database does not restore code:
-select the matching checkpoint and republish compatible code. Keep privileged
-setup separate from the runtime account. Test restoration away from live data
-before relying on it. Object storage originals are separate from PostgreSQL;
-do not assume a database restore restores or deletes uploaded files. Retain
-originals and verify storage retention/recovery separately.
-
-## Operational limits and exceptions
-
-Sessions expire after eight hours. API mutations require CSRF tokens. Login
-allows 30 failed attempts/15 minutes/IP; invite acceptance 20/15 minutes/IP;
-upload creation 60/15 minutes/user. Limits are process-local; multiple instances
-need a shared limiter or an edge limit before promising a global limit.
-
-Imports: four files maximum; default 5 MiB/file, configurable up to 20 MiB/file;
-total at most four times the per-file limit; 100,000 parsed rows/file. Splitting
-files must preserve the source/order replacement semantics explained in Help.
-
-Review `PHASE10_REPORT.md` for remaining release gates. Passing local checks is
-not evidence that publishing, live proxy headers, backups or restores have been
-performed.
+* https://docs.replit.com/features/data-and-storage/connection-details
+* https://docs.replit.com/features/data-and-storage/data-recovery

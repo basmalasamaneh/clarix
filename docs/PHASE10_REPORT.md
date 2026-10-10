@@ -1,5 +1,13 @@
 # Phase 10 — MVP polish and publish readiness
 
+**Later pre-publish update:** See `PRE_PUBLISH_CONFIRMATION.md` and the corrected
+`PHASE10_PUBLISH.md`. The parser advisory below has since been fixed with a
+typography-scoped override, identical generated CSS, and a fresh 87/87 isolated
+suite plus 52/52 verifier checks. Only the sandbox braces advisory remains.
+All five seeded email identities were subsequently tested for production-mode
+rejection. The managed production role/provisioning path remains a release gate;
+the earlier isolated empty-DB test was not a verified Replit Publish rehearsal.
+
 ## Outcome
 
 Implemented the approved scope, but **not an unconditional release approval**.

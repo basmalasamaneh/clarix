@@ -68,6 +68,24 @@ try{
     await call("post","/api/auth/login").set("Cookie",cookie).set("X-CSRF-Token",csrf).send({email:"manager@proof.invalid",password}).expect(401);
     assert.equal((await call("get","/api/auth/session").set("Cookie",cookie).expect(200)).body.user,null);
     evidence.checks.push("test identities rejected and sessions invalidated with production + seed false");
+    const seedIdentities=[
+      ["platform.admin@clarix.test",null],
+      ["ethmar.manager@clarix.test","factory_manager"],
+      ["ethmar.analyst@clarix.test","analyst"],
+      ["ethmar.viewer@clarix.test","viewer"],
+      ["najm.manager@clarix.test","factory_manager"],
+    ] as const;
+    for(const [email,role] of seedIdentities){
+      const id=`seed-proof-${randomBytes(8).toString("hex")}`;
+      // Disposable identities use the already verified password hash, not a
+      // deliberate bad password: rejection must be the production seed guard.
+      await setup.query(`INSERT INTO users(id,email,name,password_hash,platform_admin,test_account)
+        SELECT $1,$2,'Isolated seed rejection',password_hash,$3,true FROM users WHERE id=$4`,
+        [id,email,role===null,manager]);
+      if(role)await setup.query("INSERT INTO memberships(user_id,factory_id,role) VALUES($1,'bootstrap-proof',$2)",[id,role]);
+      await call("post","/api/auth/login").set("Cookie",cookie).set("X-CSRF-Token",csrf).send({email,password}).expect(401);
+    }
+    evidence.checks.push("all five seeded email identities rejected with valid passwords in production; disposable copies only");
     const health=await call("get","/api/healthz").expect(200);
     assert.deepEqual(health.body,{status:"ok"});
     for(const h of ["content-security-policy","x-frame-options","x-content-type-options","referrer-policy"])assert.ok(health.headers[h]);
