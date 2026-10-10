@@ -1,6 +1,7 @@
 import type {PoolClient} from "pg";
 import {ImportError} from "../imports/model";
 import {audit} from "./context";
+import {ensureMemberCapacity} from "../platform/settings";
 
 const columns=`u.id,u.name,u.email,m.role,m.active,m.last_login AS "lastLogin",
  m.login_success_count AS "loginSuccessCount",m.login_failure_count AS "loginFailureCount"`;
@@ -26,6 +27,7 @@ export async function updateMember(c:PoolClient,factory:string,actor:string,id:s
   }
   const recovery=(await c.query("SELECT recovery_required FROM memberships WHERE factory_id=$1 AND user_id=$2",[factory,id])).rows[0];
   if(active&&recovery.recovery_required) throw new ImportError("RECOVERY_REQUIRED",409);
+  if(active&&!old.active)await ensureMemberCapacity(c,factory);
   await c.query("UPDATE memberships SET role=$3,active=$4 WHERE factory_id=$1 AND user_id=$2",[factory,id,role,active]);
   if(role!==old.role) await audit(c,factory,actor,id,"role_changed",role);
   if(active!==old.active) {

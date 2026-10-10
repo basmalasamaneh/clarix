@@ -294,6 +294,24 @@ Wave 3: AI Analyst panel · remaining charts · audit log view · comments · ad
 
 ## 11. Multi-factory (multi-tenant) and security
 
+### Approved Phase 13: factory management
+
+Platform Admin has a metadata-only `/platform` console to create factories,
+invite their first manager, recover/revoke that invitation while no active
+manager exists, suspend/reactivate factories and set member/upload/row limits.
+It never grants production-data access or delegation. Lists and append-only
+platform audits are paginated. Suspensions revoke sessions and retain all data.
+Factory Managers alone edit their own factory's display name, language, exact
+unit factors and material-balance warning/error thresholds (1%/5% defaults,
+0–100 with warning strictly below error). Settings changes are audited with
+old/new values and affect future checks only, never approved results.
+Deployment-secret onboarding may optionally create the first Platform Admin
+invitation instead of the first-manager invitation. The legacy manager mode
+remains supported. Both modes require zero users, a hashed seven-day token,
+an immutable initialization latch, transactional fail-closed setup and no
+credential/link logging. No public signup, delegation, billing, email,
+password reset, SSO, AI, export, snapshots or reconciliation is added.
+
 ### Approved Phase 10: MVP polish and publish readiness
 
 Production-gate clarification: replace manual first-manager bootstrap with a

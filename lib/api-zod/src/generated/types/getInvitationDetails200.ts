@@ -5,11 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { MemberRole } from './memberRole';
+import type { GetInvitationDetails200Role } from './getInvitationDetails200Role';
 
 export type GetInvitationDetails200 = {
   factoryName: string;
-  role: MemberRole;
+  role: GetInvitationDetails200Role;
   email: string;
   expiresAt: string;
 };

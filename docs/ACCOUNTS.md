@@ -1,5 +1,27 @@
 # Accounts and invitations — Phase 8
 
+## Platform factory management
+
+Platform Admins manage metadata through `/platform`: factory creation, first-manager
+invitation recovery while no active manager exists, suspension/reactivation and
+limits. They have no tenant production-data access or delegation. Suspension
+invalidates users' session versions; reactivation requires a fresh login.
+Member, file-size and import-row limits are enforced by the server.
+First-manager invitations require a new email: existing accounts cannot join
+another factory through this flow. Links appear once and must be shared privately.
+
+Managers edit only their own factory's name, language, balance thresholds and
+extra units under Settings. Audited changes affect future imports/checks, never
+approved mappings, results or past comparisons. Built-in conversions remain fixed.
+Platform and settings audits cannot be updated, deleted or truncated.
+
+Production can optionally bootstrap a Platform Admin using `CLARIX_INITIAL_ROLE`,
+`CLARIX_INITIAL_ADMIN_EMAIL` and `CLARIX_INITIAL_INVITE_TOKEN`. Omitting the role
+selector preserves initial Factory Manager mode. Both require zero users and
+retain the initial invitation as a durable, expiring, single-use latch.
+No bootstrap password is configured: the recipient chooses it on the invitation
+page. Follow the 15-step `PHASE10_PUBLISH.md` checklist.
+
 This approved phase replaces the original roadmap's reconciliation/snapshots
 scope. Authentication remains email/password with Argon2id; there is no public
 signup, email delivery, SSO or password-reset email.

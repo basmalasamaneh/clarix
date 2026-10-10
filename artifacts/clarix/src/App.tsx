@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import '@/lib/accounts-i18n';
 import '@/lib/phase10-i18n';
+import '@/lib/phase13-i18n';
 import HelpPage from '@/pages/help';
 import MembersPage from '@/pages/members';
 import AccountPage from '@/pages/account';

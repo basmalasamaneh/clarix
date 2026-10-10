@@ -7,6 +7,7 @@ import { sessionMiddleware, csrfGuard } from "./lib/session";
 import foundationRouter from "./routes/foundation";
 import importsRouter from "./routes/imports";
 import accountsRouter from "./routes/accounts";
+import platformRouter from "./routes/platform";
 
 const app: Express = express();
 
@@ -40,6 +41,7 @@ app.use("/api", router);
 app.use("/api", accountsRouter);
 app.use("/api", foundationRouter);
 app.use("/api", importsRouter);
+app.use("/api", platformRouter);
 app.use((_req, res) => { res.status(404).json({ error: "NOT_FOUND" }); });
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   // Never serialize thrown DB/request objects: they can include password inputs.

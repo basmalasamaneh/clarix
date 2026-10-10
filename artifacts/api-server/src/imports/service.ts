@@ -69,7 +69,7 @@ export async function finalize(ctx:Context,row:ImportRow) {
   if(row.finalized) return view(ctx,row);
   return importJobs.run(row.id,async progress=>{
     const limits=limitConfig(ctx.settings),sources:SourceFile[]=[];
-    let total=0;
+    let total=0,totalRows=0,largestFile=0;
     for(const [index,f] of row.files.entries()) {
       let bytes:Buffer;
       try {bytes=await fileStorage.read(f.stage,limits.maxFileBytes);} catch(e) {
@@ -79,6 +79,8 @@ export async function finalize(ctx:Context,row:ImportRow) {
       total+=bytes.length;
       if(total>limits.maxTotalBytes || bytes.length!==f.size) throw new ImportError("FILE_SIZE_MISMATCH",400,{file:f.name});
       const {encoding,delimiter,table}=await importCpu("inspect",[{name:f.name,bytes}]) as ReturnType<typeof inspect>;
+      totalRows+=table.rows.length;largestFile=Math.max(largestFile,bytes.length);
+      if(totalRows>limits.maxRows)throw new ImportError("TOO_MANY_ROWS",413,{maxRows:limits.maxRows});
       const original=`originals/${ctx.factory}/${row.id}/${randomUUID()}`;
       await fileStorage.preserve(original,bytes);
       Object.assign(f,{original,sha256:createHash("sha256").update(bytes).digest("hex"),encoding,delimiter,
@@ -94,6 +96,9 @@ export async function finalize(ctx:Context,row:ImportRow) {
     // bypass duplicate approval. Multiplicity is retained in the sorted hashes.
     const hash=createHash("sha256").update(row.files.map(f=>f.sha256!).sort().join("\0")).digest("hex"),mapping=suggestMapping(row.files,row.source_name);
     const settings=ctx.settings;
+    await ctx.db.query(`UPDATE factories SET settings=jsonb_set(settings,'{platformUsage}',
+      jsonb_build_object('rows',greatest(coalesce((settings->'platformUsage'->>'rows')::int,0),$2),
+      'uploadBytes',greatest(coalesce((settings->'platformUsage'->>'uploadBytes')::int,0),$3))) WHERE id=$1`,[ctx.factory,totalRows,largestFile]);
     if(settings.unit_factors_to_kg) mapping.unit_factors_to_kg=settings.unit_factors_to_kg as Mapping["unit_factors_to_kg"];
     if(settings.tolerances) mapping.tolerances=settings.tolerances as Mapping["tolerances"];
     if(settings.event_code_map) mapping.event_code_map=settings.event_code_map as Mapping["event_code_map"];
@@ -105,7 +110,7 @@ export async function finalize(ctx:Context,row:ImportRow) {
 }
 export async function sources(ctx:Context,row:ImportRow):Promise<SourceFile[]> {
   if(!row.finalized) throw new ImportError("UPLOAD_INCOMPLETE");
-  const limit=limitConfig(ctx.settings).maxFileBytes;
+  const limit=row.status==="approved"?Math.max(...row.files.map(f=>f.size)):limitConfig(ctx.settings).maxFileBytes;
   return Promise.all(row.files.map(async f=>({name:f.name,bytes:await fileStorage.read(f.original!,limit)})));
 }
 export async function saveMapping(ctx:Context,row:ImportRow,input:unknown) {
@@ -126,6 +131,15 @@ export async function runEngine(ctx:Context,row:ImportRow) {
 }
 export async function check(ctx:Context,row:ImportRow) {
   editable(row);
+  const activeLimits=limitConfig(ctx.settings);
+  if(row.files.some(f=>f.size>activeLimits.maxFileBytes))throw new ImportError("FILE_TOO_LARGE",413);
+  if(row.files.reduce((n,f)=>n+(f.rowCount??0),0)>activeLimits.maxRows)throw new ImportError("TOO_MANY_ROWS",413,{maxRows:activeLimits.maxRows});
+  // Snapshot the factory's managed configuration at CHECK, never when reading
+  // or approving an existing result. Approved mappings/results stay immutable.
+  if(ctx.settings.managedImportSettings){
+    row.mapping=validateMapping({...row.mapping,unit_factors_to_kg:ctx.settings.unit_factors_to_kg,tolerances:ctx.settings.tolerances},row.source_name,row.files.map(f=>f.name));
+    await ctx.db.query("UPDATE imports SET mapping=$3 WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(row.mapping)]);
+  }
   await assertChoices(ctx,row);
   return importJobs.run(row.id,async progress=>{
     progress(15);

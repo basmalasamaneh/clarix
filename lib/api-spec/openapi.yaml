@@ -11,6 +11,106 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /platform/factories:
+    get:
+      operationId: getPlatformFactories
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Metadata only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformFactoryPage" }
+    post:
+      operationId: createPlatformFactory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FactoryCreation" }
+      responses:
+        "201":
+          description: Created with one-time invitation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformInvitationResult" }
+  /platform/factories/{id}:
+    patch:
+      operationId: updatePlatformFactory
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FactoryAdministration" }
+      responses:
+        "200":
+          description: Updated metadata
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformFactory" }
+  /platform/factories/{id}/invitation:
+    post:
+      operationId: managePlatformInvitation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FirstManagerInvitationAction" }
+      responses:
+        "200":
+          description: Invitation action result
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformInvitationResult" }
+  /platform/audit:
+    get:
+      operationId: getPlatformAudit
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Platform audit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ManagementAuditPage" }
+  /factory-settings:
+    get:
+      operationId: getFactorySettings
+      responses:
+        "200":
+          description: Own factory safe settings
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FactoryPreferences" }
+    put:
+      operationId: saveFactorySettings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/FactoryPreferences" }
+      responses:
+        "200":
+          description: Saved for future checks
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FactoryPreferences" }
+  /factory-settings/audit:
+    get:
+      operationId: getFactorySettingsAudit
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Own settings audit
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ManagementAuditPage" }
   /overview:
     get:
       operationId: getOverview
@@ -132,7 +232,7 @@ paths:
                 required: [factoryName, role, email, expiresAt]
                 properties:
                   factoryName: { type: string }
-                  role: { $ref: "#/components/schemas/MemberRole" }
+                  role: { type: string, enum: [platform_admin, factory_manager, analyst, viewer] }
                   email: { type: string }
                   expiresAt: { type: string }
     post:
@@ -596,6 +696,95 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    FactoryLimits:
+      type: object
+      required: [maxMembers, maxFileBytes, maxRows]
+      properties:
+        maxMembers: { type: integer, minimum: 1, maximum: 10000 }
+        maxFileBytes: { type: integer, minimum: 1024, maximum: 20000000 }
+        maxRows: { type: integer, minimum: 1, maximum: 100000 }
+    FactoryCreation:
+      type: object
+      required: [name, slug, defaultLanguage, managerEmail]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        slug: { type: string, pattern: "^[a-z][a-z0-9-]{0,99}$" }
+        defaultLanguage: { type: string, enum: [ar, en] }
+        managerEmail: { type: string, format: email, maxLength: 254 }
+    FactoryAdministration:
+      type: object
+      properties:
+        status: { type: string, enum: [active, suspended] }
+        limits: { $ref: "#/components/schemas/FactoryLimits" }
+    FirstManagerInvitationAction:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [reissue, revoke] }
+    PlatformFactory:
+      type: object
+      required: [id, name, slug, status, defaultLanguage, createdAt, activeMembers, managers, lastApprovedAt, limits, uploadBytesUsage, rowsUsage, invitationStatus]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        status: { type: string, enum: [active, suspended] }
+        defaultLanguage: { type: string, enum: [ar, en] }
+        createdAt: { type: [string, "null"] }
+        activeMembers: { type: integer }
+        managers: { type: integer }
+        lastApprovedAt: { type: [string, "null"] }
+        limits: { $ref: "#/components/schemas/FactoryLimits" }
+        uploadBytesUsage: { type: integer }
+        rowsUsage: { type: integer }
+        invitationStatus: { type: string, enum: [none, pending, expired, revoked, accepted] }
+    PlatformFactoryPage:
+      type: object
+      required: [items, page, total]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/PlatformFactory" } }
+        page: { type: integer }
+        total: { type: integer }
+    PlatformInvitationResult:
+      type: object
+      required: [factory, path, expiresAt]
+      properties:
+        factory: { $ref: "#/components/schemas/PlatformFactory" }
+        path: { type: [string, "null"] }
+        expiresAt: { type: [string, "null"] }
+    UnitConversion:
+      type: object
+      required: [unit, factor]
+      properties:
+        unit: { type: string, minLength: 1, maxLength: 32 }
+        factor: { type: string, maxLength: 80 }
+    FactoryPreferences:
+      type: object
+      required: [name, defaultLanguage, warningPercent, errorPercent, units]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        defaultLanguage: { type: string, enum: [ar, en] }
+        warningPercent: { type: string }
+        errorPercent: { type: string }
+        units: { type: array, maxItems: 100, items: { $ref: "#/components/schemas/UnitConversion" } }
+    ManagementAuditEntry:
+      type: object
+      required: [id, factoryId, actorName, action, createdAt, oldValue, newValue]
+      properties:
+        id: { type: string }
+        factoryId: { type: [string, "null"] }
+        actorName: { type: [string, "null"] }
+        action: { type: string }
+        createdAt: { type: string }
+        oldValue: { type: [object, "null"], additionalProperties: true }
+        newValue: { type: [object, "null"], additionalProperties: true }
+    ManagementAuditPage:
+      type: object
+      required: [items, page, total]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ManagementAuditEntry" } }
+        page: { type: integer }
+        total: { type: integer }
     Overview:
       type: object
       required: [approvedImports, currentOrders, statuses, errors, warnings, latestImports, comparisonRuns, chart_spec, indicators]

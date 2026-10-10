@@ -68,7 +68,8 @@ function initials(name: string) {
 function NavList({ session, onNavigate }: { session: Session; onNavigate?: () => void }) {
   const { t } = useTranslation();
   const [location] = useLocation();
-  const tenant = NAV_PAGES.filter((p) => session.allowedPages.includes(p));
+  const isManager = !session.user?.platformAdmin && session.memberships.some((m) => m.factoryId === session.activeFactoryId && m.role === 'factory_manager');
+  const tenant = NAV_PAGES.filter((p) => session.allowedPages.includes(p) && (p !== 'settings' || isManager));
   const showMembers = !session.user?.platformAdmin && session.allowedPages.includes('members');
   const showPlatform = session.user?.platformAdmin && session.allowedPages.includes('platform');
   const item = (p: string) => {

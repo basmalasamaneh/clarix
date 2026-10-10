@@ -12,9 +12,20 @@ const settings=z.object({
 // null-created_by invitation is a durable latch, not regenerated on restarts.
 export async function deploymentInvitation(c:PoolClient,env:NodeJS.ProcessEnv){
   if((await c.query("SELECT 1 FROM users LIMIT 1")).rowCount)return;
+  if((await c.query("SELECT 1 FROM platform_invitations LIMIT 1")).rowCount)return;
   if((await c.query("SELECT 1 FROM invitations WHERE created_by IS NULL LIMIT 1")).rowCount)return;
   // A partially provisioned/foreign database must not silently become a new app.
   if((await c.query("SELECT 1 FROM factories LIMIT 1")).rowCount)throw new Error("Setup requires an empty installation");
+  const role=env.CLARIX_INITIAL_ROLE??"factory_manager";
+  if(role==="platform_admin"){
+    const admin=z.object({CLARIX_INITIAL_ADMIN_EMAIL:z.string().email().max(254),CLARIX_INITIAL_INVITE_TOKEN:z.string().regex(/^[A-Za-z0-9_-]{43}$/)}).safeParse(env);
+    if(!admin.success)throw new Error("Initial invitation configuration is missing or invalid");
+    await c.query("INSERT INTO platform_invitations(id,email,token_hash,expires_at) VALUES($1,$2,$3,now()+interval '7 days')",
+      [randomUUID(),admin.data.CLARIX_INITIAL_ADMIN_EMAIL.toLowerCase(),createHash("sha256").update(admin.data.CLARIX_INITIAL_INVITE_TOKEN).digest("hex")]);
+    await c.query("INSERT INTO platform_audit(id,action) VALUES($1,'invitation_issued')",[randomUUID()]);
+    return;
+  }
+  if(role!=="factory_manager")throw new Error("Initial invitation role is invalid");
   const parsed=settings.safeParse(env);
   if(!parsed.success)throw new Error("Initial invitation configuration is missing or invalid");
   const input=parsed.data;

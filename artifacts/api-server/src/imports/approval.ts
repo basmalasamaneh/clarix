@@ -67,5 +67,6 @@ export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacemen
     await ctx.db.query("UPDATE data_issues SET order_id=$4 WHERE factory_id=$1 AND import_id=$2 AND source_order_id=$3",[ctx.factory,row.id,sourceId,current.id]);
   }
   await ctx.db.query("UPDATE imports SET status='approved',approved_at=now(),replaced_orders=$3 WHERE factory_id=$1 AND id=$2",[ctx.factory,row.id,JSON.stringify(replaced)]);
+  await ctx.db.query("UPDATE factories SET last_approved_at=now() WHERE id=$1",[ctx.factory]);
   return view(ctx,await getRow(ctx,row.id));
 }

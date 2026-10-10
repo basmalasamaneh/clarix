@@ -10,6 +10,8 @@ import {configureDeployment,verifyDeploymentSecurity} from "../maintenance/deplo
 import {fingerprint} from "../maintenance/reset";
 
 const root=resolve("../..");
+const adminMode=process.argv.includes("--admin");
+const initialTable=adminMode?"platform_invitations":"invitations";
 const main=new pg.Pool({connectionString:process.env.DATABASE_URL,options:"-c row_security=off"});
 const observer=await main.connect();
 // A live development browser refreshes session expiry independently of tests.
@@ -39,9 +41,11 @@ try{
   const c=await pool.connect();setupClient=c;
   await c.query("CREATE ROLE proof_owner LOGIN CREATEROLE; ALTER DATABASE postgres OWNER TO proof_owner; ALTER SCHEMA public OWNER TO proof_owner; SET ROLE proof_owner");
   const env={...process.env,DATABASE_URL:url,NODE_ENV:"production",SEED_TEST_USERS:"false",CLARIX_RUNTIME_PASSWORD:password,
+    ...(adminMode?{CLARIX_INITIAL_ROLE:"platform_admin",CLARIX_INITIAL_ADMIN_EMAIL:"admin@proof.invalid"}:{}),
     CLARIX_INITIAL_INVITE_TOKEN:token,CLARIX_INITIAL_FACTORY_NAME:"Proof A",CLARIX_INITIAL_FACTORY_SLUG:"proof-a",CLARIX_INITIAL_MANAGER_EMAIL:"manager@proof.invalid"};
   // Simulate the tables produced by Publish, not a startup migration.
   await c.query(await readFile(resolve(root,"lib/db/drizzle/0000_production-foundation.sql"),"utf8"));
+  await c.query(await readFile(resolve(root,"lib/db/platform-migration.sql"),"utf8"));
   await c.query("ALTER TABLE invitations ALTER COLUMN created_by DROP NOT NULL");
   // Provision through a table-owning CREATEROLE login, not a superuser or
   // BYPASSRLS login. Keep fixture administration separate in this test cluster.
@@ -52,16 +56,16 @@ try{
   assert.equal((await c.query("SELECT 1 FROM factories")).rowCount,0);
   checks.push("halfway failure rolls back role, factory and invitation; safe retry");
   await configureDeployment(c,env,resolve(root,"lib/db"));
-  const original=(await fixtures.query("SELECT id,token_hash,expires_at FROM invitations")).rows;
+  const original=(await fixtures.query(`SELECT id,token_hash,expires_at FROM ${initialTable}`)).rows;
   assert.equal((await c.query("SELECT 1 FROM users")).rowCount,0);
   await configureDeployment(c,env,resolve(root,"lib/db"));
-  assert.deepEqual((await fixtures.query("SELECT id,token_hash,expires_at FROM invitations")).rows,original);
+  assert.deepEqual((await fixtures.query(`SELECT id,token_hash,expires_at FROM ${initialTable}`)).rows,original);
   assert.ok(Math.abs(original[0].expires_at.getTime()-Date.now()-7*86400000)<10000);
-  await fixtures.query("UPDATE invitations SET expires_at=now()-interval '1 day'");
+  await fixtures.query(`UPDATE ${initialTable} SET expires_at=now()-interval '1 day'`);
   await configureDeployment(c,env,resolve(root,"lib/db"));
-  assert.ok((await fixtures.query("SELECT expires_at<now() AS expired FROM invitations")).rows[0].expired);
+  assert.ok((await fixtures.query(`SELECT expires_at<now() AS expired FROM ${initialTable}`)).rows[0].expired);
   // Restore only this synthetic fixture's original expiry for acceptance tests.
-  await fixtures.query("UPDATE invitations SET expires_at=$1",[original[0].expires_at]);
+  await fixtures.query(`UPDATE ${initialTable} SET expires_at=$1`,[original[0].expires_at]);
   await verifyDeploymentSecurity(c);
   checks.push("fresh cluster, no runtime role: provision twice; identical invitation/expiry, zero synthetic users, all forced RLS");
   const runtimeUrl=new URL(url);runtimeUrl.username="clarix_runtime";runtimeUrl.password=password;
@@ -94,12 +98,24 @@ try{
   const accepted=await call("/api/auth/invitation",{token,name:"Proof manager",password:managerPassword});
   assert.equal(accepted.status,200);
   const user=accepted.data.user.id;
+  assert.equal(accepted.data.user.platformAdmin,adminMode);
+  if(adminMode){
+    assert.deepEqual(accepted.data.memberships,[]);
+    assert.equal((await call("/api/platform/factories")).status,200);
+    for(const path of ["/api/runs","/api/overview","/api/imports","/api/quality","/api/comparison"])
+      assert.equal((await call(path)).status,403);
+    const created=await call("/api/platform/factories",{name:"First real factory",slug:"new-factory",defaultLanguage:"en",managerEmail:"new@proof.invalid"});
+    assert.equal(created.status,201);
+    assert.ok(created.data.path.startsWith("/invite/"));
+    checks.push("optional Platform Admin accepted with zero memberships; can create factory invitation, cannot access tenant data");
+  }
   assert.equal((await call("/api/auth/invitation",{token,name:"Second",password:managerPassword})).status,404);
   const withoutToken={...env};delete (withoutToken as any).CLARIX_INITIAL_INVITE_TOKEN;
   await configureDeployment(c,withoutToken,resolve(root,"lib/db"));
   assert.equal((await c.query("SELECT count(*)::int AS n FROM users")).rows[0].n,1);
   assert.equal((await call(`/api/auth/invitation?token=${token}`)).status,404);
   checks.push("existing invitation accepted once, rerun without token does nothing, replay denied");
+  if(!adminMode){
   await fixtures.query("INSERT INTO factories(id,name) VALUES('proof-b','Proof B')");
   const r=new pg.Pool({connectionString:runtimeUrl.toString()});
   try{
@@ -108,6 +124,7 @@ try{
     assert.equal((await call("/api/factories/proof-b/pages/overview")).status,403);
   }finally{await r.end();}
   checks.push("factory-A identity cannot read factory B through runtime RLS or HTTP");
+  }
   for(const email of ["platform.admin@clarix.test","ethmar.manager@clarix.test","ethmar.analyst@clarix.test","ethmar.viewer@clarix.test","najm.manager@clarix.test"]){
     await c.query("UPDATE users SET email=$1,test_account=true WHERE id=$2",[email,user]);
     assert.equal((await call("/api/auth/login",{email,password:managerPassword})).status,401);
@@ -123,8 +140,9 @@ try{
   if(started)execFileSync(resolve(bin,"pg_ctl"),["-D",dir,"-m","immediate","-w","stop"],{stdio:"ignore"});
   await rm(dir,{recursive:true,force:true});
   const after=await snapshot(),unchanged=JSON.stringify(before)===JSON.stringify(after);
-  await mkdir(resolve(root,"generated-artifacts/phase10"),{recursive:true});
-  await writeFile(resolve(root,"generated-artifacts/phase10/deployment-gate.json"),JSON.stringify({checks,before,after,unchanged},null,2));
+  const proofDir=adminMode?"generated-artifacts/phase13":"generated-artifacts/phase10";
+  await mkdir(resolve(root,proofDir),{recursive:true});
+  await writeFile(resolve(root,proofDir,"deployment-gate.json"),JSON.stringify({checks,before,after,unchanged},null,2));
   await observer.query("COMMIT");observer.release();await main.end();
   assert.ok(unchanged,"development fingerprints unchanged");
 }

@@ -8,6 +8,298 @@
 import * as zod from 'zod';
 
 
+
+
+
+export const GetPlatformFactoriesQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const getPlatformFactoriesResponseItemsItemLimitsMaxMembersMax = 10000;
+
+export const getPlatformFactoriesResponseItemsItemLimitsMaxFileBytesMin = 1024;
+export const getPlatformFactoriesResponseItemsItemLimitsMaxFileBytesMax = 20000000;
+
+export const getPlatformFactoriesResponseItemsItemLimitsMaxRowsMax = 100000;
+
+
+
+export const GetPlatformFactoriesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum(['active', 'suspended']),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "createdAt": zod.string().nullable(),
+  "activeMembers": zod.number().int(),
+  "managers": zod.number().int(),
+  "lastApprovedAt": zod.string().nullable(),
+  "limits": zod.object({
+  "maxMembers": zod.number().int().min(1).max(getPlatformFactoriesResponseItemsItemLimitsMaxMembersMax),
+  "maxFileBytes": zod.number().int().min(getPlatformFactoriesResponseItemsItemLimitsMaxFileBytesMin).max(getPlatformFactoriesResponseItemsItemLimitsMaxFileBytesMax),
+  "maxRows": zod.number().int().min(1).max(getPlatformFactoriesResponseItemsItemLimitsMaxRowsMax)
+}),
+  "uploadBytesUsage": zod.number().int(),
+  "rowsUsage": zod.number().int(),
+  "invitationStatus": zod.enum(['none', 'pending', 'expired', 'revoked', 'accepted'])
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+export const createPlatformFactoryBodyNameMax = 160;
+
+export const createPlatformFactoryBodySlugRegExp = new RegExp('^[a-z][a-z0-9-]{0,99}$');
+export const createPlatformFactoryBodyManagerEmailMax = 254;
+
+
+
+export const CreatePlatformFactoryBody = zod.object({
+  "name": zod.string().min(1).max(createPlatformFactoryBodyNameMax),
+  "slug": zod.string().regex(createPlatformFactoryBodySlugRegExp),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "managerEmail": zod.string().email().max(createPlatformFactoryBodyManagerEmailMax)
+})
+
+export const createPlatformFactoryResponseFactoryLimitsMaxMembersMax = 10000;
+
+export const createPlatformFactoryResponseFactoryLimitsMaxFileBytesMin = 1024;
+export const createPlatformFactoryResponseFactoryLimitsMaxFileBytesMax = 20000000;
+
+export const createPlatformFactoryResponseFactoryLimitsMaxRowsMax = 100000;
+
+
+
+export const CreatePlatformFactoryResponse = zod.object({
+  "factory": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum(['active', 'suspended']),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "createdAt": zod.string().nullable(),
+  "activeMembers": zod.number().int(),
+  "managers": zod.number().int(),
+  "lastApprovedAt": zod.string().nullable(),
+  "limits": zod.object({
+  "maxMembers": zod.number().int().min(1).max(createPlatformFactoryResponseFactoryLimitsMaxMembersMax),
+  "maxFileBytes": zod.number().int().min(createPlatformFactoryResponseFactoryLimitsMaxFileBytesMin).max(createPlatformFactoryResponseFactoryLimitsMaxFileBytesMax),
+  "maxRows": zod.number().int().min(1).max(createPlatformFactoryResponseFactoryLimitsMaxRowsMax)
+}),
+  "uploadBytesUsage": zod.number().int(),
+  "rowsUsage": zod.number().int(),
+  "invitationStatus": zod.enum(['none', 'pending', 'expired', 'revoked', 'accepted'])
+}),
+  "path": zod.string().nullable(),
+  "expiresAt": zod.string().nullable()
+})
+
+
+export const UpdatePlatformFactoryParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updatePlatformFactoryBodyLimitsMaxMembersMax = 10000;
+
+export const updatePlatformFactoryBodyLimitsMaxFileBytesMin = 1024;
+export const updatePlatformFactoryBodyLimitsMaxFileBytesMax = 20000000;
+
+export const updatePlatformFactoryBodyLimitsMaxRowsMax = 100000;
+
+
+
+export const UpdatePlatformFactoryBody = zod.object({
+  "status": zod.enum(['active', 'suspended']).optional(),
+  "limits": zod.object({
+  "maxMembers": zod.number().int().min(1).max(updatePlatformFactoryBodyLimitsMaxMembersMax),
+  "maxFileBytes": zod.number().int().min(updatePlatformFactoryBodyLimitsMaxFileBytesMin).max(updatePlatformFactoryBodyLimitsMaxFileBytesMax),
+  "maxRows": zod.number().int().min(1).max(updatePlatformFactoryBodyLimitsMaxRowsMax)
+}).optional()
+})
+
+export const updatePlatformFactoryResponseLimitsMaxMembersMax = 10000;
+
+export const updatePlatformFactoryResponseLimitsMaxFileBytesMin = 1024;
+export const updatePlatformFactoryResponseLimitsMaxFileBytesMax = 20000000;
+
+export const updatePlatformFactoryResponseLimitsMaxRowsMax = 100000;
+
+
+
+export const UpdatePlatformFactoryResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum(['active', 'suspended']),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "createdAt": zod.string().nullable(),
+  "activeMembers": zod.number().int(),
+  "managers": zod.number().int(),
+  "lastApprovedAt": zod.string().nullable(),
+  "limits": zod.object({
+  "maxMembers": zod.number().int().min(1).max(updatePlatformFactoryResponseLimitsMaxMembersMax),
+  "maxFileBytes": zod.number().int().min(updatePlatformFactoryResponseLimitsMaxFileBytesMin).max(updatePlatformFactoryResponseLimitsMaxFileBytesMax),
+  "maxRows": zod.number().int().min(1).max(updatePlatformFactoryResponseLimitsMaxRowsMax)
+}),
+  "uploadBytesUsage": zod.number().int(),
+  "rowsUsage": zod.number().int(),
+  "invitationStatus": zod.enum(['none', 'pending', 'expired', 'revoked', 'accepted'])
+})
+
+
+export const ManagePlatformInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ManagePlatformInvitationBody = zod.object({
+  "action": zod.enum(['reissue', 'revoke'])
+})
+
+export const managePlatformInvitationResponseFactoryLimitsMaxMembersMax = 10000;
+
+export const managePlatformInvitationResponseFactoryLimitsMaxFileBytesMin = 1024;
+export const managePlatformInvitationResponseFactoryLimitsMaxFileBytesMax = 20000000;
+
+export const managePlatformInvitationResponseFactoryLimitsMaxRowsMax = 100000;
+
+
+
+export const ManagePlatformInvitationResponse = zod.object({
+  "factory": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum(['active', 'suspended']),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "createdAt": zod.string().nullable(),
+  "activeMembers": zod.number().int(),
+  "managers": zod.number().int(),
+  "lastApprovedAt": zod.string().nullable(),
+  "limits": zod.object({
+  "maxMembers": zod.number().int().min(1).max(managePlatformInvitationResponseFactoryLimitsMaxMembersMax),
+  "maxFileBytes": zod.number().int().min(managePlatformInvitationResponseFactoryLimitsMaxFileBytesMin).max(managePlatformInvitationResponseFactoryLimitsMaxFileBytesMax),
+  "maxRows": zod.number().int().min(1).max(managePlatformInvitationResponseFactoryLimitsMaxRowsMax)
+}),
+  "uploadBytesUsage": zod.number().int(),
+  "rowsUsage": zod.number().int(),
+  "invitationStatus": zod.enum(['none', 'pending', 'expired', 'revoked', 'accepted'])
+}),
+  "path": zod.string().nullable(),
+  "expiresAt": zod.string().nullable()
+})
+
+
+
+
+
+export const GetPlatformAuditQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const GetPlatformAuditResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "factoryId": zod.string().nullable(),
+  "actorName": zod.string().nullable(),
+  "action": zod.string(),
+  "createdAt": zod.string(),
+  "oldValue": zod.record(zod.string(), zod.unknown()).nullable(),
+  "newValue": zod.record(zod.string(), zod.unknown()).nullable()
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+export const getFactorySettingsResponseNameMax = 160;
+
+export const getFactorySettingsResponseUnitsItemUnitMax = 32;
+
+export const getFactorySettingsResponseUnitsItemFactorMax = 80;
+
+export const getFactorySettingsResponseUnitsMax = 100;
+
+
+
+export const GetFactorySettingsResponse = zod.object({
+  "name": zod.string().min(1).max(getFactorySettingsResponseNameMax),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "warningPercent": zod.string(),
+  "errorPercent": zod.string(),
+  "units": zod.array(zod.object({
+  "unit": zod.string().min(1).max(getFactorySettingsResponseUnitsItemUnitMax),
+  "factor": zod.string().max(getFactorySettingsResponseUnitsItemFactorMax)
+})).max(getFactorySettingsResponseUnitsMax)
+})
+
+
+export const saveFactorySettingsBodyNameMax = 160;
+
+export const saveFactorySettingsBodyUnitsItemUnitMax = 32;
+
+export const saveFactorySettingsBodyUnitsItemFactorMax = 80;
+
+export const saveFactorySettingsBodyUnitsMax = 100;
+
+
+
+export const SaveFactorySettingsBody = zod.object({
+  "name": zod.string().min(1).max(saveFactorySettingsBodyNameMax),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "warningPercent": zod.string(),
+  "errorPercent": zod.string(),
+  "units": zod.array(zod.object({
+  "unit": zod.string().min(1).max(saveFactorySettingsBodyUnitsItemUnitMax),
+  "factor": zod.string().max(saveFactorySettingsBodyUnitsItemFactorMax)
+})).max(saveFactorySettingsBodyUnitsMax)
+})
+
+export const saveFactorySettingsResponseNameMax = 160;
+
+export const saveFactorySettingsResponseUnitsItemUnitMax = 32;
+
+export const saveFactorySettingsResponseUnitsItemFactorMax = 80;
+
+export const saveFactorySettingsResponseUnitsMax = 100;
+
+
+
+export const SaveFactorySettingsResponse = zod.object({
+  "name": zod.string().min(1).max(saveFactorySettingsResponseNameMax),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "warningPercent": zod.string(),
+  "errorPercent": zod.string(),
+  "units": zod.array(zod.object({
+  "unit": zod.string().min(1).max(saveFactorySettingsResponseUnitsItemUnitMax),
+  "factor": zod.string().max(saveFactorySettingsResponseUnitsItemFactorMax)
+})).max(saveFactorySettingsResponseUnitsMax)
+})
+
+
+
+
+
+export const GetFactorySettingsAuditQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const GetFactorySettingsAuditResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "factoryId": zod.string().nullable(),
+  "actorName": zod.string().nullable(),
+  "action": zod.string(),
+  "createdAt": zod.string(),
+  "oldValue": zod.record(zod.string(), zod.unknown()).nullable(),
+  "newValue": zod.record(zod.string(), zod.unknown()).nullable()
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
 export const GetOverviewResponse = zod.object({
   "chart_spec": zod.array(zod.object({
   "key": zod.string(),
@@ -367,7 +659,7 @@ export const GetInvitationDetailsQueryParams = zod.object({
 
 export const GetInvitationDetailsResponse = zod.object({
   "factoryName": zod.string(),
-  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "role": zod.enum(['platform_admin', 'factory_manager', 'analyst', 'viewer']),
   "email": zod.string(),
   "expiresAt": zod.string()
 })

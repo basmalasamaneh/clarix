@@ -1,6 +1,6 @@
 import type {PoolClient} from "pg";
 export const importedTables=["events_history","production_records_history","orders_history","data_issues","events","production_records","orders","raw_rows","imports","column_mappings"];
-export const protectedTables=["users","factories","memberships","sessions","invitations","account_audit"];
+export const protectedTables=["users","factories","memberships","sessions","invitations","account_audit","platform_audit","factory_settings_audit","platform_invitations"];
 export async function requireUnfilteredObserver(c:PoolClient) {
   const role=(await c.query("SELECT rolsuper OR rolbypassrls AS allowed FROM pg_roles WHERE rolname=current_user")).rows[0];
   if(role?.allowed!==true) throw new Error("Isolation evidence requires a privileged BYPASSRLS setup observer; refusing filtered fingerprints");
@@ -28,7 +28,7 @@ export async function fingerprint(c:PoolClient,schema="public",factory?:string,o
     let where="";
     const parameters:string[]=[];
     // Users/sessions are global tables: never bind a factory to those queries.
-    if(factory!==undefined && table!=="users" && table!=="sessions") {
+    if(factory!==undefined && table!=="users" && table!=="sessions" && table!=="platform_invitations") {
       where=table==="factories"?" WHERE t.id=$1":" WHERE t.factory_id=$1";
       parameters.push(factory);
     }

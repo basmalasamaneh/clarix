@@ -12,7 +12,11 @@ No publishing was performed. **You** means a Replit-interface action;
    `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`,
    `PUBLIC_OBJECT_SEARCH_PATHS`, `CLARIX_INITIAL_FACTORY_NAME`,
    `CLARIX_INITIAL_FACTORY_SLUG`, `CLARIX_INITIAL_MANAGER_EMAIL`,
-   `CLARIX_INITIAL_INVITE_TOKEN`. The factory slug must start with a lowercase
+   `CLARIX_INITIAL_INVITE_TOKEN`. For optional Platform Admin onboarding, also
+   set `CLARIX_INITIAL_ROLE` to `platform_admin` and
+   `CLARIX_INITIAL_ADMIN_EMAIL`, instead of the three factory/manager names.
+   Omit the role selector for the backwards-compatible first-manager mode.
+   The factory slug must start with a lowercase
    letter and contain only lowercase letters, digits and hyphens.
 3. **You:** Set a production `CLARIX_RUNTIME_PASSWORD` of at least 32 characters,
    **different from development**, and a strong production `SESSION_SECRET`.
@@ -37,7 +41,8 @@ No publishing was performed. **You** means a Replit-interface action;
    the runtime password, verifies protections and creates the initial invitation
    in one transaction. Any failure rolls back and prevents API startup.
 9. **Automatic:** With zero users and no previous initial invitation, the
-   initializer creates the first factory and a seven-day invitation. It stores
+   initializer creates the first factory and a seven-day manager invitation,
+   or just a Platform Admin invitation in the optional admin mode. It stores
    only the token hash, creates no dummy user, and logs no token or link.
    Repeat starts do not replace invitations or extend expiry.
 10. **Automatic:** The setup process closes its privileged connection and
@@ -47,9 +52,11 @@ No publishing was performed. **You** means a Replit-interface action;
     `/invite/<your-token>` address, inserting your saved token privately.
     Choose your name and password on the existing invitation page. Finish
     within seven days; restarting does not renew an expired invitation.
-12. **You:** Sign out and sign in as the first manager. Then delete only the
+12. **You:** Sign out and sign in as the first manager or Platform Admin. Then delete only the
     deployment `CLARIX_INITIAL_INVITE_TOKEN` secret and discard the saved token.
     Apply the deployment configuration update through Replit if required.
+    Platform Admins can then use **Platform → Add factory** to invite each
+    factory's first manager; they cannot open factory production data.
 13. **Automatic:** The accepted token stops working. Once any user exists,
     initialization does nothing, including when the token secret is absent.
     The retained invitation prevents accidental recreation if users are removed.

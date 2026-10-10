@@ -23,9 +23,9 @@ export interface StoredFile {
   preview?:ReturnType<typeof parseCsv>["rows"];rowCount?:number;
 }
 export function limitConfig(settings:Record<string,unknown>={}) {
-  const custom=settings.importMaxFileBytes;
+  const custom=(settings.platformLimits as {maxFileBytes?:number}|undefined)?.maxFileBytes??settings.importMaxFileBytes;
   const maxFileBytes=typeof custom==="number" && Number.isSafeInteger(custom) && custom>0 ? Math.min(custom,20*1024*1024):5*1024*1024;
-  return {maxFileBytes,maxTotalBytes:maxFileBytes*4,maxFiles:4};
+  return {maxFileBytes,maxTotalBytes:maxFileBytes*4,maxFiles:4,maxRows:(settings.platformLimits as {maxRows?:number}|undefined)?.maxRows??100000};
 }
 export function inspect(bytes:Uint8Array,name:string) {
   let encoding="utf-8";

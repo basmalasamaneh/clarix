@@ -8,6 +8,7 @@ import { StateScreen } from '@/components/state-screen';
 import { PAGE_ICONS } from '@/components/app-shell';
 import { RunsSelect, ComparisonSelect } from '@/components/sources/run-select';
 import { SourceAdmin } from '@/components/sources/source-admin';
+import { FactorySettings } from '@/components/management/factory-settings';
 import { errorCode, errorStatus, firstAllowedPath, localizeError, type TenantPage } from '@/lib/session';
 
 export function ForbiddenState({ session }: { session: Session }) {
@@ -40,6 +41,7 @@ export default function TenantPageView({ page, session }: { page: TenantPage; se
   });
   const factory = session.memberships.find((m) => m.factoryId === factoryId);
 
+  if (page === 'settings' && (session.user?.platformAdmin || factory?.role !== 'factory_manager')) return <ForbiddenState session={session} />;
   if (q.isLoading) return <PageSkeleton />;
   if (q.isError) {
     if (errorStatus(q.error) === 403) return <ForbiddenState session={session} />;
@@ -69,7 +71,9 @@ export default function TenantPageView({ page, session }: { page: TenantPage; se
         lead={t(`pages.${page}.lead`)}
         meta={factory ? `${factory.factoryName} · ${t('factory.isolated')}` : undefined}
       />
-      {page === 'runs' ? (
+      {page === 'settings' ? (
+        <FactorySettings factoryId={factoryId} />
+      ) : page === 'runs' ? (
         <RunsSelect />
       ) : page === 'comparison' ? (
         <ComparisonSelect />

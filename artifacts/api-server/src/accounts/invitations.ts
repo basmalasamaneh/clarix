@@ -3,6 +3,8 @@ import argon2 from "argon2";
 import type {PoolClient} from "pg";
 import {accountTransaction,scope,audit} from "./context";
 import {ImportError} from "../imports/model";
+import {ensureMemberCapacity} from "../platform/settings";
+import {platformAudit} from "../platform/service";
 
 const unavailable=()=>new ImportError("INVITATION_UNAVAILABLE",404);
 export const tokenHash=(token:string)=>createHash("sha256").update(token).digest("hex");
@@ -30,6 +32,7 @@ export async function listInvitations(c:PoolClient,factory:string,page:number) {
   return {items:r.rows.map(invitation),page,total:n.rows[0].n};
 }
 export async function createInvitation(c:PoolClient,factory:string,actor:string,input:{email:string;role:string}) {
+  await ensureMemberCapacity(c,factory);
   const email=input.email.trim().toLowerCase(),existing=await eligible(c,factory,email);
   const pending=await c.query("SELECT 1 FROM invitations WHERE factory_id=$1 AND email=$2 AND revoked_at IS NULL AND accepted_at IS NULL",[factory,email]);
   if(pending.rowCount) throw unavailable();
@@ -67,6 +70,8 @@ async function tokenLookup(c:PoolClient,token:string,lock=false) {
 }
 export async function invitationDetails(token:string) {
   return accountTransaction(async c=>{
+    const admin=await platformToken(c,token);
+    if(admin)return {factoryName:"Clarix",email:admin.email,role:"platform_admin",expiresAt:admin.expires_at.toISOString()};
     const row=await tokenLookup(c,token);
     await scope(c,row.factory_id);
     const f=(await c.query("SELECT name FROM factories WHERE id=$1 AND status='active'",[row.factory_id])).rows[0];
@@ -78,11 +83,20 @@ export async function acceptInvitation(input:{token:string;name:string;password:
   // Hash before the transaction, but rate-limit the route before this work.
   const hash=await hashPassword(input.password);
   return accountTransaction(async c=>{
+    const admin=await platformToken(c,input.token,true);
+    if(admin){
+      const id=randomUUID();
+      await c.query("INSERT INTO users(id,email,name,password_hash,platform_admin) VALUES($1,$2,$3,$4,true)",[id,admin.email,input.name,hash]);
+      await c.query("UPDATE platform_invitations SET accepted_at=now() WHERE id=$1",[admin.id]);
+      await platformAudit(c,null,id,"invitation_accepted");
+      return {id,factory:undefined,version:0};
+    }
     const found=await tokenLookup(c,input.token);
     await scope(c,found.factory_id);
-    const f=await c.query("SELECT id FROM factories WHERE id=$1 AND status='active' FOR NO KEY UPDATE",[found.factory_id]);
+    const f=await c.query("SELECT id,default_language FROM factories WHERE id=$1 AND status='active' FOR NO KEY UPDATE",[found.factory_id]);
     if(!f.rowCount) throw unavailable();
     const row=await tokenLookup(c,input.token,true);
+    await ensureMemberCapacity(c,row.factory_id);
     const existing=await eligible(c,row.factory_id,row.email),id=existing??randomUUID();
     if(existing) {
       await c.query("UPDATE users SET name=$2,password_hash=$3,session_version=session_version+1 WHERE id=$1",[id,input.name,hash]);
@@ -90,12 +104,23 @@ export async function acceptInvitation(input:{token:string;name:string;password:
       await audit(c,row.factory_id,id,id,"password_changed");
       await audit(c,row.factory_id,id,id,"member_reactivated");
     } else {
-      await c.query("INSERT INTO users(id,email,name,password_hash) VALUES($1,$2,$3,$4)",[id,row.email,input.name,hash]);
+      await c.query("INSERT INTO users(id,email,name,password_hash,language) VALUES($1,$2,$3,$4,$5)",[id,row.email,input.name,hash,f.rows[0].default_language]);
       await c.query("INSERT INTO memberships(user_id,factory_id,role) VALUES($1,$2,$3)",[id,row.factory_id,row.role]);
     }
     await c.query("UPDATE invitations SET accepted_at=now() WHERE id=$1 AND factory_id=$2",[row.id,row.factory_id]);
     await audit(c,row.factory_id,id,id,"invite_accepted",row.role);
+    if(row.created_by&&(await c.query("SELECT 1 FROM users WHERE id=$1 AND platform_admin",[row.created_by])).rowCount)
+      await platformAudit(c,row.factory_id,id,"invitation_accepted");
     const version=(await c.query("SELECT session_version FROM users WHERE id=$1",[id])).rows[0].session_version;
     return {id,factory:row.factory_id as string,version:version as number};
   });
+}
+async function platformToken(c:PoolClient,token:string,lock=false){
+  if(!/^[A-Za-z0-9_-]{43}$/.test(token))throw unavailable();
+  await c.query("SELECT set_config('app.invite_hash',$1,true)",[tokenHash(token)]);
+  const row=(await c.query(`SELECT * FROM platform_invitations WHERE token_hash=$1 AND accepted_at IS NULL AND expires_at>now() ${lock?"FOR UPDATE":""}`,[tokenHash(token)])).rows[0];
+  if(!row)return null;
+  await c.query("SELECT pg_advisory_xact_lock(190011)");
+  if((await c.query("SELECT 1 FROM users LIMIT 1")).rowCount)throw unavailable();
+  return row;
 }

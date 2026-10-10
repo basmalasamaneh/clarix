@@ -40,9 +40,9 @@ try {
   await c.query(`CREATE ROLE ${schema} NOLOGIN NOSUPERUSER NOBYPASSRLS`);
   created=true;
   await c.query(`GRANT ${schema} TO CURRENT_USER`);
-  await c.query(`GRANT clarix_runtime,clarix_identity,clarix_accounts TO ${schema}`);
+  await c.query(`GRANT clarix_runtime,clarix_identity,clarix_accounts,clarix_platform TO ${schema}`);
   await c.query(`CREATE SCHEMA ${schema} AUTHORIZATION ${schema}`);
-  await c.query(`GRANT USAGE ON SCHEMA ${schema} TO clarix_runtime,clarix_identity,clarix_accounts`);
+  await c.query(`GRANT USAGE ON SCHEMA ${schema} TO clarix_runtime,clarix_identity,clarix_accounts,clarix_platform`);
   for(const t of [...protectedTables,...importedTables]) {
     await c.query(`CREATE TABLE ${schema}."${t}" (LIKE public."${t}" INCLUDING ALL)`);
     await c.query(`ALTER TABLE ${schema}."${t}" OWNER TO ${schema}`);
@@ -57,7 +57,7 @@ try {
     await c.query(`ALTER TABLE ${schema}."${fk.table_name}" ADD CONSTRAINT "${fk.conname}" ${def}`);
   }
   await c.query(`SET search_path=${schema}`);
-  for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql"]) {
+  for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql"]) {
     let sql=await readFile(root+"lib/db/"+file,"utf8");
     if(file==="foundation-rls.sql") sql=sql.slice(sql.indexOf("GRANT SELECT ON factories")); // roles already exist; no global role changes
     await c.query(sql);

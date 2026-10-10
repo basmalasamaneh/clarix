@@ -21,12 +21,16 @@ export async function prepareProductionSchema(c:PoolClient){
       await c.query(initial);
       await c.query("INSERT INTO clarix_schema_versions(version,checksum) VALUES('foundation',$1)",[hash]);
     }
+    await c.query(await readFile(new URL("platform-migration.sql",base),"utf8"));
     await c.query(`DO $$ BEGIN
+      IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='clarix_platform') THEN
+        CREATE ROLE clarix_platform NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
+      END IF;
       IF NOT EXISTS(SELECT 1 FROM pg_roles WHERE rolname='clarix_accounts') THEN
         CREATE ROLE clarix_accounts NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS;
       END IF;
-    END $$; GRANT clarix_accounts TO CURRENT_USER; GRANT USAGE ON SCHEMA public TO clarix_accounts;`);
-    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","run-indexes.sql","accounts-rls.sql","runtime-grants.sql"])
+    END $$; GRANT clarix_accounts,clarix_platform TO CURRENT_USER; GRANT USAGE ON SCHEMA public TO clarix_accounts,clarix_platform;`);
+    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","run-indexes.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql"])
       await c.query(await readFile(new URL(file,base),"utf8"));
     await c.query(`REVOKE CREATE ON SCHEMA public FROM PUBLIC;
       DO $$ BEGIN EXECUTE format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC',current_database()); END $$;`);

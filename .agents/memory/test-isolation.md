@@ -19,3 +19,10 @@ The user approved one narrow reset exception: clear only `sourceArchives` and
 factory fields and settings.
 **Why:** Retaining archive flags after deleting imports would block reusing old
 source names, despite an otherwise empty factory.
+
+Forced RLS also applies to the disposable schema's non-bypass owner. For synthetic
+invitation expiry changes, use the scoped accounts transaction and check affected
+rows; for tenant assertions, use the authenticated API instead of owner queries.
+**Why:** An owner UPDATE silently matched zero rows in a test, leaving the token
+valid and producing a misleading expiry failure.
+**How to apply:** Do not relax RLS or modify ordinary data to prepare fixtures.

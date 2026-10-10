@@ -27,6 +27,7 @@ export function formatDate(iso: string | null | undefined, lang: string, withTim
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat(lang === 'ar' ? 'ar' : 'en-GB', {
+    numberingSystem: 'latn',
     dateStyle: 'medium',
     ...(withTime ? { timeStyle: 'short' } : {}),
   }).format(d);

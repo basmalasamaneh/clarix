@@ -5,6 +5,190 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface FactoryLimits {
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  maxMembers: number;
+  /**
+     * @minimum 1024
+     * @maximum 20000000
+     */
+  maxFileBytes: number;
+  /**
+     * @minimum 1
+     * @maximum 100000
+     */
+  maxRows: number;
+}
+
+export type FactoryCreationDefaultLanguage = typeof FactoryCreationDefaultLanguage[keyof typeof FactoryCreationDefaultLanguage];
+
+
+export const FactoryCreationDefaultLanguage = {
+  ar: 'ar',
+  en: 'en',
+} as const;
+
+export interface FactoryCreation {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /** @pattern ^[a-z][a-z0-9-]{0,99}$ */
+  slug: string;
+  defaultLanguage: FactoryCreationDefaultLanguage;
+  /** @maxLength 254 */
+  managerEmail: string;
+}
+
+export type FactoryAdministrationStatus = typeof FactoryAdministrationStatus[keyof typeof FactoryAdministrationStatus];
+
+
+export const FactoryAdministrationStatus = {
+  active: 'active',
+  suspended: 'suspended',
+} as const;
+
+export interface FactoryAdministration {
+  status?: FactoryAdministrationStatus;
+  limits?: FactoryLimits;
+}
+
+export type FirstManagerInvitationActionAction = typeof FirstManagerInvitationActionAction[keyof typeof FirstManagerInvitationActionAction];
+
+
+export const FirstManagerInvitationActionAction = {
+  reissue: 'reissue',
+  revoke: 'revoke',
+} as const;
+
+export interface FirstManagerInvitationAction {
+  action: FirstManagerInvitationActionAction;
+}
+
+export type PlatformFactoryStatus = typeof PlatformFactoryStatus[keyof typeof PlatformFactoryStatus];
+
+
+export const PlatformFactoryStatus = {
+  active: 'active',
+  suspended: 'suspended',
+} as const;
+
+export type PlatformFactoryDefaultLanguage = typeof PlatformFactoryDefaultLanguage[keyof typeof PlatformFactoryDefaultLanguage];
+
+
+export const PlatformFactoryDefaultLanguage = {
+  ar: 'ar',
+  en: 'en',
+} as const;
+
+export type PlatformFactoryInvitationStatus = typeof PlatformFactoryInvitationStatus[keyof typeof PlatformFactoryInvitationStatus];
+
+
+export const PlatformFactoryInvitationStatus = {
+  none: 'none',
+  pending: 'pending',
+  expired: 'expired',
+  revoked: 'revoked',
+  accepted: 'accepted',
+} as const;
+
+export interface PlatformFactory {
+  id: string;
+  name: string;
+  slug: string;
+  status: PlatformFactoryStatus;
+  defaultLanguage: PlatformFactoryDefaultLanguage;
+  /** @nullable */
+  createdAt: string | null;
+  activeMembers: number;
+  managers: number;
+  /** @nullable */
+  lastApprovedAt: string | null;
+  limits: FactoryLimits;
+  uploadBytesUsage: number;
+  rowsUsage: number;
+  invitationStatus: PlatformFactoryInvitationStatus;
+}
+
+export interface PlatformFactoryPage {
+  items: PlatformFactory[];
+  page: number;
+  total: number;
+}
+
+export interface PlatformInvitationResult {
+  factory: PlatformFactory;
+  /** @nullable */
+  path: string | null;
+  /** @nullable */
+  expiresAt: string | null;
+}
+
+export interface UnitConversion {
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  unit: string;
+  /** @maxLength 80 */
+  factor: string;
+}
+
+export type FactoryPreferencesDefaultLanguage = typeof FactoryPreferencesDefaultLanguage[keyof typeof FactoryPreferencesDefaultLanguage];
+
+
+export const FactoryPreferencesDefaultLanguage = {
+  ar: 'ar',
+  en: 'en',
+} as const;
+
+export interface FactoryPreferences {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  defaultLanguage: FactoryPreferencesDefaultLanguage;
+  warningPercent: string;
+  errorPercent: string;
+  /** @maxItems 100 */
+  units: UnitConversion[];
+}
+
+/**
+ * @nullable
+ */
+export type ManagementAuditEntryOldValue = { [key: string]: unknown } | null;
+
+/**
+ * @nullable
+ */
+export type ManagementAuditEntryNewValue = { [key: string]: unknown } | null;
+
+export interface ManagementAuditEntry {
+  id: string;
+  /** @nullable */
+  factoryId: string | null;
+  /** @nullable */
+  actorName: string | null;
+  action: string;
+  createdAt: string;
+  /** @nullable */
+  oldValue: ManagementAuditEntryOldValue;
+  /** @nullable */
+  newValue: ManagementAuditEntryNewValue;
+}
+
+export interface ManagementAuditPage {
+  items: ManagementAuditEntry[];
+  page: number;
+  total: number;
+}
+
 export type OverviewStatuses = {
   /** @nullable */
   green: number | null;
@@ -895,6 +1079,27 @@ export interface HealthStatus {
   status: string;
 }
 
+export type GetPlatformFactoriesParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type GetPlatformAuditParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type GetFactorySettingsAuditParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
 export type GetMembersParams = {
 /**
  * @minimum 1
@@ -925,9 +1130,19 @@ export type GetInvitationDetailsParams = {
 token: string;
 };
 
+export type GetInvitationDetails200Role = typeof GetInvitationDetails200Role[keyof typeof GetInvitationDetails200Role];
+
+
+export const GetInvitationDetails200Role = {
+  platform_admin: 'platform_admin',
+  factory_manager: 'factory_manager',
+  analyst: 'analyst',
+  viewer: 'viewer',
+} as const;
+
 export type GetInvitationDetails200 = {
   factoryName: string;
-  role: MemberRole;
+  role: GetInvitationDetails200Role;
   email: string;
   expiresAt: string;
 };

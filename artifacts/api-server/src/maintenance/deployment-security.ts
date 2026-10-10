@@ -5,12 +5,12 @@ import {randomBytes,pbkdf2Sync,createHmac,createHash} from "node:crypto";
 import {deploymentInvitation} from "./deployment-invitation";
 
 const quote=(s:string)=>`"${s.replaceAll('"','""')}"`;
-const roles=["clarix_runtime","clarix_identity","clarix_accounts"];
+const roles=["clarix_runtime","clarix_identity","clarix_accounts","clarix_platform"];
 export const tenantTables=["factories","memberships","imports","raw_rows","column_mappings","orders","production_records","events","data_issues","orders_history","production_records_history","events_history","invitations","account_audit"];
 export async function verifyDeploymentSecurity(c:PoolClient){
   const r=(await c.query(`SELECT rolname,rolsuper,rolcreatedb,rolcreaterole,rolbypassrls,rolinherit,rolcanlogin
     FROM pg_roles WHERE rolname=ANY($1)`,[roles])).rows;
-  if(r.length!==3||r.some(v=>v.rolsuper||v.rolcreatedb||v.rolcreaterole||v.rolbypassrls||v.rolinherit||v.rolcanlogin!==(v.rolname==="clarix_runtime")))
+  if(r.length!==roles.length||r.some(v=>v.rolsuper||v.rolcreatedb||v.rolcreaterole||v.rolbypassrls||v.rolinherit||v.rolcanlogin!==(v.rolname==="clarix_runtime")))
     throw new Error("Unsafe database role attributes");
   const inherited=(await c.query(`WITH RECURSIVE reachable(id) AS (
     SELECT oid FROM pg_roles WHERE rolname=ANY($1) UNION
@@ -29,7 +29,7 @@ export async function verifyDeploymentSecurity(c:PoolClient){
     AND (c.relname='factories' OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='factory_id' AND NOT a.attisdropped))`)).rows;
   if(tenantTables.some(t=>!tables.some(r=>r.relname===t))||tables.some(r=>!r.relrowsecurity||!r.relforcerowsecurity||roles.includes(r.owner)))
     throw new Error("Unsafe tenant tables");
-  for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit"]){
+  for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit","platform_audit","factory_settings_audit"]){
     const triggers=(await c.query(`SELECT tgtype::int FROM pg_trigger WHERE tgrelid=$1::regclass AND NOT tgisinternal AND tgenabled IN('O','A')`,[`public.${table}`])).rows;
     for(const bit of [8,16,32])if(!triggers.some(t=>(t.tgtype&bit)!==0))throw new Error("Immutable protection missing");
     for(const role of roles){
@@ -55,8 +55,8 @@ export async function configureDeployment(c:PoolClient,env:NodeJS.ProcessEnv,sql
       if(!(await c.query("SELECT 1 FROM pg_roles WHERE rolname=$1",[role])).rowCount)
         await c.query(`CREATE ROLE ${role} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS`);
     }
-    await c.query("GRANT clarix_accounts TO CURRENT_USER; GRANT USAGE ON SCHEMA public TO clarix_accounts");
-    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql"])
+    await c.query("GRANT clarix_accounts,clarix_platform TO CURRENT_USER; GRANT USAGE ON SCHEMA public TO clarix_accounts,clarix_platform");
+    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql"])
       await c.query(await readFile(resolve(sqlDir,file),"utf8"));
     // These SQL files deliberately restore policies/triggers, not table structure.
     for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit"])
@@ -72,10 +72,10 @@ export async function configureDeployment(c:PoolClient,env:NodeJS.ProcessEnv,sql
     // No runtime role can use it, and it is removed before COMMIT.
     const owner=(await c.query("SELECT current_user AS name")).rows[0].name;
     if(roles.includes(owner))throw new Error("Privileged deployment connection required");
-    for(const table of ["factories","invitations","account_audit"])
+    for(const table of ["factories","invitations","account_audit","platform_invitations","platform_audit"])
       await c.query(`CREATE POLICY clarix_deploy_owner ON ${table} TO ${quote(owner)} USING(true) WITH CHECK(true)`);
     await deploymentInvitation(c,env);
-    for(const table of ["factories","invitations","account_audit"])
+    for(const table of ["factories","invitations","account_audit","platform_invitations","platform_audit"])
       await c.query(`DROP POLICY clarix_deploy_owner ON ${table}`);
     await verifyDeploymentSecurity(c);
     await c.query("COMMIT");

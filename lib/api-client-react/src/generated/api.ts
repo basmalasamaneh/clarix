@@ -23,7 +23,12 @@ import type {
   AccountAudit,
   ApprovalInput,
   Credentials,
+  FactoryAdministration,
+  FactoryCreation,
+  FactoryPreferences,
   FactorySelection,
+  FirstManagerInvitationAction,
+  GetFactorySettingsAuditParams,
   GetImportErrorsParams,
   GetInvitationDetails200,
   GetInvitationDetailsParams,
@@ -31,6 +36,8 @@ import type {
   GetInvitationsParams,
   GetMembers200,
   GetMembersParams,
+  GetPlatformAuditParams,
+  GetPlatformFactoriesParams,
   GetQualityParams,
   GetRunComparisonParams,
   GetSourceComparisonParams,
@@ -53,6 +60,7 @@ import type {
   ListProductionRuns200,
   ListProductionRunsParams,
   ListSourceRunsParams,
+  ManagementAuditPage,
   MappingInput,
   MappingTemplate,
   Member,
@@ -60,6 +68,9 @@ import type {
   Overview,
   PageState,
   PasswordChange,
+  PlatformFactory,
+  PlatformFactoryPage,
+  PlatformInvitationResult,
   Preferences,
   ProductionRun,
   QualityIssue,
@@ -97,6 +108,641 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetPlatformFactoriesUrl = (params?: GetPlatformFactoriesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/factories?${stringifiedParams}` : `/api/platform/factories`
+}
+
+export const getPlatformFactories = async (params?: GetPlatformFactoriesParams, options?: Parameters<typeof customFetch>[1]): Promise<PlatformFactoryPage> => {
+
+  return customFetch<PlatformFactoryPage>(getGetPlatformFactoriesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformFactoriesQueryKey = (params?: GetPlatformFactoriesParams,) => {
+    return [
+    `/api/platform/factories`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPlatformFactoriesQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformFactories>>, TError = ErrorType<unknown>>(params?: GetPlatformFactoriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformFactories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformFactoriesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformFactories>>> = ({ signal }) => getPlatformFactories(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformFactories>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformFactoriesQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformFactories>>>
+export type GetPlatformFactoriesQueryError = ErrorType<unknown>
+
+
+
+export function useGetPlatformFactories<TData = Awaited<ReturnType<typeof getPlatformFactories>>, TError = ErrorType<unknown>>(
+ params?: GetPlatformFactoriesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformFactories>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformFactoriesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreatePlatformFactoryUrl = () => {
+
+
+
+
+  return `/api/platform/factories`
+}
+
+export const createPlatformFactory = async (factoryCreation: FactoryCreation, options?: Parameters<typeof customFetch>[1]): Promise<PlatformInvitationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PlatformInvitationResult>(getCreatePlatformFactoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(factoryCreation)
+  }
+);}
+
+
+
+
+
+export const getCreatePlatformFactoryMutationKey = () => ['createPlatformFactory'] as const;
+
+export const getCreatePlatformFactoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPlatformFactory>>, TError,CreatePlatformFactoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPlatformFactory>>, TError,CreatePlatformFactoryMutationVariables, TContext> => {
+
+const mutationKey = getCreatePlatformFactoryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPlatformFactory>>, CreatePlatformFactoryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPlatformFactory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePlatformFactoryMutationResult = NonNullable<Awaited<ReturnType<typeof createPlatformFactory>>>
+    export type CreatePlatformFactoryMutationBody = BodyType<FactoryCreation>
+    export type CreatePlatformFactoryMutationError = ErrorType<unknown>
+    export type CreatePlatformFactoryMutationVariables = {data: BodyType<FactoryCreation>}
+
+    export const useCreatePlatformFactory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPlatformFactory>>, TError,CreatePlatformFactoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPlatformFactory>>,
+        TError,
+        CreatePlatformFactoryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePlatformFactoryMutationOptions(options));
+    }
+
+export const getUpdatePlatformFactoryUrl = (id: string,) => {
+
+
+
+
+  return `/api/platform/factories/${id}`
+}
+
+export const updatePlatformFactory = async (id: string,
+    factoryAdministration: FactoryAdministration, options?: Parameters<typeof customFetch>[1]): Promise<PlatformFactory> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PlatformFactory>(getUpdatePlatformFactoryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(factoryAdministration)
+  }
+);}
+
+
+
+
+
+export const getUpdatePlatformFactoryMutationKey = () => ['updatePlatformFactory'] as const;
+
+export const getUpdatePlatformFactoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatformFactory>>, TError,UpdatePlatformFactoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePlatformFactory>>, TError,UpdatePlatformFactoryMutationVariables, TContext> => {
+
+const mutationKey = getUpdatePlatformFactoryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePlatformFactory>>, UpdatePlatformFactoryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePlatformFactory(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePlatformFactoryMutationResult = NonNullable<Awaited<ReturnType<typeof updatePlatformFactory>>>
+    export type UpdatePlatformFactoryMutationBody = BodyType<FactoryAdministration>
+    export type UpdatePlatformFactoryMutationError = ErrorType<unknown>
+    export type UpdatePlatformFactoryMutationVariables = {id: string;data: BodyType<FactoryAdministration>}
+
+    export const useUpdatePlatformFactory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatformFactory>>, TError,UpdatePlatformFactoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePlatformFactory>>,
+        TError,
+        UpdatePlatformFactoryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdatePlatformFactoryMutationOptions(options));
+    }
+
+export const getManagePlatformInvitationUrl = (id: string,) => {
+
+
+
+
+  return `/api/platform/factories/${id}/invitation`
+}
+
+export const managePlatformInvitation = async (id: string,
+    firstManagerInvitationAction: FirstManagerInvitationAction, options?: Parameters<typeof customFetch>[1]): Promise<PlatformInvitationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PlatformInvitationResult>(getManagePlatformInvitationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(firstManagerInvitationAction)
+  }
+);}
+
+
+
+
+
+export const getManagePlatformInvitationMutationKey = () => ['managePlatformInvitation'] as const;
+
+export const getManagePlatformInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePlatformInvitation>>, TError,ManagePlatformInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof managePlatformInvitation>>, TError,ManagePlatformInvitationMutationVariables, TContext> => {
+
+const mutationKey = getManagePlatformInvitationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof managePlatformInvitation>>, ManagePlatformInvitationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  managePlatformInvitation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ManagePlatformInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof managePlatformInvitation>>>
+    export type ManagePlatformInvitationMutationBody = BodyType<FirstManagerInvitationAction>
+    export type ManagePlatformInvitationMutationError = ErrorType<unknown>
+    export type ManagePlatformInvitationMutationVariables = {id: string;data: BodyType<FirstManagerInvitationAction>}
+
+    export const useManagePlatformInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof managePlatformInvitation>>, TError,ManagePlatformInvitationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof managePlatformInvitation>>,
+        TError,
+        ManagePlatformInvitationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getManagePlatformInvitationMutationOptions(options));
+    }
+
+export const getGetPlatformAuditUrl = (params?: GetPlatformAuditParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/platform/audit?${stringifiedParams}` : `/api/platform/audit`
+}
+
+export const getPlatformAudit = async (params?: GetPlatformAuditParams, options?: Parameters<typeof customFetch>[1]): Promise<ManagementAuditPage> => {
+
+  return customFetch<ManagementAuditPage>(getGetPlatformAuditUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformAuditQueryKey = (params?: GetPlatformAuditParams,) => {
+    return [
+    `/api/platform/audit`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetPlatformAuditQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformAudit>>, TError = ErrorType<unknown>>(params?: GetPlatformAuditParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformAuditQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformAudit>>> = ({ signal }) => getPlatformAudit(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformAudit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformAuditQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformAudit>>>
+export type GetPlatformAuditQueryError = ErrorType<unknown>
+
+
+
+export function useGetPlatformAudit<TData = Awaited<ReturnType<typeof getPlatformAudit>>, TError = ErrorType<unknown>>(
+ params?: GetPlatformAuditParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformAuditQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFactorySettingsUrl = () => {
+
+
+
+
+  return `/api/factory-settings`
+}
+
+export const getFactorySettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<FactoryPreferences> => {
+
+  return customFetch<FactoryPreferences>(getGetFactorySettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFactorySettingsQueryKey = () => {
+    return [
+    `/api/factory-settings`
+    ] as const;
+    }
+
+
+export const getGetFactorySettingsQueryOptions = <TData = Awaited<ReturnType<typeof getFactorySettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFactorySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFactorySettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFactorySettings>>> = ({ signal }) => getFactorySettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFactorySettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFactorySettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getFactorySettings>>>
+export type GetFactorySettingsQueryError = ErrorType<unknown>
+
+
+
+export function useGetFactorySettings<TData = Awaited<ReturnType<typeof getFactorySettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFactorySettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFactorySettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveFactorySettingsUrl = () => {
+
+
+
+
+  return `/api/factory-settings`
+}
+
+export const saveFactorySettings = async (factoryPreferences: FactoryPreferences, options?: Parameters<typeof customFetch>[1]): Promise<FactoryPreferences> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<FactoryPreferences>(getSaveFactorySettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(factoryPreferences)
+  }
+);}
+
+
+
+
+
+export const getSaveFactorySettingsMutationKey = () => ['saveFactorySettings'] as const;
+
+export const getSaveFactorySettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFactorySettings>>, TError,SaveFactorySettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveFactorySettings>>, TError,SaveFactorySettingsMutationVariables, TContext> => {
+
+const mutationKey = getSaveFactorySettingsMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveFactorySettings>>, SaveFactorySettingsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveFactorySettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveFactorySettingsMutationResult = NonNullable<Awaited<ReturnType<typeof saveFactorySettings>>>
+    export type SaveFactorySettingsMutationBody = BodyType<FactoryPreferences>
+    export type SaveFactorySettingsMutationError = ErrorType<unknown>
+    export type SaveFactorySettingsMutationVariables = {data: BodyType<FactoryPreferences>}
+
+    export const useSaveFactorySettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveFactorySettings>>, TError,SaveFactorySettingsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveFactorySettings>>,
+        TError,
+        SaveFactorySettingsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveFactorySettingsMutationOptions(options));
+    }
+
+export const getGetFactorySettingsAuditUrl = (params?: GetFactorySettingsAuditParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/factory-settings/audit?${stringifiedParams}` : `/api/factory-settings/audit`
+}
+
+export const getFactorySettingsAudit = async (params?: GetFactorySettingsAuditParams, options?: Parameters<typeof customFetch>[1]): Promise<ManagementAuditPage> => {
+
+  return customFetch<ManagementAuditPage>(getGetFactorySettingsAuditUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFactorySettingsAuditQueryKey = (params?: GetFactorySettingsAuditParams,) => {
+    return [
+    `/api/factory-settings/audit`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetFactorySettingsAuditQueryOptions = <TData = Awaited<ReturnType<typeof getFactorySettingsAudit>>, TError = ErrorType<unknown>>(params?: GetFactorySettingsAuditParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFactorySettingsAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFactorySettingsAuditQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFactorySettingsAudit>>> = ({ signal }) => getFactorySettingsAudit(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFactorySettingsAudit>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFactorySettingsAuditQueryResult = NonNullable<Awaited<ReturnType<typeof getFactorySettingsAudit>>>
+export type GetFactorySettingsAuditQueryError = ErrorType<unknown>
+
+
+
+export function useGetFactorySettingsAudit<TData = Awaited<ReturnType<typeof getFactorySettingsAudit>>, TError = ErrorType<unknown>>(
+ params?: GetFactorySettingsAuditParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFactorySettingsAudit>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFactorySettingsAuditQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetOverviewUrl = () => {
 
