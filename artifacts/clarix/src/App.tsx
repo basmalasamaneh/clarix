@@ -6,6 +6,9 @@ import '@/lib/accounts-i18n';
 import '@/lib/phase10-i18n';
 import '@/lib/phase13-i18n';
 import '@/lib/phase14-i18n';
+import '@/lib/phase18-i18n';
+import ResetPage from '@/pages/reset';
+import { SecurityNotices } from '@/components/security/security-admin';
 import SnapshotsPage from '@/pages/snapshots';
 import SnapshotDetailPage from '@/pages/snapshot-detail';
 import HelpPage from '@/pages/help';
@@ -129,6 +132,7 @@ function AuthedRoutes({ session }: { session: Session }) {
 
   return (
     <AppShell session={session}>
+      <SecurityNotices session={session} />
       <RoutedErrorBoundary>
         <Switch>
           <Route path="/">{() => <Redirect to={home} replace />}</Route>
@@ -181,6 +185,7 @@ function Gate() {
   const { data: session, isLoading, isError, error, refetch, isFetching } = useSession();
   const inviteMatch = /^\/invite\/([^/?#]+)$/.exec(location);
   if (inviteMatch) return <InvitePage token={decodeURIComponent(inviteMatch[1])} />;
+  if (location === '/reset') return <ResetPage />;
 
   if (isLoading) return <SessionLoading />;
   if (isError || !session) {

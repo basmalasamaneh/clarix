@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 import { AlertCircle, ArrowRight, Eye, EyeOff, FileSearch, Layers, ShieldCheck, Sigma } from 'lucide-react';
 import { getGetSessionQueryKey, useLogin } from '@workspace/api-client-react';
+import { Link } from 'wouter';
+import { SecondFactorStep } from '@/components/security/second-factor';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -39,7 +41,7 @@ export default function LoginPage() {
         onSuccess: (next) => {
           qc.setQueryData(getGetSessionQueryKey(), next);
           form.reset({ email: v.email, password: '' });
-          navigate(firstAllowedPath(next));
+          if (!next.pendingSecondFactor) navigate(firstAllowedPath(next));
         },
         onError: () => form.setValue('password', ''),
       },
@@ -104,6 +106,7 @@ export default function LoginPage() {
           </div>
         </div>
         <div className="flex flex-1 items-center justify-center px-5 pb-16 pt-6 sm:px-8">
+          {session?.pendingSecondFactor ? <SecondFactorStep /> : (
           <div className="fade-up w-full max-w-[400px]">
             <h1 className="text-[1.75rem] font-semibold tracking-tight" data-testid="text-login-title">
               {t('login.title')}
@@ -188,8 +191,12 @@ export default function LoginPage() {
                 </Button>
               </form>
             </Form>
-            <p className="mt-8 border-t pt-5 text-sm text-muted-foreground">{t('login.help')}</p>
+            <Link href="/reset" className="mt-4 inline-flex min-h-11 items-center text-sm font-medium text-primary underline-offset-4 hover:underline" data-testid="link-forgot-password">
+              {t('sec.login.forgot')}
+            </Link>
+            <p className="mt-4 border-t pt-5 text-sm text-muted-foreground">{t('login.help')}</p>
           </div>
+          )}
         </div>
       </main>
     </div>

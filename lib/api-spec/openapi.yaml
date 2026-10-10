@@ -11,6 +11,63 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /auth/security:
+    get:
+      operationId: getAccountSecurity
+      responses:
+        "200":
+          description: Account security state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountSecurityState" }
+    post:
+      operationId: changeAccountSecurity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecurityActionInput" }
+      responses:
+        "200":
+          description: Completed action; secrets appear only on their creation response
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SecurityActionResult" }
+  /auth/security/sessions:
+    get:
+      operationId: getAccountSessions
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+      responses:
+        "200":
+          description: Active account sessions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccountSessions" }
+  /auth/second-factor:
+    post:
+      operationId: completeSecondFactor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SecondFactorInput" }
+      responses:
+        "200":
+          description: Signed-in session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /auth/recovery:
+    post:
+      operationId: recoverAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecoveryInput" }
+      responses:
+        "204": { description: Password replaced; sign in again including any enrolled second factor }
   /ai/assist:
     post:
       operationId: assistAi
@@ -850,6 +907,70 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    AccountSecurityState:
+      type: object
+      required: [enrolled, setupRequired, recoveryRemaining, hasRecoveryKey, singleManager, factoryRequiresMfa]
+      properties:
+        enrolled: { type: boolean }
+        setupRequired: { type: boolean }
+        recoveryRemaining: { type: integer }
+        hasRecoveryKey: { type: boolean }
+        singleManager: { type: boolean }
+        factoryRequiresMfa: { type: boolean }
+        graceUntil: { type: [string, "null"] }
+        lastSignIn: { type: [string, "null"] }
+    SecurityActionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [reauth, enroll, confirm, acknowledge, disable, recovery-key, revoke-session, revoke-others, require-mfa, issue-reset, revoke-reset]
+        password: { type: string, maxLength: 256 }
+        code: { type: string, maxLength: 128 }
+        memberId: { type: string, maxLength: 100 }
+        resetId: { type: string, format: uuid }
+        sessionId: { type: string, maxLength: 128 }
+        required: { type: boolean }
+    SecurityActionResult:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean }
+        key: { type: string }
+        uri: { type: string }
+        token: { type: string }
+        resetId: { type: string }
+        recoveryCodes: { type: array, items: { type: string } }
+    SecondFactorInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1, maxLength: 128 }
+    RecoveryInput:
+      type: object
+      required: [password]
+      properties:
+        password: { type: string, minLength: 12, maxLength: 256 }
+        token: { type: string, maxLength: 128 }
+        email: { type: string, maxLength: 254 }
+        recoveryKey: { type: string, maxLength: 128 }
+    AccountSessions:
+      type: object
+      required: [items, total, page, pageSize]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/AccountSessionItem" } }
+        total: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+    AccountSessionItem:
+      type: object
+      required: [id, device, lastActive, current]
+      properties:
+        id: { type: string }
+        device: { type: string }
+        lastActive: { type: string }
+        current: { type: boolean }
     AiAssistInput:
       type: object
       required: [task, language]
@@ -1844,6 +1965,7 @@ components:
       type: object
       required: [user, csrfToken, memberships, activeFactoryId, allowedPages]
       properties:
+        pendingSecondFactor: { type: boolean }
         user:
           anyOf:
             - { $ref: "#/components/schemas/User" }

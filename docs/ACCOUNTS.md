@@ -1,3 +1,17 @@
+# Phase 18 addition
+
+Password recovery, authenticator setup, sessions, configuration and manual steps
+are documented in [PHASE18_SECURITY.md](PHASE18_SECURITY.md).
+
+The no-op `NotificationProvider` is called on reset issue/completion and MFA-policy
+changes. Adding delivery later requires a provider adapter, verified sender and
+recipient handling, deployment credentials, retry/idempotency policy and tests
+for delivery failure. It must not log messages containing credentials or retain
+recovery material. The current notification events contain identifiers and event
+types only; reset links are still shared manually. Automatic secret-link delivery
+would need a separately reviewed, transient token transport contract, not a query
+that attempts to recover the stored token hash.
+
 # Accounts and invitations — Phase 8
 
 ## Platform factory management

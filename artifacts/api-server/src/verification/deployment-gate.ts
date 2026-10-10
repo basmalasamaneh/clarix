@@ -41,12 +41,15 @@ try{
   const c=await pool.connect();setupClient=c;
   await c.query("CREATE ROLE proof_owner LOGIN CREATEROLE; ALTER DATABASE postgres OWNER TO proof_owner; ALTER SCHEMA public OWNER TO proof_owner; SET ROLE proof_owner");
   const env={...process.env,DATABASE_URL:url,NODE_ENV:"production",SEED_TEST_USERS:"false",CLARIX_RUNTIME_PASSWORD:password,
+    CLARIX_REQUIRE_ADMIN_MFA:"false",CLARIX_SESSION_IDLE_SECONDS:"1800",CLARIX_SESSION_ABSOLUTE_SECONDS:"28800",
     ...(adminMode?{CLARIX_INITIAL_ROLE:"platform_admin",CLARIX_INITIAL_ADMIN_EMAIL:"admin@proof.invalid"}:{}),
     CLARIX_INITIAL_INVITE_TOKEN:token,CLARIX_INITIAL_FACTORY_NAME:"Proof A",CLARIX_INITIAL_FACTORY_SLUG:"proof-a",CLARIX_INITIAL_MANAGER_EMAIL:"manager@proof.invalid"};
   // Simulate the tables produced by Publish, not a startup migration.
   await c.query(await readFile(resolve(root,"lib/db/drizzle/0000_production-foundation.sql"),"utf8"));
   await c.query(await readFile(resolve(root,"lib/db/platform-migration.sql"),"utf8"));
   await c.query(await readFile(resolve(root,"lib/db/snapshot-migration.sql"),"utf8"));
+  await c.query(await readFile(resolve(root,"lib/db/ai-migration.sql"),"utf8"));
+  await c.query(await readFile(resolve(root,"lib/db/security-migration.sql"),"utf8"));
   await c.query("ALTER TABLE invitations ALTER COLUMN created_by DROP NOT NULL");
   // Provision through a table-owning CREATEROLE login, not a superuser or
   // BYPASSRLS login. Keep fixture administration separate in this test cluster.
@@ -88,6 +91,9 @@ try{
   const childEnv=await readFile(`/proc/${server.pid}/environ`,"utf8");
   assert.ok(!childEnv.includes(token)&&!childEnv.includes("proof_owner"));
   assert.ok(!childEnv.includes("SEED_TEST_PASSWORD"));
+  for(const key of ["CLARIX_TOTP_ENCRYPTION_KEY","CLARIX_REQUIRE_ADMIN_MFA","CLARIX_SESSION_IDLE_SECONDS","CLARIX_SESSION_ABSOLUTE_SECONDS"])
+    assert.ok(childEnv.includes(`${key}=`),"Required security configuration absent from production API");
+  checks.push("security encryption key and deployment policy/timeouts reach request-serving process");
   checks.push("real production launcher exec replaces owner process; API environment has no owner, bootstrap token or seed password");
   let cookie="",csrf="";
   const call=async(path:string,body?:unknown)=>{

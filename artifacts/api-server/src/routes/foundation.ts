@@ -11,6 +11,8 @@ import { isProduction, allowedPages } from "../lib/permissions";
 import { withRequestTenant } from "../lib/tenancy";
 import {getMemberships} from "../lib/tenancy";
 import {loginAudit,signIn} from "../accounts/auth";
+import {needsFactor,throttle,clearLimit} from "../accounts/security";
+import {ImportError} from "../imports/model";
 
 const router: IRouter = Router();
 const loginLimit = rateLimit({
@@ -27,14 +29,25 @@ router.get("/auth/session", async (req, res) => {
 router.post("/auth/login", loginLimit, async (req, res) => {
   const input = LoginBody.strict().safeParse(req.body);
   if (!input.success) { res.status(400).json({ error: "INVALID_INPUT" }); return; }
+  try{
+   await throttle("login-ip",req.ip??"",300);
+   await throttle("login-account",input.data.email.trim().toLowerCase(),15);
+  }catch(e){if(e instanceof ImportError){res.status(e.status).json({error:e.code});return;}throw e;}
   const [user] = await db.select().from(users).where(eq(users.email, input.data.email.trim().toLowerCase()));
   const valid = await argon2.verify(user?.passwordHash ?? await dummyHash, input.data.password);
   const memberships=user&&!user.platformAdmin?await getMemberships(user.id):[];
   const permitted=!!user&&valid&&!(user.testAccount&&isProduction())&&(user.platformAdmin||memberships.length>0);
-  if(user) await loginAudit(user.id,permitted);
+  if(user&&!permitted) await loginAudit(user.id,false);
   if (!permitted) {
     res.status(401).json({ error: "INVALID_CREDENTIALS" }); return;
   }
+  await clearLimit("login-account",input.data.email.trim().toLowerCase());
+  if(await needsFactor(user.id)){
+   await new Promise<void>((resolve,reject)=>req.session.regenerate(e=>e?reject(e):resolve()));
+   req.session.pendingFactor={id:user.id,version:user.sessionVersion,at:Date.now()};
+   const view=await sessionView(req);await saveSession(req);res.json(view);return;
+  }
+  await loginAudit(user.id,true);
   const view = await signIn(req,user.id,user.sessionVersion);
   req.log.info("User authenticated");
   res.json(view);

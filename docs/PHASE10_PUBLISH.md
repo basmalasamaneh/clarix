@@ -23,6 +23,11 @@ No publishing was performed. **You** means a Replit-interface action;
    Verify storage settings privately. **Do not set `SEED_TEST_PASSWORD` for the
    deployment.** Remove its inherited production entry without deleting the
    development secret. Never copy the development `DATABASE_URL`.
+   Also set a separate production `CLARIX_TOTP_ENCRYPTION_KEY` (64 random
+   hexadecimal characters). Review `CLARIX_REQUIRE_ADMIN_MFA` (defaults on in
+   production), `CLARIX_SESSION_IDLE_SECONDS` and
+   `CLARIX_SESSION_ABSOLUTE_SECONDS`. See `PHASE18_SECURITY.md` before rotating
+   encryption keys. No enrollment is enforced before saved-code acknowledgement.
 4. **You:** Generate a cryptographically random **43-character token** in a
    trusted local password manager, using only letters, digits, hyphens and
    underscores. This is at least 256 bits when selected uniformly. Save it

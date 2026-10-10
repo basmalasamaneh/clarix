@@ -9,6 +9,7 @@ import importsRouter from "./routes/imports";
 import aiRouter from "./routes/ai";
 import accountsRouter from "./routes/accounts";
 import platformRouter from "./routes/platform";
+import securityRouter,{securityEnforcement} from "./routes/security";
 
 const app: Express = express();
 
@@ -39,6 +40,8 @@ app.use("/api", (_req, res, next) => { res.setHeader("Cache-Control", "no-store"
 app.use("/api", csrfGuard);
 
 app.use("/api", router);
+app.use("/api", securityRouter);
+app.use("/api", securityEnforcement);
 app.use("/api", accountsRouter);
 app.use("/api", foundationRouter);
 app.use("/api", importsRouter);

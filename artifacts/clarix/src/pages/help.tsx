@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import '@/lib/phase17-i18n';
-import { ClipboardCheck, Columns2, FileDown, FileUp, CircleHelp, Ban, Info, Archive, type LucideIcon } from 'lucide-react';
+import '@/lib/phase18-i18n';
+import { KeyRound, LifeBuoy, ShieldCheck, Smartphone, ClipboardCheck, Columns2, FileDown, FileUp, CircleHelp, Ban, Info, Archive, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GlossaryTip } from '@/components/charts/glossary';
 import '@/lib/phase14-i18n';
@@ -108,6 +109,15 @@ export default function HelpPage() {
         <Note icon={Ban} tip="na" title={t('help.naTitle')} body={t('help.naBody')} testId="card-help-na" />
         <Note icon={Info} title={t('help.causeTitle')} body={t('help.causeBody')} testId="card-help-cause" />
       </div>
+      <section className="mt-10" aria-labelledby="help-security" data-testid="section-help-security">
+        <h2 id="help-security" className="text-lg font-semibold">{t('sec.help.title')}</h2>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <Note icon={LifeBuoy} title={t('sec.help.forgotTitle')} body={t('sec.help.forgotBody')} testId="card-help-forgot" />
+          <Note icon={ShieldCheck} title={t('sec.help.setupTitle')} body={t('sec.help.setupBody')} testId="card-help-mfa" />
+          <Note icon={Smartphone} title={t('sec.help.phoneTitle')} body={t('sec.help.phoneBody')} testId="card-help-phone" />
+          <Note icon={KeyRound} title={t('sec.help.keyTitle')} body={t('sec.help.keyBody')} testId="card-help-key" />
+        </div>
+      </section>
       <div className="mt-4">
         <Note icon={CircleHelp} title={t('help.moreTitle')} body={t('help.moreBody')} testId="card-help-more" />
       </div>

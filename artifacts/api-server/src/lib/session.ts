@@ -12,9 +12,21 @@ declare module "express-session" {
     activeFactoryId?: string;
     authenticatedAt?: number;
     authVersion?: number;
+    lastActiveAt?: number;
+    confirmedAt?: number;
+    factorVerified?: boolean;
+    device?: string;
+    pendingFactor?: {id:string;version:number;at:number};
   }
 }
 const secret = process.env.SESSION_SECRET;
+function timeout(name:string,fallback:number){
+ const n=Number(process.env[name]??fallback);
+ if(!Number.isSafeInteger(n)||n<60||n>2592000)throw new Error("Invalid session timeout configuration");
+ return n*1000;
+}
+export const absoluteTimeout=timeout("CLARIX_SESSION_ABSOLUTE_SECONDS",28800);
+export const idleTimeout=timeout("CLARIX_SESSION_IDLE_SECONDS",1800);
 if (!secret) throw new Error("SESSION_SECRET is required");
 export const sessionStore = new (connectPgSimple(session))({
   pool, schemaName: process.env.CLARIX_TEST_SCHEMA || "public", tableName: "sessions", createTableIfMissing: false,
@@ -22,7 +34,7 @@ export const sessionStore = new (connectPgSimple(session))({
 export const sessionMiddleware = session({
   name: "clarix.sid", secret, store: sessionStore,
   resave: false, saveUninitialized: false,
-  cookie: { httpOnly: true, secure: isProduction(), sameSite: "lax", maxAge: 8 * 60 * 60 * 1000, path: "/" },
+   cookie: { httpOnly: true, secure: isProduction(), sameSite: "lax", maxAge: absoluteTimeout, path: "/" },
 });
 export function csrfToken(req: Request) {
   return req.session.csrfToken ??= randomBytes(32).toString("hex");

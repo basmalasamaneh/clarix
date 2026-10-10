@@ -64,6 +64,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { errorStatus, localizeError, usePrefs } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { MemberResetControl } from '@/components/security/security-admin';
+import { SecondManagerHint, useSecurityState } from '@/components/security/security-kit';
 import {
   absoluteInviteUrl,
   endLocalSession,
@@ -204,6 +206,7 @@ export default function MembersPage({ session }: { session: Session }) {
     () => auditItems.slice((aPage - 1) * AUDIT_PER_PAGE, aPage * AUDIT_PER_PAGE),
     [auditItems, aPage],
   );
+  const sec = useSecurityState();
   const busy = update.isPending || revoke.isPending || reissue.isPending;
 
   return (
@@ -221,6 +224,8 @@ export default function MembersPage({ session }: { session: Session }) {
           {t('acct.members.invite')}
         </Button>
       </header>
+
+      {sec.data?.singleManager && <SecondManagerHint testId="notice-members-second-manager" showLink={false} />}
 
       <Panel
         testId="panel-members"
@@ -278,6 +283,8 @@ export default function MembersPage({ session }: { session: Session }) {
                         {t('acct.members.loginsDetail', { ok: m.loginSuccessCount, fail: m.loginFailureCount })}
                       </div>
                     </div>
+                    <div className="flex flex-wrap gap-1.5 md:justify-end">
+                    {!self && m.active && <MemberResetControl member={m} disabled={busy} />}
                     <Button
                       variant="outline"
                       className={cn('min-h-11', m.active && 'text-status-red')}
@@ -287,6 +294,7 @@ export default function MembersPage({ session }: { session: Session }) {
                     >
                       {m.active ? t('acct.members.deactivate') : t('acct.members.reactivate')}
                     </Button>
+                    </div>
                   </li>
                 );
               })}

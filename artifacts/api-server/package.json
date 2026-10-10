@@ -29,6 +29,7 @@
     "express-rate-limit": "^8.7.1",
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
+    "otpauth": "^9.5.2",
     "pg": "^8.23.0",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",

@@ -5,6 +5,95 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AccountSecurityState {
+  enrolled: boolean;
+  setupRequired: boolean;
+  recoveryRemaining: number;
+  hasRecoveryKey: boolean;
+  singleManager: boolean;
+  factoryRequiresMfa: boolean;
+  /** @nullable */
+  graceUntil?: string | null;
+  /** @nullable */
+  lastSignIn?: string | null;
+}
+
+export type SecurityActionInputAction = typeof SecurityActionInputAction[keyof typeof SecurityActionInputAction];
+
+
+export const SecurityActionInputAction = {
+  reauth: 'reauth',
+  enroll: 'enroll',
+  confirm: 'confirm',
+  acknowledge: 'acknowledge',
+  disable: 'disable',
+  'recovery-key': 'recovery-key',
+  'revoke-session': 'revoke-session',
+  'revoke-others': 'revoke-others',
+  'require-mfa': 'require-mfa',
+  'issue-reset': 'issue-reset',
+  'revoke-reset': 'revoke-reset',
+} as const;
+
+export interface SecurityActionInput {
+  action: SecurityActionInputAction;
+  /** @maxLength 256 */
+  password?: string;
+  /** @maxLength 128 */
+  code?: string;
+  /** @maxLength 100 */
+  memberId?: string;
+  resetId?: string;
+  /** @maxLength 128 */
+  sessionId?: string;
+  required?: boolean;
+}
+
+export interface SecurityActionResult {
+  ok: boolean;
+  key?: string;
+  uri?: string;
+  token?: string;
+  resetId?: string;
+  recoveryCodes?: string[];
+}
+
+export interface SecondFactorInput {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  code: string;
+}
+
+export interface RecoveryInput {
+  /**
+     * @minLength 12
+     * @maxLength 256
+     */
+  password: string;
+  /** @maxLength 128 */
+  token?: string;
+  /** @maxLength 254 */
+  email?: string;
+  /** @maxLength 128 */
+  recoveryKey?: string;
+}
+
+export interface AccountSessionItem {
+  id: string;
+  device: string;
+  lastActive: string;
+  current: boolean;
+}
+
+export interface AccountSessions {
+  items: AccountSessionItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export type AiAssistInputTask = typeof AiAssistInputTask[keyof typeof AiAssistInputTask];
 
 
@@ -1521,6 +1610,7 @@ export interface User {
 }
 
 export interface Session {
+  pendingSecondFactor?: boolean;
   user: User | null;
   csrfToken: string;
   /** @nullable */
@@ -1545,6 +1635,13 @@ export interface PageState {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetAccountSessionsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
 
 export type GetPlatformFactoriesParams = {
 /**

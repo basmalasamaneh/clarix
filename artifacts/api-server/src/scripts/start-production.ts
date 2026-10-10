@@ -20,6 +20,8 @@ try{
   // Explicit allowlist: no owner/legacy PG credentials or bootstrap token are
   // inherited by the request-serving process.
   for(const key of ["PATH","HOME","LANG","TZ","NODE_ENV","PORT","BASE_PATH","SESSION_SECRET","CLARIX_RUNTIME_PASSWORD",
+    "CLARIX_TOTP_ENCRYPTION_KEY","CLARIX_TOTP_PREVIOUS_ENCRYPTION_KEY","CLARIX_REQUIRE_ADMIN_MFA",
+    "CLARIX_SESSION_IDLE_SECONDS","CLARIX_SESSION_ABSOLUTE_SECONDS",
     "DEFAULT_OBJECT_STORAGE_BUCKET_ID","PRIVATE_OBJECT_DIR","PUBLIC_OBJECT_SEARCH_PATHS","LOG_LEVEL",
     "REPL_ID","REPLIT_DEPLOYMENT","REPLIT_SIDECAR_URL","REPLIT_DOMAINS"])
     if(process.env[key]!==undefined)env[key]=process.env[key]!;

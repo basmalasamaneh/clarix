@@ -56,7 +56,7 @@ export async function configureDeployment(c:PoolClient,env:NodeJS.ProcessEnv,sql
         await c.query(`CREATE ROLE ${role} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS`);
     }
     await c.query("GRANT clarix_accounts,clarix_platform TO CURRENT_USER; GRANT USAGE ON SCHEMA public TO clarix_accounts,clarix_platform");
-    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql","snapshot-rls.sql","ai-rls.sql"])
+    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql","snapshot-rls.sql","ai-rls.sql","security-rls.sql"])
       await c.query(await readFile(resolve(sqlDir,file),"utf8"));
     // These SQL files deliberately restore policies/triggers, not table structure.
     for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit"])

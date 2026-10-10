@@ -31,6 +31,8 @@ try {
   await pool.query(await readFile(new URL("../../../../lib/db/snapshot-rls.sql",import.meta.url),"utf8"));
   await pool.query(await readFile(new URL("../../../../lib/db/ai-migration.sql",import.meta.url),"utf8"));
   await pool.query(await readFile(new URL("../../../../lib/db/ai-rls.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/security-migration.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/security-rls.sql",import.meta.url),"utf8"));
 } finally {
   await pool.end();
 }

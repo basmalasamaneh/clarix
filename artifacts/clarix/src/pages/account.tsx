@@ -21,7 +21,9 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { errorStatus, localizeError } from '@/lib/session';
+import { errorCode, errorStatus, localizeError } from '@/lib/session';
+import { AccountSecurity } from '@/components/security/account-security';
+import { ReauthInline, StrengthGuide } from '@/components/security/security-kit';
 import { endLocalSession, LengthMeter, newPasswordSchema, Panel, PasswordInput, replaceSession } from '@/components/accounts/shared';
 
 const EMPTY = { currentPassword: '', newPassword: '', confirm: '' };
@@ -37,6 +39,7 @@ export default function AccountPage({ session }: { session: Session }) {
   const logout = useLogout({ request: req });
   const logoutAll = useLogoutEverywhere({ request: req });
   const [confirmAll, setConfirmAll] = useState(false);
+  const [pwRetry, setPwRetry] = useState<null | V>(null);
 
   const schema = z
     .object({
@@ -57,21 +60,28 @@ export default function AccountPage({ session }: { session: Session }) {
     navigate('/login');
   };
 
-  const submit = (v: V) =>
+  const submit = (v: V) => {
+    setPwRetry(null);
     change.mutate(
       { data: { currentPassword: v.currentPassword, newPassword: v.newPassword } },
       {
         onSuccess: (next) => {
+          change.reset();
           form.reset(EMPTY);
           replaceSession(qc, next, false);
           toast({ description: t('acct.account.changed') });
         },
         onError: (e) => {
+          if (errorCode(e) === 'RECENT_SIGN_IN_REQUIRED') {
+            setPwRetry(v);
+            return;
+          }
           form.setValue('currentPassword', '');
           if (errorStatus(e) === 401) signedOut();
         },
       },
     );
+  };
 
   const memberships = session.memberships;
 
@@ -137,6 +147,7 @@ export default function AccountPage({ session }: { session: Session }) {
                       <PasswordInput {...field} autoComplete="new-password" maxLength={512} testId="input-new-password" />
                     </FormControl>
                     <LengthMeter value={pw} testId="meter-new-password" />
+                    <StrengthGuide value={pw} testId="guide-new-password" />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -155,7 +166,7 @@ export default function AccountPage({ session }: { session: Session }) {
                 )}
               />
             </div>
-            {change.isError && errorStatus(change.error) !== 401 && (
+            {change.isError && !pwRetry && errorStatus(change.error) !== 401 && (
               <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-status-red" data-testid="error-change-password">
                 {localizeError(t, change.error)}
               </p>
@@ -167,8 +178,17 @@ export default function AccountPage({ session }: { session: Session }) {
               </Button>
             </div>
           </form>
+          {pwRetry && (
+              <div className="px-4 pb-5 sm:px-5"><ReauthInline
+                onConfirmed={() => submit(pwRetry)}
+                onCancel={() => { setPwRetry(null); change.reset(); form.setValue('currentPassword', ''); }}
+                testId="reauth-password"
+              /></div>
+            )}
         </Form>
       </Panel>
+
+      <AccountSecurity session={session} />
 
       <Panel testId="panel-sessions" title={t('acct.account.sessionsTitle')} lead={t('acct.account.sessionsLead')}>
         <div className="flex flex-wrap gap-3 px-4 py-5 sm:px-5">

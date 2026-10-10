@@ -9,6 +9,7 @@ import type { Membership } from './membership';
 import type { User } from './user';
 
 export interface Session {
+  pendingSecondFactor?: boolean;
   user: User | null;
   csrfToken: string;
   /** @nullable */

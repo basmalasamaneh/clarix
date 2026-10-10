@@ -8,6 +8,120 @@
 import * as zod from 'zod';
 
 
+export const GetAccountSecurityResponse = zod.object({
+  "enrolled": zod.boolean(),
+  "setupRequired": zod.boolean(),
+  "recoveryRemaining": zod.number().int(),
+  "hasRecoveryKey": zod.boolean(),
+  "singleManager": zod.boolean(),
+  "factoryRequiresMfa": zod.boolean(),
+  "graceUntil": zod.string().nullish(),
+  "lastSignIn": zod.string().nullish()
+})
+
+
+export const changeAccountSecurityBodyPasswordMax = 256;
+
+export const changeAccountSecurityBodyCodeMax = 128;
+
+export const changeAccountSecurityBodyMemberIdMax = 100;
+
+export const changeAccountSecurityBodySessionIdMax = 128;
+
+
+
+export const ChangeAccountSecurityBody = zod.object({
+  "action": zod.enum(['reauth', 'enroll', 'confirm', 'acknowledge', 'disable', 'recovery-key', 'revoke-session', 'revoke-others', 'require-mfa', 'issue-reset', 'revoke-reset']),
+  "password": zod.string().max(changeAccountSecurityBodyPasswordMax).optional(),
+  "code": zod.string().max(changeAccountSecurityBodyCodeMax).optional(),
+  "memberId": zod.string().max(changeAccountSecurityBodyMemberIdMax).optional(),
+  "resetId": zod.string().uuid().optional(),
+  "sessionId": zod.string().max(changeAccountSecurityBodySessionIdMax).optional(),
+  "required": zod.boolean().optional()
+})
+
+export const ChangeAccountSecurityResponse = zod.object({
+  "ok": zod.boolean(),
+  "key": zod.string().optional(),
+  "uri": zod.string().optional(),
+  "token": zod.string().optional(),
+  "resetId": zod.string().optional(),
+  "recoveryCodes": zod.array(zod.string()).optional()
+})
+
+
+export const getAccountSessionsQueryPageDefault = 1;
+
+
+
+export const GetAccountSessionsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).default(getAccountSessionsQueryPageDefault)
+})
+
+export const GetAccountSessionsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "device": zod.string(),
+  "lastActive": zod.string(),
+  "current": zod.boolean()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "pageSize": zod.number().int()
+})
+
+
+export const completeSecondFactorBodyCodeMax = 128;
+
+
+
+export const CompleteSecondFactorBody = zod.object({
+  "code": zod.string().min(1).max(completeSecondFactorBodyCodeMax)
+})
+
+export const CompleteSecondFactorResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "platformAdmin": zod.boolean(),
+  "language": zod.enum(['en', 'ar']),
+  "theme": zod.enum(['light', 'dark', 'system']),
+  "tourCompleted": zod.boolean()
+}),zod.null()]),
+  "csrfToken": zod.string(),
+  "activeFactoryId": zod.string().nullable(),
+  "memberships": zod.array(zod.object({
+  "factoryId": zod.string(),
+  "factoryName": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
+})),
+  "allowedPages": zod.array(zod.string())
+})
+
+
+export const recoverAccountBodyPasswordMin = 12;
+export const recoverAccountBodyPasswordMax = 256;
+
+export const recoverAccountBodyTokenMax = 128;
+
+export const recoverAccountBodyEmailMax = 254;
+
+export const recoverAccountBodyRecoveryKeyMax = 128;
+
+
+
+export const RecoverAccountBody = zod.object({
+  "password": zod.string().min(recoverAccountBodyPasswordMin).max(recoverAccountBodyPasswordMax),
+  "token": zod.string().max(recoverAccountBodyTokenMax).optional(),
+  "email": zod.string().max(recoverAccountBodyEmailMax).optional(),
+  "recoveryKey": zod.string().max(recoverAccountBodyRecoveryKeyMax).optional()
+})
+
+export const RecoverAccountResponse = zod.void()
+
+
 export const assistAiBodyQuestionMax = 500;
 
 export const assistAiBodySourceMax = 200;
@@ -835,6 +949,7 @@ export const AcceptInvitationBody = zod.object({
 })
 
 export const AcceptInvitationResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
   "user": zod.union([zod.object({
   "id": zod.string(),
   "email": zod.string(),
@@ -868,6 +983,7 @@ export const ChangePasswordBody = zod.object({
 })
 
 export const ChangePasswordResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
   "user": zod.union([zod.object({
   "id": zod.string(),
   "email": zod.string(),
@@ -2161,6 +2277,7 @@ export const HealthCheckResponse = zod.object({
 
 
 export const GetSessionResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
   "user": zod.union([zod.object({
   "id": zod.string(),
   "email": zod.string(),
@@ -2193,6 +2310,7 @@ export const LoginBody = zod.object({
 })
 
 export const LoginResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
   "user": zod.union([zod.object({
   "id": zod.string(),
   "email": zod.string(),
@@ -2223,6 +2341,7 @@ export const UpdatePreferencesBody = zod.object({
 })
 
 export const UpdatePreferencesResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
   "user": zod.union([zod.object({
   "id": zod.string(),
   "email": zod.string(),
@@ -2248,6 +2367,7 @@ export const SelectFactoryBody = zod.object({
 })
 
 export const SelectFactoryResponse = zod.object({
+  "pendingSecondFactor": zod.boolean().optional(),
   "user": zod.union([zod.object({
   "id": zod.string(),
   "email": zod.string(),

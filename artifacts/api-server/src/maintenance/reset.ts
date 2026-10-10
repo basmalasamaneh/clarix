@@ -1,6 +1,7 @@
 import type {PoolClient} from "pg";
 export const importedTables=["events_history","production_records_history","orders_history","data_issues","events","production_records","orders","raw_rows","imports","column_mappings"];
-export const protectedTables=["users","factories","memberships","sessions","invitations","account_audit","platform_audit","factory_settings_audit","platform_invitations","analysis_snapshots","reconciliations","source_row_links","snapshot_audit","ai_state","ai_usage"];
+export const securityTables=["account_security","password_resets","security_audit","security_limits","revoked_sessions"];
+export const protectedTables=["users","factories","memberships","sessions","invitations","account_audit","platform_audit","factory_settings_audit","platform_invitations","analysis_snapshots","reconciliations","source_row_links","snapshot_audit","ai_state","ai_usage","account_security","password_resets","security_audit","security_limits","revoked_sessions"];
 export async function requireUnfilteredObserver(c:PoolClient) {
   const role=(await c.query("SELECT rolsuper OR rolbypassrls AS allowed FROM pg_roles WHERE rolname=current_user")).rows[0];
   if(role?.allowed!==true) throw new Error("Isolation evidence requires a privileged BYPASSRLS setup observer; refusing filtered fingerprints");
@@ -28,7 +29,7 @@ export async function fingerprint(c:PoolClient,schema="public",factory?:string,o
     let where="";
     const parameters:string[]=[];
     // Users/sessions are global tables: never bind a factory to those queries.
-    if(factory!==undefined && table!=="users" && table!=="sessions" && table!=="platform_invitations") {
+    if(factory!==undefined && !["users","sessions","platform_invitations","account_security","security_audit","security_limits","revoked_sessions"].includes(table)) {
       where=table==="factories"?" WHERE t.id=$1":" WHERE t.factory_id=$1";
       parameters.push(factory);
     }
@@ -51,7 +52,7 @@ export async function resetFactory(c:PoolClient,args:string[],env:NodeJS.Process
     // Exclusive locks and transaction-local DDL make bypass unobservable to other
     // connections. Rollback restores all guards, including on a failed delete.
     await c.query(`LOCK TABLE ${[...importedTables,"factories"].map(t=>`"${t}"`).join(",")} IN ACCESS EXCLUSIVE MODE`);
-    for(const t of [...importedTables,"factories","memberships"]) await c.query(`ALTER TABLE "${t}" NO FORCE ROW LEVEL SECURITY`);
+    for(const t of [...importedTables,"factories","memberships",...securityTables]) await c.query(`ALTER TABLE "${t}" NO FORCE ROW LEVEL SECURITY`);
     if((await c.query("SELECT id FROM factories WHERE id=$1",[factory])).rowCount!==1) throw new Error("Unknown factory slug");
     const before=await fingerprint(c,identity.s);
     const rolesBefore=await roleFingerprint(c);
@@ -74,7 +75,7 @@ export async function resetFactory(c:PoolClient,args:string[],env:NodeJS.Process
     for(let i=0;i<otherBefore.length;i++)
       if(JSON.stringify(otherStates[i])!==JSON.stringify(await fingerprint(c,identity.s,otherBefore[i].id))) throw new Error("Another factory changed");
     for(const t of importedTables) if(scopedAfter[t].count) throw new Error(`Reset incomplete: ${t}`);
-    for(const t of [...importedTables,"factories","memberships"]) await c.query(`ALTER TABLE "${t}" FORCE ROW LEVEL SECURITY`);
+    for(const t of [...importedTables,"factories","memberships",...securityTables]) await c.query(`ALTER TABLE "${t}" FORCE ROW LEVEL SECURITY`);
     await c.query("COMMIT");
     return {factory,before:scopedBefore,after:scopedAfter,sources:{before:sourcesBefore,after:0},rolesUnchanged:true,protectedUnchanged:true,otherFactoriesUnchanged:true,
       globalCounts:{before:Object.fromEntries(Object.entries(before).map(([k,v])=>[k,v.count])),after:Object.fromEntries(Object.entries(after).map(([k,v])=>[k,v.count]))}};

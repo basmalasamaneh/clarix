@@ -21,6 +21,8 @@ import type {
 
 import type {
   AccountAudit,
+  AccountSecurityState,
+  AccountSessions,
   AiAssistInput,
   AiAssistResult,
   AiConsent,
@@ -34,6 +36,7 @@ import type {
   FactoryPreferences,
   FactorySelection,
   FirstManagerInvitationAction,
+  GetAccountSessionsParams,
   GetFactorySettingsAuditParams,
   GetImportErrorsParams,
   GetInvitationDetails200,
@@ -87,8 +90,12 @@ import type {
   ReconciliationPreviewInput,
   ReconciliationRecord,
   ReconciliationResult,
+  RecoveryInput,
   ReportFigures,
   RunComparison,
+  SecondFactorInput,
+  SecurityActionInput,
+  SecurityActionResult,
   Session,
   SnapshotDetail,
   SnapshotInput,
@@ -126,6 +133,401 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetAccountSecurityUrl = () => {
+
+
+
+
+  return `/api/auth/security`
+}
+
+export const getAccountSecurity = async ( options?: Parameters<typeof customFetch>[1]): Promise<AccountSecurityState> => {
+
+  return customFetch<AccountSecurityState>(getGetAccountSecurityUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountSecurityQueryKey = () => {
+    return [
+    `/api/auth/security`
+    ] as const;
+    }
+
+
+export const getGetAccountSecurityQueryOptions = <TData = Awaited<ReturnType<typeof getAccountSecurity>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountSecurity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountSecurityQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountSecurity>>> = ({ signal }) => getAccountSecurity({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountSecurity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountSecurityQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountSecurity>>>
+export type GetAccountSecurityQueryError = ErrorType<unknown>
+
+
+
+export function useGetAccountSecurity<TData = Awaited<ReturnType<typeof getAccountSecurity>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountSecurity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountSecurityQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getChangeAccountSecurityUrl = () => {
+
+
+
+
+  return `/api/auth/security`
+}
+
+export const changeAccountSecurity = async (securityActionInput: SecurityActionInput, options?: Parameters<typeof customFetch>[1]): Promise<SecurityActionResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SecurityActionResult>(getChangeAccountSecurityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(securityActionInput)
+  }
+);}
+
+
+
+
+
+export const getChangeAccountSecurityMutationKey = () => ['changeAccountSecurity'] as const;
+
+export const getChangeAccountSecurityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAccountSecurity>>, TError,ChangeAccountSecurityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeAccountSecurity>>, TError,ChangeAccountSecurityMutationVariables, TContext> => {
+
+const mutationKey = getChangeAccountSecurityMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeAccountSecurity>>, ChangeAccountSecurityMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  changeAccountSecurity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeAccountSecurityMutationResult = NonNullable<Awaited<ReturnType<typeof changeAccountSecurity>>>
+    export type ChangeAccountSecurityMutationBody = BodyType<SecurityActionInput>
+    export type ChangeAccountSecurityMutationError = ErrorType<unknown>
+    export type ChangeAccountSecurityMutationVariables = {data: BodyType<SecurityActionInput>}
+
+    export const useChangeAccountSecurity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeAccountSecurity>>, TError,ChangeAccountSecurityMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changeAccountSecurity>>,
+        TError,
+        ChangeAccountSecurityMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeAccountSecurityMutationOptions(options));
+    }
+
+export const getGetAccountSessionsUrl = (params?: GetAccountSessionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/auth/security/sessions?${stringifiedParams}` : `/api/auth/security/sessions`
+}
+
+export const getAccountSessions = async (params?: GetAccountSessionsParams, options?: Parameters<typeof customFetch>[1]): Promise<AccountSessions> => {
+
+  return customFetch<AccountSessions>(getGetAccountSessionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAccountSessionsQueryKey = (params?: GetAccountSessionsParams,) => {
+    return [
+    `/api/auth/security/sessions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAccountSessionsQueryOptions = <TData = Awaited<ReturnType<typeof getAccountSessions>>, TError = ErrorType<unknown>>(params?: GetAccountSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAccountSessionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAccountSessions>>> = ({ signal }) => getAccountSessions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAccountSessions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAccountSessionsQueryResult = NonNullable<Awaited<ReturnType<typeof getAccountSessions>>>
+export type GetAccountSessionsQueryError = ErrorType<unknown>
+
+
+
+export function useGetAccountSessions<TData = Awaited<ReturnType<typeof getAccountSessions>>, TError = ErrorType<unknown>>(
+ params?: GetAccountSessionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAccountSessions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAccountSessionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCompleteSecondFactorUrl = () => {
+
+
+
+
+  return `/api/auth/second-factor`
+}
+
+export const completeSecondFactor = async (secondFactorInput: SecondFactorInput, options?: Parameters<typeof customFetch>[1]): Promise<Session> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<Session>(getCompleteSecondFactorUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(secondFactorInput)
+  }
+);}
+
+
+
+
+
+export const getCompleteSecondFactorMutationKey = () => ['completeSecondFactor'] as const;
+
+export const getCompleteSecondFactorMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSecondFactor>>, TError,CompleteSecondFactorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeSecondFactor>>, TError,CompleteSecondFactorMutationVariables, TContext> => {
+
+const mutationKey = getCompleteSecondFactorMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeSecondFactor>>, CompleteSecondFactorMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeSecondFactor(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteSecondFactorMutationResult = NonNullable<Awaited<ReturnType<typeof completeSecondFactor>>>
+    export type CompleteSecondFactorMutationBody = BodyType<SecondFactorInput>
+    export type CompleteSecondFactorMutationError = ErrorType<unknown>
+    export type CompleteSecondFactorMutationVariables = {data: BodyType<SecondFactorInput>}
+
+    export const useCompleteSecondFactor = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeSecondFactor>>, TError,CompleteSecondFactorMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeSecondFactor>>,
+        TError,
+        CompleteSecondFactorMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCompleteSecondFactorMutationOptions(options));
+    }
+
+export const getRecoverAccountUrl = () => {
+
+
+
+
+  return `/api/auth/recovery`
+}
+
+export const recoverAccount = async (recoveryInput: RecoveryInput, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getRecoverAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(recoveryInput)
+  }
+);}
+
+
+
+
+
+export const getRecoverAccountMutationKey = () => ['recoverAccount'] as const;
+
+export const getRecoverAccountMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverAccount>>, TError,RecoverAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recoverAccount>>, TError,RecoverAccountMutationVariables, TContext> => {
+
+const mutationKey = getRecoverAccountMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recoverAccount>>, RecoverAccountMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  recoverAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecoverAccountMutationResult = NonNullable<Awaited<ReturnType<typeof recoverAccount>>>
+    export type RecoverAccountMutationBody = BodyType<RecoveryInput>
+    export type RecoverAccountMutationError = ErrorType<unknown>
+    export type RecoverAccountMutationVariables = {data: BodyType<RecoveryInput>}
+
+    export const useRecoverAccount = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverAccount>>, TError,RecoverAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recoverAccount>>,
+        TError,
+        RecoverAccountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecoverAccountMutationOptions(options));
+    }
 
 export const getAssistAiUrl = () => {
 

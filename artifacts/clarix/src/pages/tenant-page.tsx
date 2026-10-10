@@ -10,6 +10,7 @@ import { PAGE_ICONS } from '@/components/app-shell';
 import { RunsSelect, ComparisonSelect } from '@/components/sources/run-select';
 import { SourceAdmin } from '@/components/sources/source-admin';
 import { FactorySettings } from '@/components/management/factory-settings';
+import { MfaPolicyPanel } from '@/components/security/security-admin';
 import { errorCode, errorStatus, firstAllowedPath, localizeError, type TenantPage } from '@/lib/session';
 
 export function ForbiddenState({ session }: { session: Session }) {
@@ -75,6 +76,7 @@ export default function TenantPageView({ page, session }: { page: TenantPage; se
       {page === 'settings' ? (
         <>
           <FactorySettings factoryId={factoryId} />
+          <div className="mt-6"><MfaPolicyPanel /></div>
           {session.memberships.find((m) => m.factoryId === session.activeFactoryId)?.role === 'factory_manager' && !session.user?.platformAdmin && <AiConsentSection key={factoryId} factoryId={factoryId} />}
         </>
       ) : page === 'runs' ? (
