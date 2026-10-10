@@ -1,0 +1,50 @@
+Phase 8 — Accounts, roles and invite-only onboarding. Read docs/CLARIX_SPEC.md (auth, roles, tenancy sections) and replit.md first. Build ONLY this phase.
+
+Goal
+A factory manager can invite people to their factory with a role, they accept via a link and set their own password, and the manager can manage members. No public sign-up. Keep it simple: no email service in this phase; invitations are shared as a copyable link.
+
+1. Roles (existing): Factory manager, Analyst, Viewer. Permissions stay as already enforced (Viewer read-only).
+   Only a Factory manager can invite, change roles, or deactivate members of THEIR factory.
+
+2. Invitations
+ - Members page (/members, Factory manager only): list of members (name, email, role, status active/deactivated, last login) and pending invitations.
+ - "Invite member": email + role. Creates a single-use invitation with a random, unguessable token stored HASHED (never plaintext), expiring in 7 days. Show the invite link once in a copy box (the plaintext token is shown only at creation).
+ - Pending invitations can be revoked and re-issued (re-issue invalidates the old link).
+ - Accept page (/invite/<token>): shows factory name and role, asks for name and a password (strength rules from spec, Argon2id). On success creates the user + membership for that factory ONLY and signs them in. Used/expired/revoked tokens show a neutral message that does not reveal whether an email exists.
+ - A person's factory comes from the invitation, never from client input. The email on the invitation cannot be changed at acceptance.
+
+3. Member management
+ - Change a member's role; deactivate/reactivate a member (deactivated users cannot sign in, existing sessions end immediately).
+ - A manager cannot remove or demote the last active Factory manager of the factory, and cannot deactivate themselves if they are the last one.
+ - Nothing is hard-deleted (history and audit stay).
+
+4. Account basics
+ - Change own password (requires current password; ends other sessions).
+ - Sign out; sign-out everywhere.
+ - Rate limiting and generic error messages on login and on invite acceptance; CSRF on all state-changing requests; no user enumeration.
+ - Password reset is OUT of scope for now; document that a manager can re-invite after deactivating the old member.
+
+5. Audit log (minimal)
+ - Append-only record of: invite created/revoked/accepted, role changed, member deactivated/reactivated, password changed, login success/failure counts per user (no passwords or tokens ever logged). Visible to the Factory manager on the Members page (read-only, latest 50).
+
+6. Dev/test accounts
+ - The seeded dev accounts remain guarded by SEED_TEST_USERS=true and non-production, with the password from the Replit Secret. Do not print or log the password. Add a note in docs on how to turn them off before publishing.
+
+7. UI/UX
+ - Arabic RTL + English LTR, light + dark, tokens only, 360/768/1280px. Clear empty, error and success states. Not colour alone for meaning. Keyboard accessible, focus visible.
+ - Simple wording for non-technical users.
+
+8. Tests
+ - Invitation lifecycle: create, accept, expire, revoke, re-issue, reuse of a used token fails, token stored hashed.
+ - Cross-factory: a manager of Ethmar cannot invite into or list members of Najm (T3/T4/T5 style); factory_id in the request body is ignored.
+ - Role enforcement: Analyst and Viewer get 403 on every members endpoint.
+ - Last-manager protection; deactivated user is locked out immediately.
+ - Rate limit and no user enumeration.
+ - Audit log has no secrets.
+ - Also RE-RUN the 24 Source Drawer bounds checks from Phase 7 that were flagged (animation offset), and report whether they pass now.
+ - Tests run in an isolated target and must not write to Ethmar/Najm dev data; show before/after counts.
+ - Screenshots at 360/1280px, Arabic/English, light/dark. State clearly you cannot judge visual quality.
+
+Do NOT build: password reset by email, email sending, SSO, Platform Admin access or delegation, second-factory features (Phase 9), charts, export, AI.
+
+Final report: built / not built, test table, bounds-check result, before/after counts, and exact manual steps for me.
