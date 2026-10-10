@@ -1,0 +1,36 @@
+Phase 19 — Final polish and publish readiness. Read docs/CLARIX_SPEC.md, replit.md and the reports for Phases 10, 12, 14, 15, 17 and 18 first. Build NO new product features. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Goal
+A non-technical person understands each page within seconds, in Arabic or English, light or dark, on a phone or a desktop, and the product is ready to publish.
+
+1. Production AI configuration gap
+ - Phase 18 reported "a separate existing production-AI configuration gap". Explain in plain words what it is (which secrets/settings, what happens in production if they are missing or wrong, and what a factory would see), then fix it minimally and safely. Required behaviour: AI is OFF unless the factory manager enabled it AND the deployment has a configured key; with no key the AI controls show a clear "not available" state and make no network call; the key is a deployment secret (name only), never in the client, logs or errors; the production publish checklist lists it as optional.
+
+2. Language and terminology
+ - ONE Arabic term for scrap everywhere (UI, glossary, chips, AI answers, Help, PDF, charts) and ONE for "run" (تشغيلة): the product currently mixes "هالك" and "هدر". Choose one, list every string changed, tell me which and why. Plural- and number-aware formatting (نقاط مئوية، ساعات، دقائق، ساعتان) and signed numbers must be correct everywhere including charts, drawers and PDF. Keep the brand name "Clarix" in Latin letters. Translation parity must still pass.
+ - A scripted audit that finds hard-coded strings, missing keys, mixed-language screens, and strings with wrong plural forms.
+
+3. "Ask about your data" polish
+ - Broaden phrasing recognition (scrap/waste/loss; هدر، هالك، تالف، خسارة، سكراب; dialect forms; Arabic-Indic digits; order ids written as E-02، e02، "E 02"; run/order/batch). Keep every parameter validated against the factory's real entities and keep all refusals (injection, other factories, out-of-scope). Add a table of at least 40 phrasings per language mapped to expected intents, including negative examples.
+ - Unsupported or ambiguous question: ONE clear message (not two), never truncated, followed by "Did you mean...?" with up to 3 code-built buttons using real order ids; ambiguous question with no run named: ask which run with buttons.
+ - The generic "the request could not be completed, try again in 60 seconds" message appears ONLY for real provider/quota/circuit-breaker failures, and says in plain words which limit and when it resets. Diagnose from metadata only (never prompts or question text) why that message once appeared for the question "شو اكبر تالف؟" and report it.
+
+4. Page clarity and layout
+ - Comparison: order = summary, key figures, charts, AI explanation, then details (tables, reconciliation, snapshot) collapsed by default. The downtime disclaimer appears exactly once in the summary and once in the downtime section.
+ - Overview, Data Quality, Snapshots, Runs: one primary action per page, clear headings, consistent empty/loading/error states, no repeated blocks saying the same thing. Keep wording short.
+ - A small "How to read this page" help affordance on Overview, Comparison and Data Quality.
+
+5. Accessibility and responsiveness audit (report honestly)
+ - Run an automated accessibility audit (for example axe) on every main page in EN and AR, light and dark, 360 and 1280px; fix every serious/critical finding; list what remains. Verify colour contrast against the tokens, visible keyboard focus, touch targets of at least 44px, unique link/button names, correct headings and landmarks, reduced-motion behaviour, RTL mirroring of icons/arrows/charts, and that no meaning depends on colour alone.
+ - Capture screenshots for the main pages at 360/768/1280px, EN/AR, light/dark. If the driver fails, list exactly which combinations are missing; do not report a partial set as complete. State clearly that you cannot judge visual quality: I will review.
+
+6. Demo mode
+ - A Platform Admin button "Create demo factory" that creates a clearly labelled DEMO factory with synthetic data (the Ethmar baseline dataset embedded in the application, imported through the real pipeline, and the Najm-style second dataset), so I can show the product without real data. A visible DEMO banner on every page of that factory, no real users, manager invitation optional, can be suspended like any factory. Works in production without shell. Document how it is used and that it contains only synthetic data.
+
+7. Publish readiness recheck (report PASS/FAIL per item with evidence)
+ - Secrets by name, cookies/headers, startup privilege and RLS checks, bootstrap flows for first Platform Admin and first manager, seeded identities rejected in production, error pages without internals, log hygiene (no prompts, tokens, passwords, cell contents), upload and rate limits, backups and restore documentation, sandbox/dev tooling excluded from the deployment, the exact production environment settings. Update docs/PHASE10_PUBLISH.md into a corrected final checklist of at most 15 plain-language steps that a non-technical person can follow in the Replit interface, marking what is automatic and what I must do, secret NAMES only.
+
+8. Final acceptance run (isolated target; never write to Ethmar/Najm dev data; show before/after counts and fingerprints)
+ - The complete suite in ONE green run: all fixture folders vs expected_results.json, 52 verifier checks, tenancy T1-T12, accounts, platform, snapshots, reports, AI, formatting, translation parity, TypeScript, builds. Performance spot-check (50,000-row import, Runs, Comparison, Data Quality).
+
+Report: what changed (strings changed grouped by rule), the production-AI gap explained, the phrasing table results, the accessibility audit results and what remains, the PASS/FAIL publish table, the final checklist, before/after counts and fingerprints, what could not be verified, and exact manual steps for me.
