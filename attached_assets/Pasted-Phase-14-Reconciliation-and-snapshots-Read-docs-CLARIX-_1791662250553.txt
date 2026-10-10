@@ -1,0 +1,43 @@
+Phase 14 — Reconciliation and snapshots. Read docs/CLARIX_SPEC.md (reconciliation, snapshots, traceability, §8 comparison, §16 gate "old snapshot unchanged after new upload"), docs/PHASE12_CHARTS.md and replit.md first. Build ONLY this phase.
+
+Goal
+1) A user can SAVE a comparison as a frozen snapshot that never changes, even if new data is imported later. 2) A user can RECONCILE what Clarix computed against the numbers in the factory's own report. Code calculates and compares; nothing here is AI.
+
+1. Snapshots
+ - "Save snapshot" on the Comparison page (Factory manager and Analyst; Viewer can read snapshots but not create). Fields: title (required, plain text), optional note, who and when.
+ - The snapshot stores, frozen: the two runs (order ids, source names, import ids), every displayed metric and difference (exact decimals), the group statuses and overall status, the warnings/errors present at that moment, the chart specs/values and captions, and the source references (file, physical line, column) behind every number. It must be renderable later WITHOUT recalculating from current data.
+ - Snapshots are append-only and immutable: the app role cannot UPDATE, DELETE or TRUNCATE them (same protections as raw rows), RLS forced, factory-scoped. No edit and no delete in the UI. A snapshot can be superseded by saving a new one, never changed. (A separate append-only "note added later" is NOT built.)
+ - Snapshots page (/snapshots): paginated list (title, runs, date, author, overall status, "data changed since" badge), search by title or order id, detail page that looks like the Comparison page but clearly labelled "Snapshot saved on <date> - frozen" with the same charts, KPI cards and Source Drawer. The drawer must still resolve the original rows even if the order was later replaced by a newer import (use the retained history rows; if something truly cannot be resolved, say so plainly, never fake it).
+ - "Data changed since" badge and a short "What changed since this snapshot" panel computed by code: compares the frozen values with today's values for the same runs (new import replaced these orders, values differ, status differs) and lists differences with exact numbers. Never overwrites the snapshot.
+
+2. Reconciliation against the factory's own report
+ - On a Comparison page and on a snapshot, an "Add factory report figures" form (manual entry, no file upload in this phase). For each of Run A and Run B the user may enter: input kg, good output kg, scrap kg, changeover minutes, unplanned downtime minutes, plus a free-text "Where do these numbers come from?" (e.g. "Monthly report, Sept"). Every field optional. An empty field means "Not provided", NEVER zero.
+ - Show, for each provided figure: Clarix value | reported value | difference (exact decimals, with unit) | result: "Matches" only if exactly equal, otherwise "Differs by <value>". If Clarix's value is Not available or the metric is blocked, show "Cannot be reconciled - <reason>" with a link to Data Quality, never a fake difference.
+ - Each difference links to the Source Drawer so the user can see which rows add up to the Clarix value and judge which side is right. Never suggest which one is correct; state facts only.
+ - Reconciliation entries are saved with the snapshot (append-only, immutable). If entered before saving, they are part of the snapshot; if entered on an existing snapshot, they are stored as a new append-only reconciliation record linked to that snapshot (the snapshot itself is never modified), and the detail page shows all records with who and when.
+ - Reconciliation records are visible to Viewer (read only).
+
+3. Plain-language and charts
+ - Short plain sentences in AR + EN generated from fixed templates, e.g. "Clarix and your report match on scrap" / "Your report says 100 kg; Clarix counts 110 kg from 3 rows. See which rows." Facts only, no causes.
+ - Reuse the existing ChartCard/KPI components. Add glossary entries for "Snapshot", "Reconciliation", "Frozen". Add a Help section explaining both in simple words.
+
+4. Scope and safety
+ - Factory-scoped on the server with RLS. Ethmar never sees Najm snapshots (T3/T4 style, identical error shape for non-existent and foreign ids). Platform Admin has no access.
+ - Respect factory limits already built; paginate all lists; add the new tables to the RLS coverage test (must fail if forced RLS is missing). Audit log entries for snapshot saved and reconciliation added (no secrets, no cell contents).
+ - Do not recalculate or change any existing import, run, issue or snapshot.
+
+5. UI/UX
+ - Plain wording, AR RTL + EN LTR, light + dark, tokens only, 360/768/1280px, loading/empty/error/success states, keyboard accessible, not colour alone. Confirmation text before saving ("A snapshot cannot be edited or deleted").
+
+6. Tests (isolated target; do not write to Ethmar/Najm dev data; show before/after counts and fingerprints)
+ - Gate test: save a snapshot of E-01 vs E-02 baseline; import a changed version (e.g. fixture 07 as a replacement in the same source); the snapshot is byte-for-byte unchanged and still opens with the drawer resolving original rows; the "changed since" panel shows the exact differences.
+ - Immutability: UPDATE/DELETE/TRUNCATE by the app role fail; no edit/delete API exists.
+ - Reconciliation: matching figures -> "Matches"; differing -> exact difference; empty -> "Not provided" (never 0); blocked/missing Clarix value -> "Cannot be reconciled"; decimals exact (no float); Najm unit-converted values reconcile correctly.
+ - Roles: Viewer cannot create; Viewer can read; Platform Admin 403; cross-factory 404 with identical shape.
+ - Frozen chart values equal frozen table values.
+ - Existing suite still passes (fixtures vs expected_results.json, 52 verifier checks, tenancy, accounts, platform, pagination).
+ - Screenshots: snapshot detail, snapshots list and reconciliation form at 360/1280px, Arabic/English, light/dark (best effort; list exactly what is missing; do not report a partial set as complete). State clearly that you cannot judge visual quality.
+
+Do NOT build: PDF/export (next phase), AI, file upload of reports, targets/benchmarks, trends, snapshot editing/deletion, email. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Final report: built / not built, test table, before/after counts and fingerprints, and exact manual steps for me.
