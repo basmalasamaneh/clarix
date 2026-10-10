@@ -48,8 +48,8 @@ without a newline are supported. Malformed CSV and duplicate headers fail
 explicitly instead of silently losing data.
 
 Every row carries a file and physical line reference. For multiline CSV records,
-the reference uses the **ending physical line**, matching Python `csv.reader`'s
-`line_num`; the header starts at line 1.
+the reference uses the **first physical line**, per the Phase 4 clarification.
+Both `start_line` and `end_line` are retained; the header starts at line 1.
 
 Date mapping supports `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`, `%f`, with literal
 separators. Invalid calendar dates, unsupported formats, malformed numbers,

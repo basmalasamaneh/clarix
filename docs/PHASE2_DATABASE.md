@@ -55,8 +55,11 @@ the later-phase data-quality rules.
 
 - Internal UUIDs are separate from source IDs. Orders, records and events use
   unique `(factory_id, source_name, external_id)` keys.
-- Content hashes are unique per factory, even across source names. A future
-  uploader must report DUPLICATE_FILE rather than silently discard the attempt.
+  Phase 4 retains these keys in current tables and archives superseded canonical
+  rows in separate append-only, tenant-isolated history tables.
+- Phase 4 restricts content-hash uniqueness to **approved** imports per factory,
+  even across source names. Draft/rejected attempts remain visible. The uploader
+  reports DUPLICATE_FILE and links to the approved import.
 - Raw rows preserve JSON cells, file name and physical line number; database
   triggers reject UPDATE/DELETE even by the owner, and reject TRUNCATE. Runtime
   roles receive no TRUNCATE privilege. No cascading raw-row deletion is allowed.
@@ -76,7 +79,9 @@ the later-phase data-quality rules.
 
 ## Setup and reproducible checks
 
-Development schema: `pnpm --filter @workspace/db run push`
+Development schema: use `scripts/post-merge.sh` (initial Drizzle schema for a new
+database; additive migrations for an existing Phase 2 database). Do not CASCADE
+referenced unique constraints when Drizzle reports constraint-ordering conflicts.
 
 Policies/triggers: `pnpm --filter @workspace/api-server run setup:rls`
 

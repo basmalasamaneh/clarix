@@ -16,7 +16,9 @@
     "test": "tsx --test src/tests/*.test.ts"
   },
   "dependencies": {
+    "@google-cloud/storage": "^8.3.0",
     "@workspace/api-zod": "workspace:*",
+    "@workspace/calculation": "workspace:*",
     "@workspace/db": "workspace:*",
     "argon2": "^0.45.1",
     "connect-pg-simple": "^10.0.0",

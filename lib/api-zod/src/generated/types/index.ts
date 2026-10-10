@@ -6,9 +6,26 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './approvalInput';
 export * from './credentials';
 export * from './factorySelection';
+export * from './fileInput';
 export * from './healthStatus';
+export * from './importDetail';
+export * from './importDetailStatus';
+export * from './importFile';
+export * from './importInput';
+export * from './importIssue';
+export * from './importLimits';
+export * from './importPage';
+export * from './issueCounts';
+export * from './issuePage';
+export * from './jsonObject';
+export * from './listImportsParams';
+export * from './listImportTemplatesParams';
+export * from './mappingInput';
+export * from './mappingSample';
+export * from './mappingTemplate';
 export * from './membership';
 export * from './membershipRole';
 export * from './pageState';
@@ -16,7 +33,11 @@ export * from './pageStateState';
 export * from './preferences';
 export * from './preferencesLanguage';
 export * from './preferencesTheme';
+export * from './previewRow';
+export * from './previewRowCells';
 export * from './session';
+export * from './templateInput';
+export * from './templatePage';
 export * from './user';
 export * from './userLanguage';
 export * from './userTheme';

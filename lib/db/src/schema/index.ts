@@ -28,3 +28,4 @@ export * from "./orders";
 export * from "./production-records";
 export * from "./events";
 export * from "./data-issues";
+export * from "./history";

@@ -1,10 +1,11 @@
 import type { Group, Severity, Status, SourceRef } from "./types";
 export const GROUPS: Group[] = ["volume","changeover","downtime"];
+export interface QualityEntry {order:string;code:string;severity:Severity;groups:Group[];refs:string[]}
 export class Issues {
-  private items: {order:string;code:string;severity:Severity;groups:Group[]}[]=[];
+  readonly items: QualityEntry[]=[];
   readonly file = new Set<string>();
-  add(order: string, code: string, severity: Severity, groups: Group[]) {
-    this.items.push({order,code,severity,groups});
+  add(order: string, code: string, severity: Severity, groups: Group[],rows:SourceRef[] = []) {
+    this.items.push({order,code,severity,groups,refs:rows.map(ref)});
   }
   forRun(order: string): string[] {
     return [...new Set(this.items.filter((i)=>i.order===order).map((i)=>`${i.code}:${i.severity}`))].sort();

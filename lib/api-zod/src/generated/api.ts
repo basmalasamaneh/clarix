@@ -8,6 +8,557 @@
 import * as zod from 'zod';
 
 
+
+
+
+export const ListImportsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const listImportsResponseItemsItemFilesItemOneNameMax = 180;
+
+
+
+
+export const ListImportsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(listImportsResponseItemsItemFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+export const createImportBodySourceNameMax = 120;
+
+export const createImportBodyFilesItemNameMax = 180;
+
+
+export const createImportBodyFilesMin = 2;
+export const createImportBodyFilesMax = 4;
+
+
+
+export const CreateImportBody = zod.object({
+  "sourceName": zod.string().min(1).max(createImportBodySourceNameMax),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(createImportBodyFilesItemNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+})).min(createImportBodyFilesMin).max(createImportBodyFilesMax)
+})
+
+export const createImportResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const CreateImportResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(createImportResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+export const GetImportConfigResponse = zod.object({
+  "maxFileBytes": zod.number().int(),
+  "maxTotalBytes": zod.number().int(),
+  "maxFiles": zod.number().int()
+})
+
+
+export const GetImportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const getImportResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const GetImportResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(getImportResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+export const FinalizeImportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const finalizeImportResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const FinalizeImportResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(finalizeImportResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+export const SaveImportMappingParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SaveImportMappingBody = zod.object({
+  "mapping": zod.record(zod.string(), zod.unknown())
+})
+
+export const saveImportMappingResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const SaveImportMappingResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(saveImportMappingResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+export const CheckImportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const checkImportResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const CheckImportResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(checkImportResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+export const ApproveImportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const approveImportBodyReplacementCountMin = 0;
+
+
+
+export const ApproveImportBody = zod.object({
+  "confirmReplacement": zod.boolean(),
+  "replacementCount": zod.number().int().min(approveImportBodyReplacementCountMin)
+})
+
+export const approveImportResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const ApproveImportResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(approveImportResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+export const RejectImportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const rejectImportResponseFilesItemOneNameMax = 180;
+
+
+
+
+export const RejectImportResponse = zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected']),
+  "createdAt": zod.string(),
+  "files": zod.array(zod.object({
+  "name": zod.string().min(1).max(rejectImportResponseFilesItemOneNameMax),
+  "size": zod.number().int().min(1),
+  "mime": zod.string()
+}).and(zod.object({
+  "id": zod.string(),
+  "uploadUrl": zod.string().optional(),
+  "sha256": zod.string().optional(),
+  "encoding": zod.string().optional(),
+  "delimiter": zod.string().optional(),
+  "rowCount": zod.number().int().optional(),
+  "header": zod.array(zod.string()).optional(),
+  "preview": zod.array(zod.object({
+  "start_line": zod.number().int(),
+  "end_line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.string())
+})).optional()
+}))),
+  "progress": zod.number().int(),
+  "finalized": zod.boolean(),
+  "replacementCount": zod.number().int(),
+  "duplicateOf": zod.string().nullish(),
+  "mapping": zod.record(zod.string(), zod.unknown()).optional(),
+  "result": zod.record(zod.string(), zod.unknown()).optional(),
+  "samples": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "raw": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})).optional(),
+  "counts": zod.object({
+  "info": zod.number().int(),
+  "warning": zod.number().int(),
+  "error": zod.number().int()
+}).optional()
+})
+
+
+
+
+
+export const ListImportIssuesParams = zod.object({
+  "id": zod.coerce.string(),
+  "page": zod.coerce.number().int().min(1)
+})
+
+export const ListImportIssuesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "code": zod.string(),
+  "severity": zod.string(),
+  "order": zod.string().nullable(),
+  "group": zod.string(),
+  "refs": zod.array(zod.string())
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+
+
+
+export const ListImportTemplatesQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "source": zod.coerce.string().optional()
+})
+
+export const listImportTemplatesResponseItemsItemOneSourceNameMax = 120;
+
+export const listImportTemplatesResponseItemsItemOneNameMax = 120;
+
+
+
+export const ListImportTemplatesResponse = zod.object({
+  "items": zod.array(zod.object({
+  "sourceName": zod.string().min(1).max(listImportTemplatesResponseItemsItemOneSourceNameMax),
+  "name": zod.string().min(1).max(listImportTemplatesResponseItemsItemOneNameMax),
+  "mapping": zod.record(zod.string(), zod.unknown())
+}).and(zod.object({
+  "id": zod.string(),
+  "version": zod.number().int()
+}))),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+export const createImportTemplateBodySourceNameMax = 120;
+
+export const createImportTemplateBodyNameMax = 120;
+
+
+
+export const CreateImportTemplateBody = zod.object({
+  "sourceName": zod.string().min(1).max(createImportTemplateBodySourceNameMax),
+  "name": zod.string().min(1).max(createImportTemplateBodyNameMax),
+  "mapping": zod.record(zod.string(), zod.unknown())
+})
+
+export const createImportTemplateResponseOneSourceNameMax = 120;
+
+export const createImportTemplateResponseOneNameMax = 120;
+
+
+
+export const CreateImportTemplateResponse = zod.object({
+  "sourceName": zod.string().min(1).max(createImportTemplateResponseOneSourceNameMax),
+  "name": zod.string().min(1).max(createImportTemplateResponseOneNameMax),
+  "mapping": zod.record(zod.string(), zod.unknown())
+}).and(zod.object({
+  "id": zod.string(),
+  "version": zod.number().int()
+}))
+
+
 /**
  * Returns server health status
  * @summary Health check

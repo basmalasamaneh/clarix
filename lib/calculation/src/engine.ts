@@ -1,10 +1,10 @@
 import { D, fmt } from "./decimal";
-import { GROUPS, Issues, ref } from "./issues";
+import { GROUPS, Issues, ref, type QualityEntry } from "./issues";
 import { analyzeVolume, processRecords } from "./volume";
 import { analyzeEvents, processEvents } from "./events";
 import type { CanonicalDataset, EngineResult, Run, WorkingEvent, WorkingRecord, EventValues } from "./types";
 
-export function calculate(data: CanonicalDataset, pair?: readonly [string,string]): EngineResult {
+export function calculate(data: CanonicalDataset, pair?: readonly [string,string], report?: (entries:QualityEntry[])=>void): EngineResult {
   const {mapping,orders}=data;
   const selected = pair ?? [orders[0],orders[1]];
   if(!selected[0] || !selected[1] || !selected.every((id)=>orders.includes(id))) throw new Error("Comparison requires two existing order IDs");
@@ -67,6 +67,7 @@ export function calculate(data: CanonicalDataset, pair?: readonly [string,string
     const comparable=va!==null && vb!==null && left.status!=="red" && right.status!=="red";
     metrics[name]={value:comparable ? fmt(new D(vb!).sub(va!)):null,comparable};
   }
+  report?.(issues.items);
   return {capability_level:mapping.capability_level,runs,comparison:{pair:[a,b],metrics},
     file_issues:[...issues.file].sort(),formula_like_cells:[...new Set(data.formulaLikeCells)].sort(),event_reasons:reasons};
 }

@@ -100,7 +100,9 @@ test("canonical schema isolation on real PostgreSQL, synthetic rows only", async
       assert.ok(fields.rows.every((r) => r.data_type==="numeric"));
     });
     await t.test("same-factory duplicates rejected; different sources can reuse external order IDs", async () => {
-      await fails("INSERT INTO imports(factory_id,source_name,file_names,content_hash,uploaded_by) VALUES ($1,'other','[]','same-synthetic-hash',$2)",[a,ua],"23505");
+      // Only approved content blocks a second approval; draft attempts survive.
+      await c.query("UPDATE imports SET status='approved' WHERE id=$1",[ids[0].imports]);
+      await fails("INSERT INTO imports(factory_id,source_name,file_names,content_hash,uploaded_by,status) VALUES ($1,'other','[]','same-synthetic-hash',$2,'approved')",[a,ua],"23505");
       await fails("INSERT INTO orders(factory_id,source_name,source_order_id) VALUES ($1,'erp','E-01')",[a],"23505");
       await c.query("INSERT INTO orders(factory_id,source_name,source_order_id) VALUES ($1,'other','E-01')",[a]);
     });

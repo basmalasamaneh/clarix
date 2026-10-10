@@ -10,9 +10,13 @@ export const rawRows = pgTable("raw_rows", {
   importId: uuid("import_id").notNull(),
   file: text("file").notNull(),
   lineNumber: integer("line_number").notNull(),
+  recordEndLine: integer("record_end_line"),
+  startLine: integer("start_line").generatedAlwaysAs(sql`line_number`),
+  endLine: integer("end_line").generatedAlwaysAs(sql`coalesce(record_end_line, line_number)`),
   cells: jsonb("cells").notNull(),
 }, (t) => [
   unique().on(t.factoryId, t.id),
+  unique().on(t.factoryId,t.importId,t.id),
   unique().on(t.factoryId, t.sourceName, t.id),
   unique().on(t.factoryId, t.importId, t.file, t.lineNumber),
   foreignKey({ columns: [t.factoryId, t.sourceName, t.importId], foreignColumns: [imports.factoryId, imports.sourceName, imports.id] }),

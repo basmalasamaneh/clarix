@@ -35,6 +35,14 @@ export const csvAdapter: SourceAdapter<readonly SourceFile[]> = {
           const raw=r.cells[column];
           if (isFormulaLikeText(field,raw)) formula.add(`${spec.file}:${r.line}:${column}`);
           c[field]=raw.trim();
+          if(numericFields.has(field)) {
+            try { parseNumber(c[field],mapping.format.decimal_separator); }
+            catch { throw new CellReadError(spec.file,r.line,column,"UNREADABLE_NUMBER"); }
+          }
+          if(dateFields.has(field) && c[field]) {
+            try { parseLocalTime(c[field], ["start","end"].includes(field) ? mapping.format.datetime_format:mapping.format.date_format); }
+            catch { throw new CellReadError(spec.file,r.line,column,"UNREADABLE_DATE"); }
+          }
         }
         return { c, file:spec.file, line:r.line };
       });
@@ -68,3 +76,9 @@ export const csvAdapter: SourceAdapter<readonly SourceFile[]> = {
     return result;
   },
 };
+
+export class CellReadError extends Error {
+  constructor(readonly file:string,readonly line:number,readonly column:string,readonly code:string) {
+    super(`${code}: ${file}:${line}:${column}`);
+  }
+}

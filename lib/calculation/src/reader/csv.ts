@@ -1,4 +1,4 @@
-export interface CsvRow { line: number; cells: Record<string,string> }
+export interface CsvRow { line: number; start_line: number; end_line: number; cells: Record<string,string> }
 export interface CsvTable { header: string[]; rows: CsvRow[] }
 
 export function decodeBytes(bytes: Uint8Array, encoding = "auto"): string {
@@ -31,10 +31,10 @@ export function detectDelimiter(text: string): string {
 export function parseCsv(text: string, delimiter = "auto"): CsvTable {
   const sep = delimiter === "auto" ? detectDelimiter(text) : delimiter;
   if (![",",";","\t","|"].includes(sep)) throw new Error("Unsupported CSV delimiter");
-  const parsed: { line: number; values: string[] }[] = [];
-  let field="", fields: string[]=[], quoted=false, closed=false, physical=1;
+  const parsed: { line: number; start_line: number; end_line: number; values: string[] }[] = [];
+  let field="", fields: string[]=[], quoted=false, closed=false, physical=1, start=1;
   const endField = () => { fields.push(field); field=""; closed=false; };
-  const endRow = () => { endField(); parsed.push({line:physical,values:fields}); fields=[]; };
+  const endRow = () => { endField(); parsed.push({line:start,start_line:start,end_line:physical,values:fields}); fields=[]; };
   for (let i=0;i<text.length;i++) {
     const c=text[i];
     if (quoted) {
@@ -47,7 +47,7 @@ export function parseCsv(text: string, delimiter = "auto"): CsvTable {
       }
     } else if (c===sep) endField();
     else if (c==="\r" || c==="\n") {
-      endRow(); if(c==="\r" && text[i+1]==="\n") i++; physical++;
+      endRow(); if(c==="\r" && text[i+1]==="\n") i++; physical++; start=physical;
     } else if (c==='"' && field==="" && !closed) quoted=true;
     else {
       if (closed || c==='"') throw new Error(`Malformed CSV at physical line ${physical}`);
@@ -60,7 +60,7 @@ export function parseCsv(text: string, delimiter = "auto"): CsvTable {
   if (!header.length || new Set(header).size!==header.length) throw new Error("Missing or duplicate CSV headers");
   const rows = parsed.filter((r) => r.values.some((v) => v.trim()!=="")).map((r) => {
     if (r.values.length>header.length) throw new Error(`Too many cells at physical line ${r.line}`);
-    return { line:r.line, cells:Object.fromEntries(header.map((h,i) => [h,r.values[i] ?? ""])) };
+    return { line:r.line, start_line:r.start_line, end_line:r.end_line, cells:Object.fromEntries(header.map((h,i) => [h,r.values[i] ?? ""])) };
   });
   return {header,rows};
 }

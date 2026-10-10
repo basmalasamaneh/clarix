@@ -2,7 +2,7 @@
 DO $$
 DECLARE tbl text;
 BEGIN
-  FOREACH tbl IN ARRAY ARRAY['imports','raw_rows','column_mappings','orders','production_records','events','data_issues']
+  FOREACH tbl IN ARRAY ARRAY['imports','raw_rows','column_mappings','orders','production_records','events','data_issues','orders_history','production_records_history','events_history']
   LOOP
     EXECUTE format('ALTER TABLE %I ENABLE ROW LEVEL SECURITY', tbl);
     EXECUTE format('ALTER TABLE %I FORCE ROW LEVEL SECURITY', tbl);

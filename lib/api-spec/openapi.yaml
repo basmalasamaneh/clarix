@@ -11,6 +11,152 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /imports:
+    get:
+      operationId: listImports
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Factory import page
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportPage" }
+    post:
+      operationId: createImport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ImportInput" }
+      responses:
+        "201":
+          description: Draft and short-lived direct upload URLs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/config:
+    get:
+      operationId: getImportConfig
+      responses:
+        "200":
+          description: Limits
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportLimits" }
+  /imports/{id}:
+    get:
+      operationId: getImport
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Draft or completed import
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/{id}/finalize:
+    post:
+      operationId: finalizeImport
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Parsed originals and suggested mapping
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/{id}/mapping:
+    put:
+      operationId: saveImportMapping
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MappingInput" }
+      responses:
+        "200":
+          description: Saved draft mapping
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/{id}/check:
+    post:
+      operationId: checkImport
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Checked import
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/{id}/approve:
+    post:
+      operationId: approveImport
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApprovalInput" }
+      responses:
+        "200":
+          description: Approved transaction
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/{id}/reject:
+    post:
+      operationId: rejectImport
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Rejected import retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ImportDetail" }
+  /imports/{id}/issues/{page}:
+    get:
+      operationId: listImportIssues
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: page, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Paginated issue report
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IssuePage" }
+  /import-templates:
+    get:
+      operationId: listImportTemplates
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: source, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Factory mapping templates
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TemplatePage" }
+    post:
+      operationId: createImportTemplate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TemplateInput" }
+      responses:
+        "201":
+          description: New immutable template version
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MappingTemplate" }
   /healthz:
     get:
       operationId: healthCheck
@@ -94,6 +240,148 @@ paths:
               schema: { $ref: "#/components/schemas/PageState" }
 components:
   schemas:
+    JsonObject:
+      type: object
+      additionalProperties: true
+    ImportInput:
+      type: object
+      required: [sourceName, files]
+      properties:
+        sourceName: { type: string, minLength: 1, maxLength: 120 }
+        files:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items: { $ref: "#/components/schemas/FileInput" }
+    FileInput:
+      type: object
+      required: [name, size, mime]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 180 }
+        size: { type: integer, minimum: 1 }
+        mime: { type: string }
+    ImportFile:
+      allOf:
+        - { $ref: "#/components/schemas/FileInput" }
+        - type: object
+          required: [id]
+          properties:
+            id: { type: string }
+            uploadUrl: { type: string }
+            sha256: { type: string }
+            encoding: { type: string }
+            delimiter: { type: string }
+            rowCount: { type: integer }
+            header: { type: array, items: { type: string } }
+            preview:
+              type: array
+              items: { $ref: "#/components/schemas/PreviewRow" }
+    PreviewRow:
+      type: object
+      required: [start_line, end_line, cells]
+      properties:
+        start_line: { type: integer }
+        end_line: { type: integer }
+        cells: { type: object, additionalProperties: { type: string } }
+    ImportDetail:
+      type: object
+      required: [id, sourceName, status, createdAt, files, progress, finalized, replacementCount]
+      properties:
+        id: { type: string }
+        sourceName: { type: string }
+        status: { type: string, enum: [draft, checked, approved, rejected] }
+        createdAt: { type: string }
+        files: { type: array, items: { $ref: "#/components/schemas/ImportFile" } }
+        progress: { type: integer }
+        finalized: { type: boolean }
+        replacementCount: { type: integer }
+        duplicateOf: { type: [string, "null"] }
+        mapping: { $ref: "#/components/schemas/JsonObject" }
+        result: { $ref: "#/components/schemas/JsonObject" }
+        samples:
+          type: array
+          items: { $ref: "#/components/schemas/MappingSample" }
+        counts: { $ref: "#/components/schemas/IssueCounts" }
+    MappingSample:
+      type: object
+      required: [file, line, column, raw, value, unit]
+      properties:
+        file: { type: string }
+        line: { type: integer }
+        column: { type: string }
+        raw: { type: string }
+        value: { type: [string, "null"] }
+        unit: { type: string }
+    IssueCounts:
+      type: object
+      required: [info, warning, error]
+      properties:
+        info: { type: integer }
+        warning: { type: integer }
+        error: { type: integer }
+    ImportPage:
+      type: object
+      required: [items, page, total]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ImportDetail" } }
+        page: { type: integer }
+        total: { type: integer }
+    ImportLimits:
+      type: object
+      required: [maxFileBytes, maxTotalBytes, maxFiles]
+      properties:
+        maxFileBytes: { type: integer }
+        maxTotalBytes: { type: integer }
+        maxFiles: { type: integer }
+    MappingInput:
+      type: object
+      required: [mapping]
+      properties:
+        mapping: { $ref: "#/components/schemas/JsonObject" }
+    ApprovalInput:
+      type: object
+      required: [confirmReplacement, replacementCount]
+      properties:
+        confirmReplacement: { type: boolean }
+        replacementCount: { type: integer, minimum: 0 }
+    TemplateInput:
+      type: object
+      required: [sourceName, name, mapping]
+      properties:
+        sourceName: { type: string, minLength: 1, maxLength: 120 }
+        name: { type: string, minLength: 1, maxLength: 120 }
+        mapping: { $ref: "#/components/schemas/JsonObject" }
+    MappingTemplate:
+      allOf:
+        - { $ref: "#/components/schemas/TemplateInput" }
+        - type: object
+          required: [id, version]
+          properties:
+            id: { type: string }
+            version: { type: integer }
+    TemplatePage:
+      type: object
+      required: [items, page, total]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/MappingTemplate" } }
+        page: { type: integer }
+        total: { type: integer }
+    ImportIssue:
+      type: object
+      required: [code, severity, refs, order, group]
+      properties:
+        code: { type: string }
+        severity: { type: string }
+        order: { type: [string, "null"] }
+        group: { type: string }
+        refs: { type: array, items: { type: string } }
+    IssuePage:
+      type: object
+      required: [items, page, total]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ImportIssue" } }
+        page: { type: integer }
+        total: { type: integer }
     Credentials:
       type: object
       additionalProperties: false

@@ -11,6 +11,7 @@ export const dataIssues = pgTable("data_issues", {
   code: text("code").notNull(),
   severity: text("severity").notNull(),
   orderId: uuid("order_id"),
+  sourceOrderId: text("source_order_id"),
   group: text("group").notNull(),
   rawRowIds: uuid("raw_row_ids").array().notNull().default(sql`'{}'::uuid[]`),
   status: text("status").notNull().default("new"),

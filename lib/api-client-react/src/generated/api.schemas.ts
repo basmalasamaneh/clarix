@@ -5,6 +5,156 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface JsonObject { [key: string]: unknown }
+
+export interface FileInput {
+  /**
+     * @minLength 1
+     * @maxLength 180
+     */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  mime: string;
+}
+
+export interface ImportInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  sourceName: string;
+  /**
+     * @minItems 2
+     * @maxItems 4
+     */
+  files: FileInput[];
+}
+
+export type PreviewRowCells = {[key: string]: string};
+
+export interface PreviewRow {
+  start_line: number;
+  end_line: number;
+  cells: PreviewRowCells;
+}
+
+export type ImportFile = FileInput & {
+  id: string;
+  uploadUrl?: string;
+  sha256?: string;
+  encoding?: string;
+  delimiter?: string;
+  rowCount?: number;
+  header?: string[];
+  preview?: PreviewRow[];
+};
+
+export type ImportDetailStatus = typeof ImportDetailStatus[keyof typeof ImportDetailStatus];
+
+
+export const ImportDetailStatus = {
+  draft: 'draft',
+  checked: 'checked',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface MappingSample {
+  file: string;
+  line: number;
+  column: string;
+  raw: string;
+  /** @nullable */
+  value: string | null;
+  unit: string;
+}
+
+export interface IssueCounts {
+  info: number;
+  warning: number;
+  error: number;
+}
+
+export interface ImportDetail {
+  id: string;
+  sourceName: string;
+  status: ImportDetailStatus;
+  createdAt: string;
+  files: ImportFile[];
+  progress: number;
+  finalized: boolean;
+  replacementCount: number;
+  /** @nullable */
+  duplicateOf?: string | null;
+  mapping?: JsonObject;
+  result?: JsonObject;
+  samples?: MappingSample[];
+  counts?: IssueCounts;
+}
+
+export interface ImportPage {
+  items: ImportDetail[];
+  page: number;
+  total: number;
+}
+
+export interface ImportLimits {
+  maxFileBytes: number;
+  maxTotalBytes: number;
+  maxFiles: number;
+}
+
+export interface MappingInput {
+  mapping: JsonObject;
+}
+
+export interface ApprovalInput {
+  confirmReplacement: boolean;
+  /** @minimum 0 */
+  replacementCount: number;
+}
+
+export interface TemplateInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  sourceName: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  mapping: JsonObject;
+}
+
+export type MappingTemplate = TemplateInput & {
+  id: string;
+  version: number;
+};
+
+export interface TemplatePage {
+  items: MappingTemplate[];
+  page: number;
+  total: number;
+}
+
+export interface ImportIssue {
+  code: string;
+  severity: string;
+  /** @nullable */
+  order: string | null;
+  group: string;
+  refs: string[];
+}
+
+export interface IssuePage {
+  items: ImportIssue[];
+  page: number;
+  total: number;
+}
+
 export interface Credentials {
   /** @maxLength 254 */
   email: string;
@@ -109,4 +259,19 @@ export interface PageState {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListImportsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type ListImportTemplatesParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+source?: string;
+};
 

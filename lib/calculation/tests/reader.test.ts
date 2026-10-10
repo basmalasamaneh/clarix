@@ -32,7 +32,7 @@ test("formula clarification: raw TAB/CR text, mapped column names, hyphen and ne
   input=replace(input,"events.csv",'Event,Order,Code,Start,End,Reason\r\nE1,A,C,2026-10-10 00:00,2026-10-10 01:00,"\rtext"\r\nE2,B,C,2026-10-10 00:00,2026-10-10 02:00,normal-text\r\n');
   const canonical=csvAdapter.read(input,mapping);
   assert.equal(canonical.records[0].input!.toString(),"-5");
-  assert.deepEqual(canonical.formulaLikeCells,["events.csv:3:Reason","orders.csv:2:Product"]);
+  assert.deepEqual(canonical.formulaLikeCells,["events.csv:2:Reason","orders.csv:2:Product"]);
   const result=calculate(canonical);
   assert.deepEqual(result.file_issues,["FORMULA_LIKE_CELL:info"]);
   assert.deepEqual(result.formula_like_cells,canonical.formulaLikeCells);
@@ -54,7 +54,8 @@ test("four delimiters; quotes, escaped quotes, embedded CRLF and physical line n
     const text=`id${delimiter}description\r\n1${delimiter}"a${delimiter}b"\r\n2${delimiter}"two\r\nlines ""quoted"""\r\n\r\n3${delimiter}end`;
     assert.equal(detectDelimiter(text),delimiter);
     const t=parseCsv(text);
-    assert.deepEqual(t.rows.map((r)=>r.line),[2,4,6]);
+    assert.deepEqual(t.rows.map((r)=>r.line),[2,3,6]);
+    assert.deepEqual(t.rows.map((r)=>[r.start_line,r.end_line]),[[2,2],[3,4],[6,6]]);
     assert.equal(t.rows[1].cells.description,'two\r\nlines "quoted"');
   }
   assert.equal(detectDelimiter('"many,commas,in,header";other\n'),";");

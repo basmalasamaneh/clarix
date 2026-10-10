@@ -7,6 +7,7 @@ export const columnMappings = pgTable("column_mappings", {
   id: uuid("id").primaryKey().defaultRandom(),
   factoryId: text("factory_id").notNull().references(() => factories.id),
   sourceName: text("source_name").notNull(),
+  name: text("name").notNull().default("Default"),
   version: integer("version").notNull(),
   mapping: jsonb("mapping").notNull(),
 }, (t) => [

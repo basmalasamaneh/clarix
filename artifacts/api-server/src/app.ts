@@ -5,6 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { sessionMiddleware, csrfGuard } from "./lib/session";
 import foundationRouter from "./routes/foundation";
+import importsRouter from "./routes/imports";
 
 const app: Express = express();
 
@@ -29,13 +30,14 @@ app.use(
 );
 app.set("trust proxy", 1);
 app.use(helmet());
-app.use(express.json({ limit: "16kb" }));
+app.use(express.json({ limit: "128kb" }));
 app.use(sessionMiddleware);
 app.use("/api", (_req, res, next) => { res.setHeader("Cache-Control", "no-store"); next(); });
 app.use("/api", csrfGuard);
 
 app.use("/api", router);
 app.use("/api", foundationRouter);
+app.use("/api", importsRouter);
 app.use((_req, res) => { res.status(404).json({ error: "NOT_FOUND" }); });
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   // Never serialize thrown DB/request objects: they can include password inputs.

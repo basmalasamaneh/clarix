@@ -8,7 +8,7 @@ const signature = (r: WorkingRecord, complete: boolean) => JSON.stringify([
 export function processRecords(rows: WorkingRecord[], issues: Issues): void {
   for(const r of rows) if(!r.rid || !r.order) {
     r.state="quarantined";
-    if(r.order) issues.add(r.order,"MISSING_REQUIRED_FIELD","error",["volume"]);
+    if(r.order) issues.add(r.order,"MISSING_REQUIRED_FIELD","error",["volume"],[r]);
     else issues.file.add("MISSING_REQUIRED_FIELD:error");
   }
   for(const group of groupsBy(rows.filter((r)=>r.state==="ok"),(r)=>r.rid)) {
@@ -16,13 +16,13 @@ export function processRecords(rows: WorkingRecord[], issues: Issues): void {
     const identical=group.every((r)=>signature(r,true)===signature(group[0],true));
     for(const r of identical ? group.slice(1):group) {
       r.state=identical ? "excluded":"quarantined";
-      issues.add(r.order, identical ? "DUPLICATE_RECORD_ID_IDENTICAL":"DUPLICATE_RECORD_ID_CONFLICT",identical ? "warning":"error",["volume"]);
+      issues.add(r.order, identical ? "DUPLICATE_RECORD_ID_IDENTICAL":"DUPLICATE_RECORD_ID_CONFLICT",identical ? "warning":"error",["volume"],group);
     }
   }
   const seen=new Set<string>();
   for(const r of rows.filter((r)=>r.state==="ok").sort(byLine)) {
     const key=signature(r,false);
-    if(seen.has(key)) { r.suspected=true; issues.add(r.order,"SUSPECTED_DUPLICATE_RECORD","error",["volume"]); }
+    if(seen.has(key)) { r.suspected=true; issues.add(r.order,"SUSPECTED_DUPLICATE_RECORD","error",["volume"],[r]); }
     seen.add(key);
   }
 }

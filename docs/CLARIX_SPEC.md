@@ -99,6 +99,28 @@ All tables carry `factory_id`. Uniqueness is scoped to **(factory, source)**: or
 
 Timestamps are plant-local and naive in v1 (no time-zone conversion); store the factory's time zone in settings for display.
 
+### Approved Phase 4 replacement and history policy
+
+Current data is keyed by `(factory_id, source_name, source_order_id)`. Approval
+atomically replaces only the orders present in the new import, after confirming
+the replacement count. Other orders remain unchanged. Only engine-included
+records/events enter current canonical tables. Excluded and quarantined rows
+remain in immutable raw rows, linked from data issues.
+
+Before replacement, old canonical values are copied to separate `orders_history`,
+`production_records_history`, and `events_history` tables with status `superseded`,
+the original import, superseding import, and superseded timestamp. Current tables
+retain their unique source IDs. History has factory-scoped references/indexes,
+ENABLE and FORCE RLS using the same tenant context, and append-only database
+triggers blocking UPDATE, DELETE and TRUNCATE. No user deletion operation exists.
+
+Import states are `draft`, `checked`, `approved`, `rejected`. Rechecking an editable
+draft replaces its derived validation report, never its raw rows or original
+files. Only approved file-set hashes block reapproval within the same factory.
+File-set hashes use sorted SHA-256 file hashes, independent of filename/order.
+Raw rows store both `start_line` and `end_line`; all displayed references use
+the first physical line. Existing `line_number` is the first-line alias.
+
 ---
 
 ## 6. Metrics — locked definitions

@@ -13,6 +13,7 @@ import { BrandMark } from '@/components/brand';
 import { LanguageSwitch, ThemeMenu } from '@/components/prefs-controls';
 import { StateScreen } from '@/components/state-screen';
 import NotFound from '@/pages/not-found';
+import ImportsPage from '@/pages/imports';
 import LoginPage from '@/pages/login';
 import PlatformPage from '@/pages/platform';
 import TenantPageView, { ForbiddenState } from '@/pages/tenant-page';
@@ -75,6 +76,7 @@ function TenantRoute({ page, session }: { page: TenantPage; session: Session }) 
       <StateScreen icon={Building2} title={t('states.noFactoryTitle')} body={t('states.noFactoryBody')} testId="state-no-factory" />
     );
   }
+  if (page === 'imports') return <ImportsPage key={session.activeFactoryId} session={session} />;
   return <TenantPageView key={`${session.activeFactoryId}:${page}`} page={page} session={session} />;
 }
 

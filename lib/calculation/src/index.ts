@@ -1,7 +1,7 @@
 export * from "./types";
 export { D, fmt, displayNumber, displaySigned, minutesToHoursDisplay, parseNumber } from "./decimal";
 export { decodeBytes, detectDelimiter, parseCsv } from "./reader/csv";
-export { csvAdapter, isFormulaLikeText } from "./reader/adapter";
+export { csvAdapter, isFormulaLikeText, CellReadError } from "./reader/adapter";
 export { parseLocalTime } from "./reader/dates";
 export { calculate } from "./engine";
 export { contentHash } from "./hash";
