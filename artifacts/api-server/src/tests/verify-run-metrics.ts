@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import {D,fmt,displayNumber,minutesToHoursDisplay} from "@workspace/calculation";
 import {definitions} from "../metrics/values";
+import {verifyCharts} from "./verify-charts";
 
 // Called only inside the guarded real import pipeline suite. No fixture writes.
 export async function verifyRunMetrics(who:any,other:any,viewer:any,source:string,exp:any,scenario:string) {
@@ -43,6 +44,8 @@ export async function verifyRunMetrics(who:any,other:any,viewer:any,source:strin
   const [left,right]=exp.comparison.pair.map((orderId:string)=>list.items.find((r:any)=>r.orderId===orderId));
   const result=(await who.a.get("/api/comparison").query({a:left.id,b:right.id}).expect(200)).body;
   const reverse=(await who.a.get("/api/comparison").query({a:right.id,b:left.id}).expect(200)).body;
+  verifyCharts(result,exp,scenario);
+  verifyCharts(reverse,exp,`${scenario}/reversed`);
   assert.equal(result.a.id,left.id);assert.equal(result.b.id,right.id);
   assert.equal(result.questions.length,3);
   for(const q of result.questions) {

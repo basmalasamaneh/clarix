@@ -25,3 +25,11 @@ Blocked runs. Exclude undated runs from “most recently produced” suggestions
 introduce a second metric eligibility definition or infer dates from uploads.
 **How to apply:** Keep automatic-shortcut eligibility separate from what the
 Comparison page permits; explain the narrower suggestion scope in both languages.
+
+Chart availability is stricter than raw table visibility: preserve non-null
+table values but omit blocked chart bars, with their reason and Quality link.
+**Why:** The user explicitly approved this distinction for scenario 05: the
+stored 10% must remain unchanged even though it must not be plotted.
+**How to apply:** Keep original exact values in chart contracts for parity
+checks and represent plotting availability separately. Never replace them with
+zero or change the engine/table rule to make the chart simpler.

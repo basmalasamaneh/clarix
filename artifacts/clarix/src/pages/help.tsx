@@ -1,6 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { ClipboardCheck, Columns2, FileUp, CircleHelp, Ban, Info, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GlossaryTip } from '@/components/charts/glossary';
+import { GLOSSARY_KEYS } from '@/lib/charts-i18n';
 
 const STEPS: { n: string; icon: LucideIcon }[] = [
   { n: '1', icon: FileUp },
@@ -45,7 +47,7 @@ export default function HelpPage() {
             <li key={key} className="flex gap-4 p-5" data-testid={`row-help-color-${key}`}>
               <span className={cn('mt-1.5 size-3 shrink-0 rounded-full', dot)} aria-hidden="true" />
               <div>
-                <div className="font-medium">{t(`help.${key}`)}</div>
+                <div className="flex items-center font-medium">{t(`help.${key}`)}<GlossaryTip term={key === 'green' ? 'ok' : key === 'yellow' ? 'check' : 'blocked'} testId={`button-help-color-glossary-${key}`} /></div>
                 <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(`help.${key}Body`)}</p>
               </div>
             </li>
@@ -53,8 +55,21 @@ export default function HelpPage() {
         </ul>
       </section>
 
+      <section className="mt-10" aria-labelledby="help-glossary" data-testid="section-help-glossary">
+        <h2 id="help-glossary" className="text-lg font-semibold">{t('gl.listTitle')}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{t('gl.listLead')}</p>
+        <dl className="mt-4 grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2">
+          {GLOSSARY_KEYS.map((k) => (
+            <div key={k} className="bg-card p-4" data-testid={`row-help-glossary-${k}`}>
+              <dt className="flex items-center font-medium">{t(`gl.terms.${k}.term`)}<GlossaryTip term={k} testId={`button-help-glossary-${k}`} /></dt>
+              <dd className="mt-1 text-sm leading-relaxed text-muted-foreground">{t(`gl.terms.${k}.def`)}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
       <div className="mt-10 grid gap-4 md:grid-cols-2">
-        <Note icon={Ban} title={t('help.naTitle')} body={t('help.naBody')} testId="card-help-na" />
+        <Note icon={Ban} tip="na" title={t('help.naTitle')} body={t('help.naBody')} testId="card-help-na" />
         <Note icon={Info} title={t('help.causeTitle')} body={t('help.causeBody')} testId="card-help-cause" />
       </div>
       <div className="mt-4">
@@ -64,12 +79,12 @@ export default function HelpPage() {
   );
 }
 
-function Note({ icon: Icon, title, body, testId }: { icon: LucideIcon; title: string; body: string; testId: string }) {
+function Note({ icon: Icon, title, body, testId, tip }: { icon: LucideIcon; title: string; body: string; testId: string; tip?: 'na' }) {
   return (
     <section className="rounded-xl border bg-card p-5" data-testid={testId}>
       <div className="flex items-center gap-2">
         <Icon className="size-4 text-primary" aria-hidden="true" />
-        <h2 className="font-semibold">{title}</h2>
+        <h2 className="font-semibold">{title}</h2>{tip && <GlossaryTip term={tip} testId="button-help-na-glossary" />}
       </div>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{body}</p>
     </section>

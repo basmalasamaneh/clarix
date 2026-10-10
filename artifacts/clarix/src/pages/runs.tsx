@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation, useSearch } from 'wouter';
 import { AlertTriangle, ArrowLeftRight, Calendar, Inbox, RotateCcw, SearchX, X } from 'lucide-react';
 import {
   getListProductionRunsQueryKey,
@@ -23,6 +23,7 @@ import { SourceLink } from '@/components/runs/refs';
 import { ForbiddenState } from '@/pages/tenant-page';
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { GlossaryTip, MetricTerm, StatusTip } from '@/components/charts/glossary';
 import '@/lib/runs-i18n';
 
 type Filters = { search?: string; source?: string; status?: ListProductionRunsStatus; sort?: ListProductionRunsSort };
@@ -119,9 +120,9 @@ function DateText({ run, testId }: { run: ProductionRun; testId: string }) {
 function ValueCell({ run, k, testId, className }: { run: ProductionRun; k: string; testId: string; className?: string }) {
   const { t } = useTranslation();
   return (
-    <SourceLink source={{ kind: 'metric', id: run.id, metric: k }} label={`${run.orderId} · ${run.sourceName} · ${t(`rc.metric.${k}`)}`} testId={`link-${testId}`} className={className}>
+    <span className="inline-flex flex-wrap items-center"><SourceLink source={{ kind: 'metric', id: run.id, metric: k }} label={`${run.orderId} · ${run.sourceName} · ${t(`rc.metric.${k}`)}`} testId={`link-${testId}`} className={className}>
       <MetricValue m={metricOf(run.metrics, k)} showHours={false} className={className} testId={testId} />
-    </SourceLink>
+    </SourceLink>{!metricOf(run.metrics,k)?.available && <GlossaryTip term="na" testId={`${testId}-glossary-na`} />}</span>
   );
 }
 
@@ -191,7 +192,11 @@ function Skeleton() {
 export default function RunsPage({ session }: { session: Session }) {
   const { t } = useTranslation();
   const [, navigate] = useLocation();
-  const [filters, setFilters] = useState<Filters>({});
+  const search = useSearch();
+  const [filters, setFilters] = useState<Filters>(() => {
+    const status = new URLSearchParams(search).get('status') as ListProductionRunsStatus;
+    return STATUSES.includes(status) ? { status } : {};
+  });
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ProductionRun[]>([]);
   const factory = session.memberships.find((m) => m.factoryId === session.activeFactoryId);
@@ -254,7 +259,7 @@ export default function RunsPage({ session }: { session: Session }) {
                 <th className="px-3 py-2.5 text-start">{t('rc.runs.colOrder')}</th>
                 <th className="px-3 py-2.5 text-start">{t('rc.runs.colSource')}</th>
                 <th className="px-3 py-2.5 text-start">{t('rc.runs.colDate')}</th>
-                {LIST_KEYS.map((k) => <th key={k} className="px-3 py-2.5 text-end">{t(`rc.metric.${k}`)}</th>)}
+                {LIST_KEYS.map((k) => <th key={k} className="px-3 py-2.5 text-end"><MetricTerm metric={k}>{t(`rc.metric.${k}`)}</MetricTerm></th>)}
                 <th className="px-3 py-2.5 text-start">{t('rc.runs.colStatus')}</th>
               </tr>
             </thead>
@@ -272,7 +277,7 @@ export default function RunsPage({ session }: { session: Session }) {
                         <ValueCell run={r} k={k} className="items-end" testId={`text-run-${k}-${r.id}`} />
                       </td>
                     ))}
-                    <td className="px-3 py-2.5"><QualityStatusBadge status={r.overall} testId={`status-run-${r.id}`} /></td>
+                    <td className="px-3 py-2.5"><span className="inline-flex items-center"><QualityStatusBadge status={r.overall} testId={`status-run-${r.id}`} /><StatusTip status={r.overall} testId={`button-glossary-status-run-${r.id}`} /></span></td>
                   </tr>
                 );
               })}
@@ -291,7 +296,7 @@ export default function RunsPage({ session }: { session: Session }) {
                   <div className="min-w-0 flex-1 space-y-1.5 pt-1">
                     <div className="flex items-start justify-between gap-2">
                       <OrderId run={r} dup={dupOrders.has(r.orderId)} />
-                      <QualityStatusBadge status={r.overall} size="sm" testId={`status-run-card-${r.id}`} />
+                      <span className="inline-flex items-center"><QualityStatusBadge status={r.overall} size="sm" testId={`status-run-card-${r.id}`} /><StatusTip status={r.overall} testId={`button-glossary-status-run-card-${r.id}`} /></span>
                     </div>
                     <SourceChip run={r} testId={`text-run-card-source-${r.id}`} />
                     <div className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="size-3" aria-hidden="true" /><DateText run={r} testId={`text-run-card-date-${r.id}`} /></div>
@@ -300,7 +305,7 @@ export default function RunsPage({ session }: { session: Session }) {
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t pt-3">
                   {LIST_KEYS.map((k) => (
                     <div key={k} className="min-w-0">
-                      <dt className="text-[11px] text-muted-foreground">{t(`rc.metric.${k}`)}</dt>
+                      <dt className="text-[11px] text-muted-foreground"><MetricTerm metric={k}>{t(`rc.metric.${k}`)}</MetricTerm></dt>
                       <dd><ValueCell run={r} k={k} testId={`text-run-card-${k}-${r.id}`} /></dd>
                     </div>
                   ))}

@@ -5,6 +5,7 @@ import {ImportError} from "../imports/model";
 import {runMetrics,references,differences,groups} from "./values";
 import {summary,questions} from "./i18n";
 import {worstStatus} from "../imports/quality";
+import {comparisonCharts} from "./charts";
 
 const from=`FROM orders o JOIN imports i ON i.factory_id=o.factory_id AND i.id=o.current_import_id
  JOIN factories f ON f.id=o.factory_id`;
@@ -62,7 +63,7 @@ export async function compare(ctx:Context,left:string,right:string) {
   const statuses=Object.fromEntries(groups.map(g=>[g,worstStatus([a.groups[g],b.groups[g]])]));
   // The user chose per-group refusal, not whole-comparison refusal. Preserve
   // good groups and golden engine behavior even when the overall badge is red.
-  return {a,b,differences:diff,groups:statuses,overall:worstStatus([a.overall,b.overall]),
+  return {...comparisonCharts(a,b,diff),a,b,differences:diff,groups:statuses,overall:worstStatus([a.overall,b.overall]),
     hasWarnings:[...a.issues,...b.issues].some(i=>i.severity==="warning"),
     hasBlockedGroups:Object.values(statuses).includes("red"),summary:summary(a,b,diff),questions:questions(a,b,diff)};
 }

@@ -31,6 +31,7 @@ import '@/lib/runs-i18n';
 import { useLocation, useSearch } from 'wouter';
 import { UUID_RE } from '@/components/runs/shared';
 import { useSource } from '@/components/source/source-context';
+import { GroupTip, StatusTip } from '@/components/charts/glossary';
 import '@/lib/source-i18n';
 
 const SEVERITIES: GetQualitySeverity[] = ['error', 'warning', 'info'];
@@ -56,8 +57,8 @@ function sevText(t: TFunction, s: string) {
 
 function Stat({ label, value, status, testId }: { label: string; value: number; status: 'green' | 'yellow' | 'red'; testId: string }) {
   return (
-    <div className="flex min-w-0 flex-col gap-2 rounded-lg border bg-background px-3 py-3">
-      <QualityStatusBadge status={status} label={label} size="sm" />
+    <div className="flex min-w-0 flex-col gap-2 rounded-lg border bg-background px-1.5 py-3 sm:px-3">
+      <span className="flex flex-wrap items-center"><QualityStatusBadge status={status} label={label} size="sm" />{testId.includes('orders-') && <StatusTip status={status} testId={`button-glossary-${testId}`} />}</span>
       <span className="num text-2xl font-semibold leading-none tracking-tight" data-testid={testId}>{value}</span>
     </div>
   );
@@ -277,7 +278,7 @@ function IssueDetail({ issue, lang }: { issue: QualityIssue; lang: string }) {
           <h4 className="text-xs font-semibold">{t('q.detail.overall')}</h4>
           {isQualityStatus(issue.overallStatus) ? (
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <QualityStatusBadge status={issue.overallStatus} testId={`status-overall-${issue.id}`} />
+              <span className="inline-flex items-center"><QualityStatusBadge status={issue.overallStatus} testId={`status-overall-${issue.id}`} /><StatusTip status={issue.overallStatus} testId={`button-glossary-status-overall-${issue.id}`} /></span>
               {issue.comparable === true && <span className="text-xs text-muted-foreground">{t('q.detail.comparable')}</span>}
             </div>
           ) : (
@@ -287,9 +288,9 @@ function IssueDetail({ issue, lang }: { issue: QualityIssue; lang: string }) {
             <ul className="mt-3 grid gap-2 sm:grid-cols-3" aria-label={t('q.detail.groups')}>
               {groupEntries.map(([g, s]) => (
                 <li key={g} className="flex items-center justify-between gap-2 rounded-md border bg-card px-2.5 py-2">
-                  <span className="text-xs font-medium">{t(`q.groups.${g}`, { defaultValue: g })}</span>
+                  <span className="inline-flex items-center text-xs font-medium">{t(`q.groups.${g}`, { defaultValue: g })}<GroupTip group={g} testId={`button-glossary-group-${issue.id}-${g}`} /></span>
                   {isQualityStatus(s) ? (
-                    <QualityStatusBadge status={s} size="sm" testId={`status-group-${issue.id}-${g}`} />
+                    <span className="inline-flex items-center"><QualityStatusBadge status={s} size="sm" testId={`status-group-${issue.id}-${g}`} /><StatusTip status={s} testId={`button-glossary-status-group-${issue.id}-${g}`} /></span>
                   ) : (
                     <Raw className="text-xs">{s}</Raw>
                   )}

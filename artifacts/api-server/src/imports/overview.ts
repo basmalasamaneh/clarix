@@ -1,6 +1,8 @@
 import type {Context} from "./service";
 import {qualityPage} from "./quality";
 import {getRuns} from "../metrics/service";
+import {comparisonCharts,orderStatusChart} from "../metrics/charts";
+import {differences} from "../metrics/values";
 
 /** Aggregate navigation summary only: never invent or recalculate production metrics. */
 export async function overview(ctx:Context) {
@@ -22,7 +24,10 @@ export async function overview(ctx:Context) {
     WHERE ${active} AND i.status='approved' AND o.factory_id=$1
       AND o.metrics->>'overall' IN ('green','yellow')
     GROUP BY o.id HAVING min(p.date) IS NOT NULL ORDER BY date DESC,o.id LIMIT 2`,[ctx.factory])).rows;
-  return {approvedImports,currentOrders:quality.summary.orders.green+quality.summary.orders.yellow+quality.summary.orders.red,
+  const comparisonRuns=await getRuns(ctx,candidates.map(r=>r.id));
+  return {chart_spec:[orderStatusChart(quality.summary.orders)],
+    indicators:comparisonRuns.length===2?comparisonCharts(comparisonRuns[0],comparisonRuns[1],differences(comparisonRuns[0],comparisonRuns[1])).indicators:[],
+    approvedImports,currentOrders:quality.summary.orders.green+quality.summary.orders.yellow+quality.summary.orders.red,
     statuses:quality.summary.orders,errors:quality.summary.errors,warnings:quality.summary.warnings,
-    latestImports,comparisonRuns:await getRuns(ctx,candidates.map(r=>r.id))};
+    latestImports,comparisonRuns};
 }

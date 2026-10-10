@@ -14,23 +14,46 @@ export type OverviewStatuses = {
   red: number | null;
 };
 
-export type OverviewImportStatus = typeof OverviewImportStatus[keyof typeof OverviewImportStatus];
+export type ChartSpecKind = typeof ChartSpecKind[keyof typeof ChartSpecKind];
 
 
-export const OverviewImportStatus = {
-  draft: 'draft',
-  checked: 'checked',
-  approved: 'approved',
-  rejected: 'rejected',
+export const ChartSpecKind = {
+  bars: 'bars',
+  status_stack: 'status_stack',
+  indicator: 'indicator',
 } as const;
 
-export interface OverviewImport {
-  id: string;
-  sourceName: string;
-  /** @nullable */
-  date: string | null;
-  status: OverviewImportStatus;
+export interface ChartText {
+  en: string;
+  ar: string;
 }
+
+export type ChartSpecUnit = typeof ChartSpecUnit[keyof typeof ChartSpecUnit];
+
+
+export const ChartSpecUnit = {
+  pct: 'pct',
+  min: 'min',
+  count: 'count',
+} as const;
+
+export type ChartSpecStatus = typeof ChartSpecStatus[keyof typeof ChartSpecStatus];
+
+
+export const ChartSpecStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type ChartPointStatus = typeof ChartPointStatus[keyof typeof ChartPointStatus];
+
+
+export const ChartPointStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
 
 export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
 
@@ -52,14 +75,30 @@ export interface MetricReference {
   kind: MetricReferenceKind;
 }
 
-export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
-
-
-export const ProductionRunOverall = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
+export interface ChartPoint {
+  frames: string[];
+  key: string;
+  label: string;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  display: string | null;
+  /** @nullable */
+  hours: string | null;
+  /** @nullable */
+  plotValue: number | null;
+  /** @nullable */
+  width: string | null;
+  available: boolean;
+  status: ChartPointStatus;
+  reason: ChartText;
+  refs: MetricReference[];
+  /** @nullable */
+  runId: string | null;
+  /** @nullable */
+  sourceName: string | null;
+  noEvents: boolean;
+}
 
 export type RunMetricGroup = typeof RunMetricGroup[keyof typeof RunMetricGroup];
 
@@ -112,6 +151,59 @@ export interface RunMetric {
   alternatives: RunMetricAlternativesItem[];
 }
 
+export type ChartSpecDirection = typeof ChartSpecDirection[keyof typeof ChartSpecDirection];
+
+
+export const ChartSpecDirection = {
+  higher: 'higher',
+  lower: 'lower',
+  same: 'same',
+  unavailable: 'unavailable',
+} as const;
+
+export interface ChartSpec {
+  key: string;
+  kind: ChartSpecKind;
+  title: ChartText;
+  unit: ChartSpecUnit;
+  status: ChartSpecStatus;
+  caption: ChartText;
+  howToRead: ChartText;
+  series: ChartPoint[];
+  difference?: RunMetric;
+  direction: ChartSpecDirection;
+  changeText: ChartText;
+  axisMax: number;
+  axisMin: number;
+}
+
+export type OverviewImportStatus = typeof OverviewImportStatus[keyof typeof OverviewImportStatus];
+
+
+export const OverviewImportStatus = {
+  draft: 'draft',
+  checked: 'checked',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface OverviewImport {
+  id: string;
+  sourceName: string;
+  /** @nullable */
+  date: string | null;
+  status: OverviewImportStatus;
+}
+
+export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
+
+
+export const ProductionRunOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
 export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
 
 
@@ -149,6 +241,8 @@ export interface ProductionRun {
 }
 
 export interface Overview {
+  chart_spec: ChartSpec[];
+  indicators: ChartSpec[];
   /** @nullable */
   approvedImports: number | null;
   /** @nullable */
@@ -428,6 +522,8 @@ export type RunComparisonQuestionsItem = {
 };
 
 export interface RunComparison {
+  chart_spec: ChartSpec[];
+  indicators: ChartSpec[];
   a: ProductionRun;
   b: ProductionRun;
   differences: RunMetric[];

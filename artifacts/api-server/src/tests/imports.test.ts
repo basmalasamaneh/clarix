@@ -12,6 +12,7 @@ import {sessionStore} from "../lib/session";
 import {verifyRunMetrics} from "./verify-run-metrics";
 import {verifySourceDetail} from "./verify-source-detail";
 import {verifyOverview} from "./verify-overview";
+import {verifyOverviewCharts} from "./verify-charts";
 after(async()=>{sessionStore.close();await closeTenantPools();await pool.end();});
 const root=fileURLToPath(new URL("../../../../",import.meta.url));
 async function login(email:string) {
@@ -24,6 +25,7 @@ test("real API import/approval, isolation, originals, replacement history and un
   const source=`API verification ${randomUUID()}`;
   await t.test("Overview empty factory returns real zero counts; anonymous and platform access denied",async()=>{
     const empty=(await viewer.a.get("/api/overview").expect(200)).body;
+    verifyOverviewCharts(empty);
     assert.equal(empty.approvedImports,0);assert.equal(empty.currentOrders,0);
     assert.deepEqual(empty.latestImports,[]);assert.deepEqual(empty.comparisonRuns,[]);
     await request(app).get("/api/overview").expect(401);

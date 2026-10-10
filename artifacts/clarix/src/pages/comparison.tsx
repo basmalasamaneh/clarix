@@ -23,6 +23,9 @@ import { ForbiddenState } from '@/pages/tenant-page';
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { issueText } from '@/lib/import-model';
 import { cn } from '@/lib/utils';
+import { BarsChart, KpiCard } from '@/components/charts/chart-card';
+import { GlossaryTip, GroupTip, MetricTerm, StatusTip } from '@/components/charts/glossary';
+import '@/lib/charts-i18n';
 import '@/lib/runs-i18n';
 import '@/lib/quality-i18n';
 
@@ -45,11 +48,12 @@ function srcFor(data: RunComparison, side: Side, key: string) {
 function ValueLink({ side, m, testId, data }: { side: Side; m: RunMetric | undefined; testId: string; data: RunComparison }) {
   const { t } = useTranslation();
   if (!m) return <MetricValue m={undefined} testId={testId} />;
-  const link = (
+  const link = (<span className="inline-flex flex-wrap items-center">
     <SourceLink source={srcFor(data, side, m.key)} label={t(`rc.metric.${m.key}`)} testId={`link-source-${side}-${m.key}`}>
       <MetricValue m={m} testId={testId} />
     </SourceLink>
-  );
+    {!m.available && <GlossaryTip term="na" testId={`${testId}-glossary-na`} />}
+  </span>);
   if (!m.available && m.group === 'volume') {
     const reasons = issuesOf(data, (i) => i.severity === 'error' && inGroup(i, 'volume')).filter((item) => side === 'd' || item.side === side);
     return <div>{link}<IssueLinks items={reasons} testId={`${testId}-reasons`} /></div>;
@@ -99,7 +103,7 @@ function MetricRows({ keys, data }: { keys: readonly string[]; data: RunComparis
             const md = metricOf(data.differences, k);
             return (
               <tr key={k} className="border-b align-top last:border-0" data-testid={`row-metric-${k}`}>
-                <th scope="row" className="px-4 py-3 text-start font-medium">{t(`rc.metric.${k}`)}</th>
+                <th scope="row" className="px-4 py-3 text-start font-medium"><MetricTerm metric={k}>{t(`rc.metric.${k}`)}</MetricTerm></th>
                 <td className="px-2 py-1.5"><ValueLink data={data} side="a" m={ma}  testId={`text-a-${k}`} /><Alternatives m={ma} side="a" data={data} /></td>
                 <td className="px-2 py-1.5"><ValueLink data={data} side="b" m={mb}  testId={`text-b-${k}`} /><Alternatives m={mb} side="b" data={data} /></td>
                 <td className="bg-[color-mix(in_srgb,var(--accent)_60%,transparent)] px-2 py-1.5"><ValueLink data={data} side="d" m={md}  testId={`text-diff-${k}`} /></td>
@@ -116,7 +120,7 @@ function MetricRows({ keys, data }: { keys: readonly string[]; data: RunComparis
           const md = metricOf(data.differences, k);
           return (
             <li key={k} className="p-3" data-testid={`card-metric-${k}`}>
-              <h4 className="text-sm font-semibold">{t(`rc.metric.${k}`)}</h4>
+              <h4 className="text-sm font-semibold"><MetricTerm metric={k}>{t(`rc.metric.${k}`)}</MetricTerm></h4>
               <dl className="mt-2 grid grid-cols-2 gap-2">
                 <div className="min-w-0 rounded-md border p-1.5">
                   <dt className="px-1.5 text-[11px] text-muted-foreground">{t('rc.cmp.runA')}</dt>
@@ -179,7 +183,8 @@ function BlockedGroup({ group, data }: { group: Group; data: RunComparison }) {
       <div className="flex flex-wrap items-center gap-2">
         <OctagonX className="size-5 text-status-red" aria-hidden="true" />
         <h3 className="text-sm font-semibold">{t('rc.cmp.blockedGroup', { group: t(`rc.groups.${group}`) })}</h3>
-        <QualityStatusBadge status="red" size="sm" />
+        <GroupTip group={group} testId={`button-glossary-blocked-group-${group}`} />
+        <span className="inline-flex items-center"><QualityStatusBadge status="red" size="sm" /><StatusTip status="red" testId={`button-glossary-status-blocked-${group}`} /></span>
       </div>
       <p className="mt-1 text-xs text-muted-foreground">{t('rc.cmp.blockedGroupBody')}</p>
       {reasons.length > 0 && <IssueLinks items={reasons} testId={`list-blocked-reasons-${group}`} />}
@@ -192,7 +197,7 @@ function BlockedGroup({ group, data }: { group: Group; data: RunComparison }) {
             <ul className="mt-2 grid gap-2 sm:grid-cols-2">
               {rows.map(({ k, side, m }) => (
                 <li key={`${side}-${k}`} className="min-w-0">
-                  <p className="text-xs font-semibold">{t(`rc.metric.${k}`)} · {side === 'a' ? t('rc.cmp.runA') : t('rc.cmp.runB')} <span className="font-normal text-muted-foreground">({(side === 'a' ? data.a : data.b).sourceName})</span></p>
+                  <p className="text-xs font-semibold"><MetricTerm metric={k}>{t(`rc.metric.${k}`)}</MetricTerm> · {side === 'a' ? t('rc.cmp.runA') : t('rc.cmp.runB')} <span className="font-normal text-muted-foreground">({(side === 'a' ? data.a : data.b).sourceName})</span></p>
                   <Alternatives m={m} side={side} data={data} />
                 </li>
               ))}
@@ -219,7 +224,7 @@ function RunCard({ run, side }: { run: ProductionRun; side: 'a' | 'b' }) {
             <Raw className="block truncate text-lg font-semibold" >{run.orderId}</Raw>
           </div>
         </div>
-        <QualityStatusBadge status={run.overall} testId={`status-run-${side}`} />
+        <span className="inline-flex items-center"><QualityStatusBadge status={run.overall} testId={`status-run-${side}`} /><StatusTip status={run.overall} testId={`button-glossary-status-run-${side}`} /></span>
       </div>
       <div className="mt-3"><SourceChip run={run} testId={`text-run-${side}-source`} /></div>
       <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
@@ -248,7 +253,7 @@ function RunCard({ run, side }: { run: ProductionRun; side: 'a' | 'b' }) {
       {[1, 2, 3].includes(run.capabilityLevel) && <p className="mt-2 text-xs text-muted-foreground" data-testid={`text-capability-${side}`}>{t(`rc.cmp.cap${run.capabilityLevel}`)}</p>}
       <ul className="mt-3 flex flex-wrap gap-1.5 border-t pt-3" aria-label={t('rc.cmp.groupStatus')}>
         {(['volume', 'changeover', 'downtime'] as Group[]).map((g) =>
-          run.groups[g] ? <li key={g}><QualityStatusBadge status={run.groups[g]} label={t(`rc.groups.${g}`)} size="sm" testId={`status-run-${side}-${g}`} /></li> : null,
+          run.groups[g] ? <li key={g} className="inline-flex items-center"><QualityStatusBadge status={run.groups[g]} label={t(`rc.groups.${g}`)} size="sm" testId={`status-run-${side}-${g}`} /><GroupTip group={g} testId={`button-glossary-group-run-${side}-${g}`} /><StatusTip status={run.groups[g]} testId={`button-glossary-status-run-${side}-${g}`} /></li> : null,
         )}
       </ul>
     </article>
@@ -277,16 +282,36 @@ function Result({ data }: { data: RunComparison }) {
         <div className="flex flex-wrap items-center gap-2">
           <h2 id="cmp-summary" className="text-sm font-semibold">{t('rc.cmp.summary')}</h2>
           <span className="text-xs text-muted-foreground">· {t('rc.cmp.overall')}</span>
-          <QualityStatusBadge status={data.overall} testId="status-comparison-overall" />
+          <QualityStatusBadge status={data.overall} testId="status-comparison-overall" /><StatusTip status={data.overall} testId="button-glossary-status-comparison-overall" />
           <span className="mx-1 hidden h-4 w-px bg-border sm:block" aria-hidden="true" />
           {(['volume', 'changeover', 'downtime'] as Group[]).map((g) =>
-            data.groups[g] ? <QualityStatusBadge key={g} status={data.groups[g]} label={t(`rc.groups.${g}`)} size="sm" testId={`status-comparison-${g}`} /> : null,
+            data.groups[g] ? <span key={g} className="inline-flex items-center"><QualityStatusBadge status={data.groups[g]} label={t(`rc.groups.${g}`)} size="sm" testId={`status-comparison-${g}`} /><GroupTip group={g} testId={`button-glossary-group-comparison-${g}`} /><StatusTip status={data.groups[g]} testId={`button-glossary-status-comparison-${g}`} /></span> : null,
           )}
         </div>
         <p className="mt-3 text-base font-medium leading-relaxed" dir={ar ? 'rtl' : 'ltr'} lang={ar ? 'ar' : 'en'} data-testid="text-summary">{ar ? data.summary.ar : data.summary.en}</p>
         <p className="mt-2 border-s-2 border-[var(--series-stop)] ps-3 text-sm text-muted-foreground" data-testid="text-downtime-separate">{t('rc.cmp.separateLine')}</p>
         <p className="mt-2 text-[11px] text-muted-foreground">{t('rc.cmp.summaryNote')}</p>
       </section>
+
+      {data.indicators.length > 0 && (
+        <section aria-labelledby="cmp-kpis" data-testid="section-kpis">
+          <h2 id="cmp-kpis" className="text-sm font-semibold">{t('ch.kpiTitle')}</h2>
+          <p className="text-[11px] text-muted-foreground">{t('ch.kpiLead')}</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {data.indicators.map((s) => <KpiCard key={s.key} spec={s} testId={`card-kpi-${s.key}`} />)}
+          </div>
+        </section>
+      )}
+
+      {data.chart_spec.length > 0 && (
+        <section aria-labelledby="cmp-charts" data-testid="section-charts">
+          <h2 id="cmp-charts" className="text-sm font-semibold">{t('ch.chartsTitle')}</h2>
+          <p className="text-[11px] text-muted-foreground">{t('ch.chartsLead')}</p>
+          <div className="mt-3 grid gap-4 lg:grid-cols-2">
+            {data.chart_spec.map((s) => <BarsChart key={s.key} spec={s} testId={`chart-${s.key}`} />)}
+          </div>
+        </section>
+      )}
 
       {data.questions.length > 0 && (
         <section className="rounded-xl border bg-card p-4 sm:p-5" aria-labelledby="cmp-questions" data-testid="section-questions">
@@ -327,8 +352,8 @@ function Result({ data }: { data: RunComparison }) {
           <section key={g} className="overflow-hidden rounded-xl border bg-card shadow-[var(--shadow-sm)]" aria-labelledby={`grp-${g}`} data-testid={`section-group-${g}`}>
             <header className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
               <Icon className="size-4 text-primary" aria-hidden="true" />
-              <h3 id={`grp-${g}`} className="text-sm font-semibold">{t(`rc.groups.${g}`)}</h3>
-              {data.groups[g] && <QualityStatusBadge status={data.groups[g]} size="sm" />}
+              <h3 id={`grp-${g}`} className="inline-flex items-center text-sm font-semibold">{t(`rc.groups.${g}`)}<GroupTip group={g} testId={`button-glossary-group-section-${g}`} /></h3>
+              {data.groups[g] && <span className="inline-flex items-center"><QualityStatusBadge status={data.groups[g]} size="sm" /><StatusTip status={data.groups[g]} testId={`button-glossary-status-section-${g}`} /></span>}
             </header>
             <MetricRows keys={keys} data={data}  />
           </section>
@@ -339,8 +364,8 @@ function Result({ data }: { data: RunComparison }) {
         <header className="border-b px-4 py-3">
           <div className="flex flex-wrap items-center gap-2">
             <Timer className="size-4 text-[var(--series-stop)]" aria-hidden="true" />
-            <h3 id="grp-downtime" className="text-sm font-semibold">{t('rc.cmp.downtimeTitle')}</h3>
-            {data.groups.downtime && <QualityStatusBadge status={data.groups.downtime} size="sm" />}
+            <h3 id="grp-downtime" className="text-sm font-semibold"><MetricTerm metric="downtime_min">{t('rc.cmp.downtimeTitle')}</MetricTerm></h3>
+            {data.groups.downtime && <span className="inline-flex items-center"><QualityStatusBadge status={data.groups.downtime} size="sm" /><StatusTip status={data.groups.downtime} testId="button-glossary-status-section-downtime" /></span>}
           </div>
           <p className="mt-1 text-xs text-muted-foreground" data-testid="text-downtime-note">{t('rc.cmp.downtimeNote')}</p>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('rc.cmp.separateLine')}</p>

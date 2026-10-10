@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ChartSpec } from './chartSpec';
 import type { ProductionRun } from './productionRun';
 import type { RunComparisonGroups } from './runComparisonGroups';
 import type { RunComparisonOverall } from './runComparisonOverall';
@@ -13,6 +14,8 @@ import type { RunComparisonSummary } from './runComparisonSummary';
 import type { RunMetric } from './runMetric';
 
 export interface RunComparison {
+  chart_spec: ChartSpec[];
+  indicators: ChartSpec[];
   a: ProductionRun;
   b: ProductionRun;
   differences: RunMetric[];

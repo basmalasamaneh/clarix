@@ -4,12 +4,14 @@ import type {TestContext} from "node:test";
 import type {Agent} from "supertest";
 import {withTenant} from "../lib/tenancy";
 import {overview} from "../imports/overview";
+import {verifyOverviewCharts} from "./verify-charts";
 
 type Actor={a:Agent;token:string;user:string;factory:string};
 export async function verifyOverview(t:TestContext,viewer:Actor,najm:Actor,manager:Actor) {
   await t.test("Overview equals Data Quality and Runs; Viewer read, factory isolation and latest five",async()=>{
     for(const who of [viewer,najm]) {
       const o=(await who.a.get("/api/overview").query({factoryId:who===viewer?najm.factory:viewer.factory}).expect(200)).body;
+      verifyOverviewCharts(o);
       const q=(await who.a.get("/api/quality").expect(200)).body;
       const r=(await who.a.get("/api/runs").expect(200)).body;
       assert.deepEqual(o.statuses,q.summary.orders);
@@ -41,6 +43,7 @@ export async function verifyOverview(t:TestContext,viewer:Actor,najm:Actor,manag
     const sourceName=before.comparisonRuns[0].sourceName;
     await manager.a.patch("/api/data-sources/archive").set("X-CSRF-Token",manager.token).send({sourceName,archived:true}).expect(200);
     const archived=(await viewer.a.get("/api/overview").expect(200)).body;
+    verifyOverviewCharts(archived);
     assert.ok(archived.approvedImports<before.approvedImports);
     assert.ok(archived.currentOrders<before.currentOrders);
     assert.ok([...archived.latestImports,...archived.comparisonRuns].every(x=>x.sourceName!==sourceName));

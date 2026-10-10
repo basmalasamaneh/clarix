@@ -5,11 +5,14 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ChartSpec } from './chartSpec';
 import type { OverviewImport } from './overviewImport';
 import type { OverviewStatuses } from './overviewStatuses';
 import type { ProductionRun } from './productionRun';
 
 export interface Overview {
+  chart_spec: ChartSpec[];
+  indicators: ChartSpec[];
   /** @nullable */
   approvedImports: number | null;
   /** @nullable */

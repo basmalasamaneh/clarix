@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils';
 import type { SourceTarget } from '@/components/source/source-context';
 import '@/lib/runs-i18n';
 import '@/lib/quality-i18n';
+import { MetricTerm } from '@/components/charts/glossary';
 import '@/lib/source-i18n';
 
 const ROWS_PAGE = 20;
@@ -194,7 +195,7 @@ function RowCard({ row, scope, label }: { row: SourceRow; scope: string; label?:
           <span className="text-muted-foreground">{t('src.contributes')}</span>
           {row.contributions.map((c) => (
             <span key={c.key} className="inline-flex items-center gap-1">
-              <span className="text-muted-foreground">{metricName(t, c.key)}</span>
+              <span className="inline-flex items-center text-muted-foreground"><MetricTerm metric={c.key}>{metricName(t, c.key)}</MetricTerm></span>
               <Val value={c.value} unit={c.unit} />
             </span>
           ))}
@@ -344,7 +345,7 @@ function Alternatives({ d }: { d: SourceDetail }) {
         {pg.shown.map((a) => (
           <li key={`${a.metric}-${a.key}`} className="flex flex-wrap items-baseline justify-between gap-2 px-3 py-2 text-sm" data-testid={`row-source-alt-${a.metric}-${a.key}`}>
             <span className="min-w-0">
-              <span className="font-medium">{metricName(t, a.metric)}</span>{' '}
+              <span className="font-medium"><MetricTerm metric={a.metric}>{metricName(t, a.metric)}</MetricTerm></span>{' '}
               <Raw className="text-[11px] text-muted-foreground">{a.key}</Raw>
             </span>
             <Val value={a.value} unit={a.unit} testId={`text-source-alt-${a.metric}-${a.key}`} />
@@ -489,7 +490,7 @@ function Body({ target, session }: { target: SourceTarget; session: Session }) {
           <dl className="grid gap-2 sm:grid-cols-2">
             {d.inputs.map((i) => (
               <div key={i.key} className="flex items-baseline justify-between gap-2 rounded-md border bg-card px-3 py-2" data-testid={`row-source-input-${i.key}`}>
-                <dt className="text-xs text-muted-foreground">{metricName(t, i.key)}</dt>
+                <dt className="text-xs text-muted-foreground"><MetricTerm metric={i.key}>{metricName(t, i.key)}</MetricTerm></dt>
                 <dd><Val value={i.value} unit={i.unit} testId={`text-source-input-${i.key}`} /></dd>
               </div>
             ))}
@@ -595,7 +596,7 @@ export function SourceDrawer({ target, session, onClose, onRestoreFocus }: { tar
             <span className="mt-1 grid size-9 shrink-0 place-items-center rounded-lg bg-secondary text-primary"><Sigma className="size-4" aria-hidden="true" /></span>
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{t('src.title')}</p>
-              <DialogPrimitive.Title className="text-lg font-semibold leading-tight [overflow-wrap:anywhere]" data-testid="text-source-title">{title}</DialogPrimitive.Title>
+              <div className="flex items-start gap-1"><DialogPrimitive.Title className="text-lg font-semibold leading-tight [overflow-wrap:anywhere]" data-testid="text-source-title">{title}</DialogPrimitive.Title>{target?.kind === 'metric' && target.metric && <MetricTerm metric={target.metric}>{null}</MetricTerm>}</div>
               <DialogPrimitive.Description className="mt-0.5 text-xs text-muted-foreground">
                 {sub ? `${sub} · ` : ''}{t('src.readOnly')}
               </DialogPrimitive.Description>

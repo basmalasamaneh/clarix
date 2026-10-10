@@ -17,6 +17,9 @@ import { cn } from '@/lib/utils';
 import '@/lib/quality-i18n';
 import '@/lib/runs-i18n';
 import '@/lib/overview-i18n';
+import '@/lib/charts-i18n';
+import { KpiCard, StatusStackChart } from '@/components/charts/chart-card';
+import { GlossaryTip, StatusTip } from '@/components/charts/glossary';
 
 const PRIMARY = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow-[var(--shadow-sm)] hover-elevate active-elevate-2';
 const SECONDARY = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-md border bg-card px-4 text-sm font-medium hover-elevate';
@@ -25,7 +28,7 @@ const TEXT_LINK = 'inline-flex min-h-11 items-center gap-1.5 text-sm font-medium
 function Num({ value, testId, className }: { value: number | null | undefined; testId: string; className?: string }) {
   const { t } = useTranslation();
   if (value === null || value === undefined) {
-    return <span className="text-sm font-medium italic text-muted-foreground" title={t('ov.naHint')} data-testid={testId}>{t('ov.na')}</span>;
+    return <span className="inline-flex items-center"><span className="text-sm font-medium italic text-muted-foreground" title={t('ov.naHint')} data-testid={testId}>{t('ov.na')}</span><GlossaryTip term="na" testId={`button-glossary-na-${testId}`} /></span>;
   }
   return <span className={cn('num font-semibold leading-none tracking-tight', className ?? 'text-3xl')} data-testid={testId}>{value}</span>;
 }
@@ -53,7 +56,7 @@ function Summary({ d, canQuality }: { d: Overview; canQuality: boolean }) {
         <ul className="mt-3 grid grid-cols-3 gap-2">
           {(['green', 'yellow', 'red'] as const).map((s) => (
             <li key={s} className="flex min-w-0 flex-col gap-2 rounded-lg border bg-background px-1.5 py-2.5 sm:px-2.5">
-              <QualityStatusBadge status={s} size="sm" className="self-start" />
+              <span className="flex flex-wrap items-center"><QualityStatusBadge status={s} size="sm" /><StatusTip status={s} testId={`button-glossary-overview-status-${s}`} /></span>
               <Num value={d.statuses[s]} className="text-2xl" testId={`text-overview-status-${s}`} />
             </li>
           ))}
@@ -79,6 +82,27 @@ function Summary({ d, canQuality }: { d: Overview; canQuality: boolean }) {
           </Link>
         )}
       </Card>
+    </div>
+  );
+}
+
+function Visuals({ d }: { d: Overview }) {
+  const { t } = useTranslation();
+  const pair = d.comparisonRuns.length === 2 ? d.comparisonRuns : null;
+  return (
+    <div className="space-y-4" data-testid="section-overview-visuals">
+      {d.chart_spec.map((s) => <StatusStackChart key={s.key} spec={s} testId={`chart-overview-${s.key}`} />)}
+      <section className="rounded-xl border bg-card p-4 shadow-[var(--shadow-sm)] sm:p-5" aria-labelledby="ov-pair-kpis" data-testid="section-overview-kpis">
+        <h2 id="ov-pair-kpis" className="text-sm font-semibold">{t('ch.pairTitle')}</h2>
+        {pair && d.indicators.length > 0 ? (
+          <>
+            <p className="text-xs text-muted-foreground" data-testid="text-overview-pair-scope">{t('ch.pairLead', { a: pair[0].orderId, b: pair[1].orderId })}</p>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {d.indicators.map((s) => <KpiCard key={s.key} spec={s} testId={`card-overview-kpi-${s.key}`} />)}
+            </div>
+          </>
+        ) : <p className="mt-1 text-sm text-muted-foreground" data-testid="text-overview-kpis-empty">{t('ch.pairFew')}</p>}
+      </section>
     </div>
   );
 }
@@ -130,7 +154,7 @@ function RunSlot({ run, side }: { run: ProductionRun; side: string }) {
       <span className="min-w-0 flex-1 space-y-1.5">
         <span className="flex items-start justify-between gap-2">
           <Raw className="min-w-0 whitespace-normal text-sm font-semibold [overflow-wrap:anywhere]">{run.orderId}</Raw>
-          <QualityStatusBadge status={run.overall} size="sm" testId={`status-overview-run-${run.id}`} />
+          <span className="inline-flex items-center"><QualityStatusBadge status={run.overall} size="sm" testId={`status-overview-run-${run.id}`} /><StatusTip status={run.overall} testId={`button-glossary-status-overview-run-${run.id}`} /></span>
         </span>
         <SourceChip run={run} testId={`text-overview-run-source-${run.id}`} />
         <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -274,6 +298,7 @@ export default function OverviewPage({ session }: { session: Session }) {
       <div className="space-y-4">
         {noApproved && <Guide canImports={canImports} canRuns={canRuns} canQuality={canQuality} />}
         <Summary d={d} canQuality={canQuality} />
+        {!noApproved && <Visuals d={d} />}
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
           {!noApproved ? (
             <CompareShortcut d={d} primary canImports={canImports} canComparison={canComparison} canRuns={canRuns} />

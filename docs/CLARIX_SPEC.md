@@ -364,6 +364,28 @@ reconciliation and snapshots are outside this phase.
 
 ## 12. Design system
 
+### Approved Phase 12 — charts, indicators and fixed explanations
+
+The new Phase 12 brief replaces the roadmap's demo/deploy scope. Add only two
+Comparison charts (scrap rate and changeover), a separate downtime panel, four
+reusable metric indicators, and one Overview current-order status stacked bar.
+Overview's metric indicators refer explicitly to its suggested comparison pair,
+not to inferred factory-wide rates. Add bilingual glossary tooltips and Help
+definitions. No export, AI, snapshots, reconciliation, targets, trends or extra
+charts. Chart export and timelines described below remain deferred.
+
+The server supplies chart_spec values, captions, differences, availability,
+source references, display formatting and cosmetic animation frames. Renderers
+only display them. Exact decimal strings remain authoritative; numeric plotting
+coordinates and percentage widths are geometry only, not calculation inputs.
+Preserve every existing table/engine value. Specifically, scenario 05 retains
+its stored 10% table value but omits the blocked chart bar. Missing and blocked
+bars are omitted (overriding the older hatched-bar rule), with Not available,
+the reason and Data Quality link. Never substitute zero. Unaffected bars and
+metric groups remain visible. Display differences only when comparable.
+Animations run 300–600ms without hiding the final readable value; reduced motion
+disables them entirely. All new claims use neutral, fixed bilingual templates.
+
 **Languages:** Arabic (RTL) and English (LTR), switch in the top bar, remembered per user. **Themes:** light, dark, system; remembered per user. Mirror layout, chart axes and icons for RTL. Use logical CSS properties (`margin-inline-start`, etc.).
 
 **Fonts:** Arabic — *IBM Plex Sans Arabic*; English — *Inter*. Formal, clear. Numbers use Latin digits (0-9) in both languages, with `font-variant-numeric: tabular-nums`. Body 16 px; headline comparison numbers 32–40 px.
@@ -465,7 +487,7 @@ Acceptance (wave 1): E-01 5% / 240 min · E-02 10% / 360 min · +5 pp · +120 mi
 | 9 | Second factory, isolation proof, runtime database login and scale check | 2 | applicable tenancy tests and forced-RLS coverage pass; direct least-privilege login proven; measured latency reported |
 | 10 | MVP polish and publish readiness | 1 | isolated acceptance, production bootstrap, bilingual reliability and explicit readiness report |
 | 11 | AI assistant (tools, structured output, validator) | 3 | AI test suite passes |
-| 12 | Remaining charts, demo mode, polish, accessibility, deploy | 3 | demo script (below) runs end-to-end |
+| 12 | Charts, indicators and plain-language explanations | 2 | server chart/table/golden parity, omitted blocked values, isolated browser and reduced-motion checks |
 
 Rules for each prompt: state the goal, what **not** to build yet, the acceptance check, and the tests to add. Create a checkpoint before each phase. If the agent drifts, roll back rather than patch on top.
 

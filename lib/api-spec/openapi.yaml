@@ -598,8 +598,10 @@ components:
   schemas:
     Overview:
       type: object
-      required: [approvedImports, currentOrders, statuses, errors, warnings, latestImports, comparisonRuns]
+      required: [approvedImports, currentOrders, statuses, errors, warnings, latestImports, comparisonRuns, chart_spec, indicators]
       properties:
+        chart_spec: { type: array, items: { $ref: "#/components/schemas/ChartSpec" } }
+        indicators: { type: array, items: { $ref: "#/components/schemas/ChartSpec" } }
         approvedImports: { type: [integer, "null"] }
         currentOrders: { type: [integer, "null"] }
         errors: { type: [integer, "null"] }
@@ -884,8 +886,10 @@ components:
           items: { $ref: "#/components/schemas/RunIssue" }
     RunComparison:
       type: object
-      required: [a, b, differences, overall, groups, summary, questions, hasWarnings, hasBlockedGroups]
+      required: [a, b, differences, overall, groups, summary, questions, hasWarnings, hasBlockedGroups, chart_spec, indicators]
       properties:
+        chart_spec: { type: array, items: { $ref: "#/components/schemas/ChartSpec" } }
+        indicators: { type: array, items: { $ref: "#/components/schemas/ChartSpec" } }
         a: { $ref: "#/components/schemas/ProductionRun" }
         b: { $ref: "#/components/schemas/ProductionRun" }
         differences: { type: array, items: { $ref: "#/components/schemas/RunMetric" } }
@@ -911,6 +915,48 @@ components:
               metricKey: { type: string }
               en: { type: string }
               ar: { type: string }
+    ChartText:
+      type: object
+      required: [en, ar]
+      properties:
+        en: { type: string }
+        ar: { type: string }
+    ChartPoint:
+      type: object
+      required: [key, label, value, display, hours, plotValue, width, available, status, reason, refs, runId, sourceName, noEvents, frames]
+      properties:
+        frames: { type: array, items: { type: string } }
+        key: { type: string }
+        label: { type: string }
+        value: { type: [string, "null"] }
+        display: { type: [string, "null"] }
+        hours: { type: [string, "null"] }
+        plotValue: { type: [number, "null"] }
+        width: { type: [string, "null"] }
+        available: { type: boolean }
+        status: { type: string, enum: [green, yellow, red] }
+        reason: { $ref: "#/components/schemas/ChartText" }
+        refs: { type: array, items: { $ref: "#/components/schemas/MetricReference" } }
+        runId: { type: [string, "null"] }
+        sourceName: { type: [string, "null"] }
+        noEvents: { type: boolean }
+    ChartSpec:
+      type: object
+      required: [key, kind, title, unit, status, caption, howToRead, series, direction, changeText, axisMin, axisMax]
+      properties:
+        key: { type: string }
+        kind: { type: string, enum: [bars, status_stack, indicator] }
+        title: { $ref: "#/components/schemas/ChartText" }
+        unit: { type: string, enum: [pct, min, count] }
+        status: { type: string, enum: [green, yellow, red] }
+        caption: { $ref: "#/components/schemas/ChartText" }
+        howToRead: { $ref: "#/components/schemas/ChartText" }
+        series: { type: array, items: { $ref: "#/components/schemas/ChartPoint" } }
+        difference: { $ref: "#/components/schemas/RunMetric" }
+        direction: { type: string, enum: [higher, lower, same, unavailable] }
+        changeText: { $ref: "#/components/schemas/ChartText" }
+        axisMax: { type: number }
+        axisMin: { type: number }
     QualityIssue:
       type: object
       required: [id, importId, code, severity, severityStatus, sourceName, group, orderId, archived, superseded, refs, blockedReasons]
