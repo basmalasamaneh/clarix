@@ -1,6 +1,7 @@
-import { useCallback, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, FileText, Rows3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { useSource, type SourceTarget } from '@/components/source/source-context';
 import type { MetricReference } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { Raw } from '@/components/imports/shared';
@@ -14,33 +15,6 @@ const KIND_CLS: Record<string, string> = {
   excluded: 'border-dashed border-[color-mix(in_srgb,var(--status-amber)_50%,transparent)] text-status-amber',
   quarantined: 'border-[color-mix(in_srgb,var(--status-red)_40%,transparent)] text-status-red bg-[color-mix(in_srgb,var(--status-red)_6%,var(--card))]',
 };
-
-/** Open-state for in-page reference disclosures. `open` also scrolls to and focuses the panel. */
-export function useRefPanels() {
-  const [openSet, setOpenSet] = useState<Set<string>>(new Set());
-  const open = useCallback((id: string) => {
-    setOpenSet((s) => new Set(s).add(id));
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        el.scrollIntoView({ block: 'start' });
-        el.querySelector('summary')?.focus({ preventScroll: true });
-        history.replaceState(history.state, '', `${location.pathname}${location.search}#${id}`);
-      }),
-    );
-  }, []);
-  const set = useCallback((id: string, o: boolean) => {
-    setOpenSet((s) => {
-      const n = new Set(s);
-      if (o) n.add(id);
-      else n.delete(id);
-      return n;
-    });
-  }, []);
-  return { isOpen: (id: string) => openSet.has(id), open, set, ids: openSet };
-}
-export type RefPanels = ReturnType<typeof useRefPanels>;
 
 export function RefList({ refs, testId }: { refs: MetricReference[]; testId: string }) {
   const { t } = useTranslation();
@@ -87,33 +61,21 @@ export function RefList({ refs, testId }: { refs: MetricReference[]; testId: str
   );
 }
 
-export function RefPanel({ id, title, refs, panels }: { id: string; title: string; refs: MetricReference[]; panels: RefPanels }) {
-  const open = panels.isOpen(id);
-  return (
-    <details id={id} open={open} onToggle={(e) => { const o = (e.currentTarget as HTMLDetailsElement).open; if (o !== open) panels.set(id, o); }} className="scroll-mt-24 rounded-lg border bg-card" data-testid={`panel-${id}`}>
-      <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-3 text-sm font-medium hover-elevate" data-testid={`toggle-${id}`}>
-        <Rows3 className="size-4 text-primary" aria-hidden="true" />
-        <span className="min-w-0 flex-1">{title}</span>
-        <span className="num text-xs text-muted-foreground">{refs.length}</span>
-      </summary>
-      {open && <div className="border-t"><RefList refs={refs} testId={`list-${id}`} /></div>}
-    </details>
-  );
-}
-
-/** A value that opens its reference panel in-page. */
-export function SourceLink({ target, panels, label, testId, children, className, showHint = true }: { target: string; panels: RefPanels; label: string; testId: string; children: ReactNode; className?: string; showHint?: boolean }) {
+/** A value that opens the shared source drawer (URL state). Button, so Enter/Space work natively. */
+export function SourceLink({ source, label, testId, children, className, showHint = true }: { source: SourceTarget; label: string; testId: string; children: ReactNode; className?: string; showHint?: boolean }) {
   const { t } = useTranslation();
+  const { openSource } = useSource();
   return (
-    <a
-      href={`#${target}`}
-      onClick={(e) => { e.preventDefault(); panels.open(target); }}
+    <button
+      type="button"
+      onClick={(e) => openSource(source, e.currentTarget)}
+      aria-haspopup="dialog"
       className={cn('group inline-flex min-h-11 flex-col items-start justify-center rounded-md px-1.5 text-start hover-elevate', className)}
       aria-label={`${label} · ${t('rc.cmp.showSource')}`}
       data-testid={testId}
     >
       {children}
       {showHint && <span className="mt-0.5 text-[11px] text-primary underline-offset-2 group-hover:underline">{t('rc.cmp.showSource')}</span>}
-    </a>
+    </button>
   );
 }

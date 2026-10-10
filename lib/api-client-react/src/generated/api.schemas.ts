@@ -5,6 +5,124 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type SourceDetailInputsItem = {
+  key: string;
+  /** @nullable */
+  value: string | null;
+  unit: string;
+};
+
+export type SourceDetailImportsItem = {
+  id: string;
+  sourceName: string;
+  /** @nullable */
+  orderId: string | null;
+  approvedAt: string;
+};
+
+export type SourceDetailAlternativesItem = {
+  key: string;
+  metric: string;
+  /** @nullable */
+  value: string | null;
+  unit: string;
+};
+
+export type SourceRowKind = typeof SourceRowKind[keyof typeof SourceRowKind];
+
+
+export const SourceRowKind = {
+  included: 'included',
+  excluded: 'excluded',
+  quarantined: 'quarantined',
+  related: 'related',
+} as const;
+
+export interface SourceText {
+  en: string;
+  ar: string;
+}
+
+export type SourceRowCellsItem = {
+  column: string;
+  value: string;
+  highlighted: boolean;
+  reason: SourceText;
+};
+
+export type SourceRowContributionsItem = {
+  key: string;
+  /** @nullable */
+  value: string | null;
+  unit: string;
+};
+
+export type SourceRowEvent = {
+  type: string;
+  start: string;
+  end: string;
+  /** @nullable */
+  minutes: string | null;
+};
+
+export interface SourceRow {
+  id: string;
+  importId: string;
+  sourceName: string;
+  /** @nullable */
+  orderId: string | null;
+  file: string;
+  line: number;
+  kind: SourceRowKind;
+  cells: SourceRowCellsItem[];
+  contributions: SourceRowContributionsItem[];
+  event?: SourceRowEvent;
+}
+
+export type SourceDetailDuplicatePairsItem = {
+  original: SourceRow;
+  suspected: SourceRow;
+};
+
+export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
+
+
+export const RunIssueSeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export interface RunIssue {
+  id: string;
+  code: string;
+  severity: RunIssueSeverity;
+  group: string;
+  /** @nullable */
+  orderId: string | null;
+  sourceName: string;
+}
+
+export interface SourceDetail {
+  key: string;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  display: string | null;
+  unit: string;
+  formula: SourceText;
+  inputs: SourceDetailInputsItem[];
+  breakdown: SourceText;
+  notes: SourceText[];
+  rows: SourceRow[];
+  total: number;
+  page: number;
+  imports: SourceDetailImportsItem[];
+  issues: RunIssue[];
+  alternatives: SourceDetailAlternativesItem[];
+  duplicatePairs: SourceDetailDuplicatePairsItem[];
+}
+
 export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
 
 
@@ -74,25 +192,6 @@ export interface RunMetric {
   noEvents: boolean;
   refs: MetricReference[];
   alternatives: RunMetricAlternativesItem[];
-}
-
-export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
-
-
-export const RunIssueSeverity = {
-  info: 'info',
-  warning: 'warning',
-  error: 'error',
-} as const;
-
-export interface RunIssue {
-  id: string;
-  code: string;
-  severity: RunIssueSeverity;
-  group: string;
-  /** @nullable */
-  orderId: string | null;
-  sourceName: string;
 }
 
 export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
@@ -621,4 +720,23 @@ export type GetSourceComparisonParams = {
 left: string;
 right: string;
 };
+
+export type GetSourceDetailParams = {
+kind: GetSourceDetailKind;
+id: string;
+metric?: string;
+other?: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type GetSourceDetailKind = typeof GetSourceDetailKind[keyof typeof GetSourceDetailKind];
+
+
+export const GetSourceDetailKind = {
+  metric: 'metric',
+  issue: 'issue',
+} as const;
 

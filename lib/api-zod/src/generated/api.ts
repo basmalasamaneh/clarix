@@ -1184,3 +1184,150 @@ export const GetPageResponse = zod.object({
 })
 
 
+
+
+
+export const GetSourceDetailQueryParams = zod.object({
+  "kind": zod.enum(['metric', 'issue']),
+  "id": zod.coerce.string(),
+  "metric": zod.coerce.string().optional(),
+  "other": zod.coerce.string().optional(),
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const GetSourceDetailResponse = zod.object({
+  "key": zod.string(),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "unit": zod.string(),
+  "formula": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "inputs": zod.array(zod.object({
+  "key": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})),
+  "breakdown": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "notes": zod.array(zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})),
+  "rows": zod.array(zod.object({
+  "id": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string().nullable(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined', 'related']),
+  "cells": zod.array(zod.object({
+  "column": zod.string(),
+  "value": zod.string(),
+  "highlighted": zod.boolean(),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})
+})),
+  "contributions": zod.array(zod.object({
+  "key": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})),
+  "event": zod.object({
+  "type": zod.string(),
+  "start": zod.string(),
+  "end": zod.string(),
+  "minutes": zod.string().nullable()
+}).optional()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int(),
+  "imports": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string().nullable(),
+  "approvedAt": zod.string()
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "metric": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})),
+  "duplicatePairs": zod.array(zod.object({
+  "original": zod.object({
+  "id": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string().nullable(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined', 'related']),
+  "cells": zod.array(zod.object({
+  "column": zod.string(),
+  "value": zod.string(),
+  "highlighted": zod.boolean(),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})
+})),
+  "contributions": zod.array(zod.object({
+  "key": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})),
+  "event": zod.object({
+  "type": zod.string(),
+  "start": zod.string(),
+  "end": zod.string(),
+  "minutes": zod.string().nullable()
+}).optional()
+}),
+  "suspected": zod.object({
+  "id": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string().nullable(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined', 'related']),
+  "cells": zod.array(zod.object({
+  "column": zod.string(),
+  "value": zod.string(),
+  "highlighted": zod.boolean(),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})
+})),
+  "contributions": zod.array(zod.object({
+  "key": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string()
+})),
+  "event": zod.object({
+  "type": zod.string(),
+  "start": zod.string(),
+  "end": zod.string(),
+  "minutes": zod.string().nullable()
+}).optional()
+})
+}))
+})
+
+

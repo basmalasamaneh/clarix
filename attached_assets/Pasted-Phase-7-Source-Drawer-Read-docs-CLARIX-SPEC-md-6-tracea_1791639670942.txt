@@ -1,0 +1,40 @@
+Phase 7 — Source Drawer. Read docs/CLARIX_SPEC.md (§6 traceability, §8 comparison page, §12 design system) and replit.md first. Build ONLY this phase.
+
+Goal
+Any number on the Comparison page, Runs list and Data Quality page can be clicked to open a side drawer showing exactly how it was calculated and which original rows it came from. This is the trust feature: every number is checkable.
+
+1. SourceDrawer component (shared)
+ - Opens from: any metric value on the Comparison page, and from issue rows on Data Quality (replace the simple expandable detail with the same drawer where it fits).
+ - Content: metric name; value and unit; the formula in plain words (e.g. "Scrap rate = scrap / input x 100"); the inputs used with their values; the list of source rows (file, physical line number, column, original cell values); the import it came from (source name, approved date); any related issues with StatusBadge.
+ - Sums are shown as a visible breakdown (e.g. 400 + 350 + 250 = 1000 kg) with each part linked to its row.
+ - Missing values show "Not available" and explain why. Never 0.
+ - For SUSPECTED_DUPLICATE_RECORD: show BOTH the suspected row and the original row it resembles side by side, and the alternative total without the suspected row (as in the spec).
+ - Highlight the specific problematic cell (e.g. the empty scrap cell) and not only the row.
+ - For changeover minutes: list each CHANGEOVER event with start, end and the minutes calculated from timestamps. Downtime listed separately, with the non-causal note.
+ - Calculation comes from the server (existing engine). The drawer only displays. No math in the browser.
+
+2. Behaviour and accessibility
+ - Opens on click/Enter, closes on Esc and on a visible close button. Focus moves into the drawer and returns to the trigger on close. Focus is trapped while open.
+ - Deep link: the drawer state is in the URL so it can be shared and reopened.
+ - RTL: opens from the correct side in Arabic. Full-screen sheet on 360px mobile.
+ - Light/dark, tokens only, not colour alone for meaning.
+
+3. Small fixes carried over
+ - SUSPECTED_DUPLICATE_RECORD wording: replace "Two records have different numbers" with "Two records have different record IDs but the same order, shift, date and quantities" (AR + EN).
+ - Verify keyboard focus rings on all interactive elements across Runs, Compare and Data Quality, and report which ones fail.
+ - Re-measure sidebar touch targets after the 44px fix and report actual values.
+
+4. Security
+ - Factory-scoped on the server. Ethmar can never open a Najm row via the drawer or its URL (404 without data leak). Viewer can open it read-only.
+
+5. Tests
+ - For every number on the Comparison page for the baseline: the drawer's source rows sum to the displayed value (exact decimals), file+line match the CSV.
+ - Scenario checks for 05 (both rows + alternative total), 07 (missing cell highlighted, "Not available"), 17 (two changeover events totalling 360), 23 (no changeover event explanation), 12 (overlap).
+ - Tenancy: T3, T4 for drawer URLs. Viewer role read-only.
+ - Tests run in an isolated target and must not write to Ethmar/Najm dev data; show before/after counts.
+ - Screenshots: drawer open at 360/1280px, Arabic/English, light/dark.
+ State clearly that you cannot judge visual quality.
+
+Do NOT build: charts, export/PDF, AI, snapshots, reconciliation, resolve/ignore workflow.
+
+Final report: built / not built, test table, focus-ring and touch-target results, before/after counts, exact manual steps for me.

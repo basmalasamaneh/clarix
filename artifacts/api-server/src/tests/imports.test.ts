@@ -10,6 +10,7 @@ import {pool} from "@workspace/db";
 import {withTenant,closeTenantPools} from "../lib/tenancy";
 import {sessionStore} from "../lib/session";
 import {verifyRunMetrics} from "./verify-run-metrics";
+import {verifySourceDetail} from "./verify-source-detail";
 after(async()=>{sessionStore.close();await closeTenantPools();await pool.end();});
 const root=fileURLToPath(new URL("../../../../",import.meta.url));
 async function login(email:string) {
@@ -233,6 +234,7 @@ test("real API import/approval, isolation, originals, replacement history and un
   await t.test("every golden folder through the real API pipeline",async()=>{
     const qualityEvidence:any[]=[];
     const metricEvidence:any[]=[];
+    const sourceEvidence:any[]=[];
     const expected=JSON.parse(readFileSync(root+"expected/expected_results.json","utf8")).datasets;
     const merge=(a:any,b:any):any=>{
       const out=structuredClone(a);
@@ -282,11 +284,14 @@ test("real API import/approval, isolation, originals, replacement history and un
         assert.ok(errors.items.every((i:any)=>i.severity==="error"));
         qualityEvidence.push({scenario:`${dataset}/${name}`,expected:{issues:expectedIssues,statuses:expectedStatuses},actual:{issues:[...issueSet].sort(),summary:qp.summary,groups:allItems.map(i=>({order:i.orderId,statuses:i.groupStatuses,overall:i.overallStatus}))},status:"PASS"});
         metricEvidence.push(...await verifyRunMetrics(who,dataset==="najm-packaging"?eth:najm,dataset==="ethmar-plastics"?viewer:null,`${source}-${name}`,exp,`${dataset}/${name}`));
+        sourceEvidence.push(...await verifySourceDetail(who,dataset==="najm-packaging"?eth:najm,dataset==="ethmar-plastics"?viewer:null,`${source}-${name}`,`${dataset}/${name}`));
       }
     }
     mkdirSync(root+"generated-artifacts/phase5",{recursive:true});
     writeFileSync(root+"generated-artifacts/phase5/scenarios.json",JSON.stringify(qualityEvidence,null,2));
     mkdirSync(root+"generated-artifacts/phase6",{recursive:true});
     writeFileSync(root+"generated-artifacts/phase6/scenario-metrics.json",JSON.stringify(metricEvidence,null,2));
+    mkdirSync(root+"generated-artifacts/phase7",{recursive:true});
+    writeFileSync(root+"generated-artifacts/phase7/source-metrics.json",JSON.stringify(sourceEvidence,null,2));
   });
 });

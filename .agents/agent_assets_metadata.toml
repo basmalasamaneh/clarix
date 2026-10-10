@@ -154,3 +154,17 @@ mtime_ms = 1791637751323
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/299620ce-7737-43d7-ba22-51f66e97f12e/f5c11c34-ea55-4173-b25d-453da57abc09"
 storage_version_token = "1791637774678723"
 content_type = "text/html"
+
+[[outputs]]
+id = "zSpPoN0QTHs-KtTGkGYmW"
+uri = "file://generated-artifacts/phase7/report.html"
+type = "html"
+title = "Phase 7 — delivery and verification report"
+description = "Features, manual steps, test results, unchanged development counts and the retained animation-measurement caveat."
+logical_id = "db294fed-085a-4036-86e1-e7e05a772b03"
+content_hash = "sha256:3f030669280e2570b498ff7bc2bbf2209e3abd2a0c3f5dc9e4c6bdf673873938"
+size = 6763
+mtime_ms = 1791641840811
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/db294fed-085a-4036-86e1-e7e05a772b03/db568f65-6c63-420c-b190-9655593960fb"
+storage_version_token = "1791641841313812"
+content_type = "text/html"

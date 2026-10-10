@@ -218,6 +218,15 @@ Viewer access includes the read-only runs list for selecting the comparison.
 Source Drawer is deferred to Phase 7; Phase 6 supplies physical file/line/column
 references and working in-page source-reference anchors.
 
+Phase 7: those anchors are replaced by a shared, read-only Source Drawer on
+Runs, Comparison and Data Quality. It shows original cells with first physical
+line numbers, server-calculated row contributions, formulas, related issues and
+clearly labelled alternatives. Drawer state is shareable in URL parameters.
+Metric URLs refer to the current approved run; issue URLs retain their original
+approved import, including superseded versions. These are not saved snapshots.
+Pagination does not change the complete server-calculated metric or breakdown.
+Copy/export, resolution and ignore actions are not part of this phase.
+
 - Two columns (run A / run B) with: input, good output, scrap, **scrap rate**, **changeover time**; a centre strip with differences (`+5 pp`, `+2 h`).
 - A **separate, clearly titled section** "Unplanned stops (recorded separately)" with the fixed note:
   EN: *"Recorded separately. Not included in changeover time and not assumed to be a cause of scrap."*

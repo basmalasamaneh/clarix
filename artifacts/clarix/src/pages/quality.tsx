@@ -2,7 +2,7 @@ import { useState, type FormEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from 'i18next';
 import type { TFunction } from 'i18next';
-import { AlertTriangle, Archive, ChevronDown, FileText, History, Info, OctagonX, RotateCcw, SearchX, ShieldCheck, X } from 'lucide-react';
+import { AlertTriangle, Archive, ChevronDown, FileText, History, Info, OctagonX, RotateCcw, Rows3, SearchX, ShieldCheck, X } from 'lucide-react';
 import {
   getGetQualityIssueQueryKey,
   getGetQualityQueryKey,
@@ -30,6 +30,8 @@ import '@/lib/quality-i18n';
 import '@/lib/runs-i18n';
 import { useLocation, useSearch } from 'wouter';
 import { UUID_RE } from '@/components/runs/shared';
+import { useSource } from '@/components/source/source-context';
+import '@/lib/source-i18n';
 
 const SEVERITIES: GetQualitySeverity[] = ['error', 'warning', 'info'];
 const GROUPS: GetQualityGroup[] = ['volume', 'changeover', 'downtime', 'file', 'import', 'all'];
@@ -228,15 +230,9 @@ function DetailField({ label, children }: { label: string; children: ReactNode }
   );
 }
 
-function cellText(v: unknown): string {
-  if (v == null || v === '') return '—';
-  if (typeof v === 'object') return JSON.stringify(v);
-  return String(v);
-}
-
 function IssueDetail({ issue, lang }: { issue: QualityIssue; lang: string }) {
   const { t } = useTranslation();
-  const q = useGetQualityIssue(issue.id, { query: { enabled: !!issue.id, queryKey: getGetQualityIssueQueryKey(issue.id) } });
+  const { openSource } = useSource();
   const groupEntries = Object.entries(issue.groupStatuses ?? {});
   return (
     <div className="grid gap-5 border-t bg-[color-mix(in_srgb,var(--primary)_3%,var(--card))] p-4 sm:p-5 lg:grid-cols-[1fr_1.1fr]" data-testid={`detail-issue-${issue.id}`}>
@@ -306,54 +302,11 @@ function IssueDetail({ issue, lang }: { issue: QualityIssue; lang: string }) {
 
       <div className="min-w-0">
         <h4 className="text-xs font-semibold">{t('q.detail.rows')}</h4>
-        {q.isLoading ? (
-          <div className="mt-2 space-y-2" role="status" aria-busy="true">
-            <span className="sr-only">{t('q.detail.loading')}</span>
-            {[0, 1].map((i) => <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />)}
-          </div>
-        ) : q.isError ? (
-          <div className="mt-2">
-            <ErrorNote
-              error={q.error}
-              testId={`status-detail-error-${issue.id}`}
-              action={
-                <Button variant="outline" className="min-h-11 gap-2" onClick={() => q.refetch()} data-testid={`button-retry-detail-${issue.id}`}>
-                  <RotateCcw className="size-4" aria-hidden="true" />{t('common.retry')}
-                </Button>
-              }
-            />
-          </div>
-        ) : !q.data?.rows || q.data.rows.length === 0 ? (
-          <p className="mt-2 rounded-lg border border-dashed bg-card p-3 text-xs text-muted-foreground" data-testid={`text-rows-empty-${issue.id}`}>{t('q.detail.rowsEmpty')}</p>
-        ) : (
-          <ol className="mt-2 space-y-2">
-            {q.data.rows.map((r, i) => (
-              <li key={`${r.file}-${r.line}-${i}`} className="min-w-0 rounded-lg border bg-card" data-testid={`row-source-${issue.id}-${i}`}>
-                <div className="flex flex-wrap items-center gap-1.5 border-b px-3 py-2 text-xs">
-                  <FileText className="size-3.5 text-muted-foreground" aria-hidden="true" />
-                  <Raw className="text-xs font-semibold">{r.file}</Raw>
-                  <span className="num text-muted-foreground">· {t('q.detail.line')} {r.line}</span>
-                </div>
-                <dl className="grid grid-cols-1 gap-x-4 gap-y-1 px-3 py-2 sm:grid-cols-2">
-                  {Object.entries(r.cells).map(([k, v]) => (
-                    <div key={k} className="flex min-w-0 items-baseline justify-between gap-2 border-b border-dashed py-1 last:border-0">
-                      <dt><Raw className="text-[11px] text-muted-foreground">{k}</Raw></dt>
-                      <dd className="min-w-0 break-all text-end"><Raw className="text-xs">{cellText(v)}</Raw></dd>
-                    </div>
-                  ))}
-                </dl>
-                {r.references.length > 0 && (
-                  <div className="flex flex-wrap items-center gap-1 border-t px-3 py-2">
-                    <span className="text-[11px] text-muted-foreground">{t('q.detail.refs')}:</span>
-                    {r.references.map((ref) => (
-                      <span key={ref} className="rounded bg-muted px-1.5 py-0.5"><Raw className="text-[11px]">{ref}</Raw></span>
-                    ))}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ol>
-        )}
+        <p className="mt-1 text-xs text-muted-foreground">{t('src.rowsLead')}</p>
+        <div className="mt-2"><Refs issue={issue} max={6} /></div>
+        <Button variant="outline" className="mt-3 min-h-11 gap-2" aria-haspopup="dialog" onClick={(e) => openSource({ kind: 'issue', id: issue.id }, e.currentTarget)} data-testid={`button-open-source-detail-${issue.id}`}>
+          <Rows3 className="size-4" aria-hidden="true" />{t('src.openSource')}
+        </Button>
       </div>
     </div>
   );
@@ -361,21 +314,20 @@ function IssueDetail({ issue, lang }: { issue: QualityIssue; lang: string }) {
 
 function IssueItem({ issue, open, onToggle, lang }: { issue: QualityIssue; open: boolean; onToggle: () => void; lang: string }) {
   const { t } = useTranslation();
+  const { openSource } = useSource();
   const panelId = `quality-detail-${issue.id}`;
   return (
     <li className={cn('border-b last:border-b-0', issue.superseded && 'bg-[color-mix(in_srgb,var(--muted)_70%,transparent)]')} data-testid={`card-issue-${issue.id}`}>
       <button
         type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={panelId}
-        aria-label={t(open ? 'q.list.collapse' : 'q.list.expand', { code: issue.code })}
-        className="hover-elevate grid w-full gap-3 px-4 py-3.5 text-start focus-visible:outline-offset-[-2px] md:grid-cols-[7.5rem_minmax(0,1fr)_8rem_8rem_minmax(0,12rem)_1.5rem] md:items-center md:gap-4"
-        data-testid={`button-toggle-issue-${issue.id}`}
+        onClick={(e) => openSource({ kind: 'issue', id: issue.id }, e.currentTarget)}
+        aria-haspopup="dialog"
+        aria-label={`${issue.code} · ${issueText(t, issue.code)} · ${t('src.openSource')}`}
+        className="hover-elevate grid min-h-11 w-full gap-3 px-4 py-3.5 text-start focus-visible:outline-offset-[-2px] md:grid-cols-[7.5rem_minmax(0,1fr)_8rem_8rem_minmax(0,12rem)_1.5rem] md:items-center md:gap-4"
+        data-testid={`button-open-issue-${issue.id}`}
       >
         <span className="flex items-center justify-between gap-2 md:block">
           <QualityStatusBadge status={issue.severityStatus} label={sevText(t, issue.severity)} testId={`status-severity-${issue.id}`} />
-          <ChevronDown className={cn('size-4 text-muted-foreground transition-transform md:hidden', open && 'rotate-180')} aria-hidden="true" />
         </span>
         <span className="min-w-0 space-y-1">
           <Raw className="block text-[11px] font-semibold text-muted-foreground">{issue.code}</Raw>
@@ -397,8 +349,23 @@ function IssueItem({ issue, open, onToggle, lang }: { issue: QualityIssue; open:
           <span className="text-xs text-muted-foreground md:hidden">{t('q.list.colSource')}</span>
           <Refs issue={issue} />
         </span>
-        <ChevronDown className={cn('hidden size-4 text-muted-foreground transition-transform md:block', open && 'rotate-180')} aria-hidden="true" />
+        <Rows3 className="hidden size-4 text-primary md:block" aria-hidden="true" />
       </button>
+      <div className="flex justify-end px-2 pb-1.5 md:-mt-2">
+        <Button
+          type="button"
+          variant="ghost"
+          className="min-h-11 gap-1.5 text-xs"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-controls={panelId}
+          aria-label={t(open ? 'q.list.collapse' : 'q.list.expand', { code: issue.code })}
+          data-testid={`button-toggle-issue-${issue.id}`}
+        >
+          {open ? t('src.hideDetails') : t('src.details')}
+          <ChevronDown className={cn('size-4 transition-transform', open && 'rotate-180')} aria-hidden="true" />
+        </Button>
+      </div>
       <div id={panelId} role="region" aria-label={t('q.list.details')} hidden={!open}>
         {open && <IssueDetail issue={issue} lang={lang} />}
       </div>

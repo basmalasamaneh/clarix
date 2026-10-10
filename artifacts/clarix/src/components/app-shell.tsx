@@ -1,3 +1,4 @@
+import { SourceDrawerProvider } from '@/components/source/source-context';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
@@ -290,7 +291,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
           </div>
         </header>
         <main id="main" tabIndex={-1} className="flex-1 px-4 py-8 outline-none sm:px-8 lg:px-12 lg:py-10">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
+          <div className="mx-auto w-full max-w-6xl"><SourceDrawerProvider session={session}>{children}</SourceDrawerProvider></div>
         </main>
       </div>
 

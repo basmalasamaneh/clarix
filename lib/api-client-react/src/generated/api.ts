@@ -26,6 +26,7 @@ import type {
   GetQualityParams,
   GetRunComparisonParams,
   GetSourceComparisonParams,
+  GetSourceDetailParams,
   HealthStatus,
   ImportDetail,
   ImportInput,
@@ -48,6 +49,7 @@ import type {
   QualityPage,
   RunComparison,
   Session,
+  SourceDetail,
   TemplateInput,
   TemplatePage
 } from './api.schemas';
@@ -2442,6 +2444,84 @@ export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError =
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetPageQueryOptions(factoryId,page,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSourceDetailUrl = (params: GetSourceDetailParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/source-detail?${stringifiedParams}` : `/api/source-detail`
+}
+
+export const getSourceDetail = async (params: GetSourceDetailParams, options?: Parameters<typeof customFetch>[1]): Promise<SourceDetail> => {
+
+  return customFetch<SourceDetail>(getGetSourceDetailUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSourceDetailQueryKey = (params?: GetSourceDetailParams,) => {
+    return [
+    `/api/source-detail`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSourceDetailQueryOptions = <TData = Awaited<ReturnType<typeof getSourceDetail>>, TError = ErrorType<unknown>>(params: GetSourceDetailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSourceDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSourceDetailQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSourceDetail>>> = ({ signal }) => getSourceDetail(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSourceDetail>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSourceDetailQueryResult = NonNullable<Awaited<ReturnType<typeof getSourceDetail>>>
+export type GetSourceDetailQueryError = ErrorType<unknown>
+
+
+
+export function useGetSourceDetail<TData = Awaited<ReturnType<typeof getSourceDetail>>, TError = ErrorType<unknown>>(
+ params: GetSourceDetailParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSourceDetail>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSourceDetailQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

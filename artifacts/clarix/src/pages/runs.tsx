@@ -19,7 +19,7 @@ import { StateScreen } from '@/components/state-screen';
 import { NativeSelect, Pager, Raw } from '@/components/imports/shared';
 import { QualityStatusBadge } from '@/components/quality/status-badge';
 import { LIST_KEYS, MetricValue, SourceChip, metricOf } from '@/components/runs/shared';
-import { RefPanel, SourceLink, useRefPanels, type RefPanels } from '@/components/runs/refs';
+import { SourceLink } from '@/components/runs/refs';
 import { ForbiddenState } from '@/pages/tenant-page';
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { cn } from '@/lib/utils';
@@ -107,54 +107,21 @@ function OrderId({ run, dup }: { run: ProductionRun; dup: boolean }) {
   );
 }
 
-const runAnchor = (runId: string, key: string) => `src-run-${runId}-${key}`;
-
-function DateText({ run, panels, testId }: { run: ProductionRun; panels: RefPanels; testId: string }) {
+function DateText({ run, testId }: { run: ProductionRun; testId: string }) {
   const { t } = useTranslation();
   return (
-    <SourceLink target={runAnchor(run.id, 'date')} panels={panels} label={`${run.orderId} · ${t('rc.runs.colDate')}`} testId={`link-${testId}`}>
+    <SourceLink source={{ kind: 'metric', id: run.id, metric: 'date' }} label={`${run.orderId} · ${t('rc.runs.colDate')}`} testId={`link-${testId}`}>
       {run.date ? <span className="num text-sm" data-testid={testId}>{run.date}</span> : <span className="text-xs italic text-muted-foreground" data-testid={testId}>{t('rc.runs.noDate')}</span>}
     </SourceLink>
   );
 }
 
-function ValueCell({ run, k, panels, testId, className }: { run: ProductionRun; k: string; panels: RefPanels; testId: string; className?: string }) {
+function ValueCell({ run, k, testId, className }: { run: ProductionRun; k: string; testId: string; className?: string }) {
   const { t } = useTranslation();
   return (
-    <SourceLink target={runAnchor(run.id, k)} panels={panels} label={`${run.orderId} · ${run.sourceName} · ${t(`rc.metric.${k}`)}`} testId={`link-${testId}`} className={className}>
+    <SourceLink source={{ kind: 'metric', id: run.id, metric: k }} label={`${run.orderId} · ${run.sourceName} · ${t(`rc.metric.${k}`)}`} testId={`link-${testId}`} className={className}>
       <MetricValue m={metricOf(run.metrics, k)} showHours={false} className={className} testId={testId} />
     </SourceLink>
-  );
-}
-
-function RunSources({ runs, panels, onClose }: { runs: ProductionRun[]; panels: RefPanels; onClose: (id: string) => void }) {
-  const { t } = useTranslation();
-  if (runs.length === 0) return null;
-  return (
-    <section aria-labelledby="runs-sources" className="space-y-3 rounded-xl border bg-card p-4" data-testid="section-runs-sources">
-      <div>
-        <h2 id="runs-sources" className="text-sm font-semibold">{t('rc.runs.sourcesTitle')}</h2>
-        <p className="text-xs text-muted-foreground">{t('rc.runs.sourcesLead')}</p>
-      </div>
-      {runs.map((r) => (
-        <div key={r.id} className="rounded-lg border bg-background p-3" data-testid={`sources-run-${r.id}`}>
-          <div className="mb-2 flex items-center gap-2">
-            <Raw className="text-sm font-semibold">{r.orderId}</Raw>
-            <SourceChip run={r} />
-            <span className="flex-1" />
-            <Button variant="ghost" size="icon" className="size-11" onClick={() => onClose(r.id)} aria-label={t('rc.runs.remove', { order: r.orderId, source: r.sourceName })} data-testid={`button-close-sources-${r.id}`}>
-              <X className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
-          <div className="grid gap-2 lg:grid-cols-2">
-            <RefPanel id={runAnchor(r.id, 'date')} panels={panels} refs={r.dateRefs} title={t('rc.cmp.sourceFor', { metric: t('rc.cmp.dateRefs'), side: `${r.orderId} · ${r.sourceName}` })} />
-            {LIST_KEYS.map((k) => (
-              <RefPanel key={k} id={runAnchor(r.id, k)} panels={panels} refs={metricOf(r.metrics, k)?.refs ?? []} title={t('rc.cmp.sourceFor', { metric: t(`rc.metric.${k}`), side: `${r.orderId} · ${r.sourceName}` })} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </section>
   );
 }
 
@@ -228,16 +195,6 @@ export default function RunsPage({ session }: { session: Session }) {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<ProductionRun[]>([]);
   const factory = session.memberships.find((m) => m.factoryId === session.activeFactoryId);
-  const basePanels = useRefPanels();
-  const [refRuns, setRefRuns] = useState<ProductionRun[]>([]);
-  const panelsFor = (r: ProductionRun): RefPanels => ({
-    ...basePanels,
-    open: (id: string) => {
-      setRefRuns((c) => (c.some((x) => x.id === r.id) ? c : [...c, r]));
-      basePanels.open(id);
-    },
-  });
-
   const params: ListProductionRunsParams = { page, search: filters.search, source: filters.source, status: filters.status, sort: filters.sort };
   const q = useListProductionRuns(params, { query: {
     queryKey: [...getListProductionRunsQueryKey(params), session.activeFactoryId, session.user?.id],
@@ -309,10 +266,10 @@ export default function RunsPage({ session }: { session: Session }) {
                     <td className="px-1.5 py-1"><SelectBox run={r} checked={sel} disabled={!sel && lockOthers} onToggle={() => toggle(r)} /></td>
                     <td className="px-3 py-2.5 align-middle" data-testid={`text-run-order-${r.id}`}><OrderId run={r} dup={dupOrders.has(r.orderId)} /></td>
                     <td className="max-w-[12rem] px-3 py-2.5"><SourceChip run={r} testId={`text-run-source-${r.id}`} /></td>
-                    <td className="px-2 py-1"><DateText run={r} panels={panelsFor(r)} testId={`text-run-date-${r.id}`} /></td>
+                    <td className="px-2 py-1"><DateText run={r} testId={`text-run-date-${r.id}`} /></td>
                     {LIST_KEYS.map((k) => (
                       <td key={k} className="px-1.5 py-1 text-end">
-                        <ValueCell run={r} k={k} panels={panelsFor(r)} className="items-end" testId={`text-run-${k}-${r.id}`} />
+                        <ValueCell run={r} k={k} className="items-end" testId={`text-run-${k}-${r.id}`} />
                       </td>
                     ))}
                     <td className="px-3 py-2.5"><QualityStatusBadge status={r.overall} testId={`status-run-${r.id}`} /></td>
@@ -337,14 +294,14 @@ export default function RunsPage({ session }: { session: Session }) {
                       <QualityStatusBadge status={r.overall} size="sm" testId={`status-run-card-${r.id}`} />
                     </div>
                     <SourceChip run={r} testId={`text-run-card-source-${r.id}`} />
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="size-3" aria-hidden="true" /><DateText run={r} panels={panelsFor(r)} testId={`text-run-card-date-${r.id}`} /></div>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground"><Calendar className="size-3" aria-hidden="true" /><DateText run={r} testId={`text-run-card-date-${r.id}`} /></div>
                   </div>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t pt-3">
                   {LIST_KEYS.map((k) => (
                     <div key={k} className="min-w-0">
                       <dt className="text-[11px] text-muted-foreground">{t(`rc.metric.${k}`)}</dt>
-                      <dd><ValueCell run={r} k={k} panels={panelsFor(r)} testId={`text-run-card-${k}-${r.id}`} /></dd>
+                      <dd><ValueCell run={r} k={k} testId={`text-run-card-${k}-${r.id}`} /></dd>
                     </div>
                   ))}
                 </dl>
@@ -370,7 +327,6 @@ export default function RunsPage({ session }: { session: Session }) {
           )}
           {body}
         </section>
-        <RunSources runs={refRuns} panels={basePanels} onClose={(id) => setRefRuns((c) => c.filter((x) => x.id !== id))} />
         <Tray selected={selected} onRemove={(id) => setSelected((c) => c.filter((s) => s.id !== id))} onClear={() => setSelected([])} onCompare={compare} />
       </div>
     </div>

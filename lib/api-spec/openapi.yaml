@@ -404,8 +404,125 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PageState" }
+  /source-detail:
+    get:
+      operationId: getSourceDetail
+      parameters:
+        - { name: kind, in: query, required: true, schema: { type: string, enum: [metric, issue] } }
+        - { name: id, in: query, required: true, schema: { type: string } }
+        - { name: metric, in: query, schema: { type: string } }
+        - { name: other, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Tenant-scoped calculation explanation and original cells
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    SourceDetail:
+      type: object
+      required: [key, value, display, unit, formula, inputs, breakdown, rows, total, page, imports, issues, alternatives, notes, duplicatePairs]
+      properties:
+        key: { type: string }
+        value: { type: [string, "null"] }
+        display: { type: [string, "null"] }
+        unit: { type: string }
+        formula: { $ref: "#/components/schemas/SourceText" }
+        inputs:
+          type: array
+          items:
+            type: object
+            required: [key, value, unit]
+            properties:
+              key: { type: string }
+              value: { type: [string, "null"] }
+              unit: { type: string }
+        breakdown: { $ref: "#/components/schemas/SourceText" }
+        notes:
+          type: array
+          items: { $ref: "#/components/schemas/SourceText" }
+        rows:
+          type: array
+          items: { $ref: "#/components/schemas/SourceRow" }
+        total: { type: integer }
+        page: { type: integer }
+        imports:
+          type: array
+          items:
+            type: object
+            required: [id, sourceName, orderId, approvedAt]
+            properties:
+              id: { type: string }
+              sourceName: { type: string }
+              orderId: { type: [string, "null"] }
+              approvedAt: { type: string }
+        issues:
+          type: array
+          items: { $ref: "#/components/schemas/RunIssue" }
+        alternatives:
+          type: array
+          items:
+            type: object
+            required: [key, metric, value, unit]
+            properties:
+              key: { type: string }
+              metric: { type: string }
+              value: { type: [string, "null"] }
+              unit: { type: string }
+        duplicatePairs:
+          type: array
+          items:
+            type: object
+            required: [original, suspected]
+            properties:
+              original: { $ref: "#/components/schemas/SourceRow" }
+              suspected: { $ref: "#/components/schemas/SourceRow" }
+    SourceText:
+      type: object
+      required: [en, ar]
+      properties:
+        en: { type: string }
+        ar: { type: string }
+    SourceRow:
+      type: object
+      required: [id, importId, sourceName, orderId, file, line, kind, cells, contributions]
+      properties:
+        id: { type: string }
+        importId: { type: string }
+        sourceName: { type: string }
+        orderId: { type: [string, "null"] }
+        file: { type: string }
+        line: { type: integer }
+        kind: { type: string, enum: [included, excluded, quarantined, related] }
+        cells:
+          type: array
+          items:
+            type: object
+            required: [column, value, highlighted, reason]
+            properties:
+              column: { type: string }
+              value: { type: string }
+              highlighted: { type: boolean }
+              reason: { $ref: "#/components/schemas/SourceText" }
+        contributions:
+          type: array
+          items:
+            type: object
+            required: [key, value, unit]
+            properties:
+              key: { type: string }
+              value: { type: [string, "null"] }
+              unit: { type: string }
+        event:
+          type: object
+          required: [type, start, end, minutes]
+          properties:
+            type: { type: string }
+            start: { type: string }
+            end: { type: string }
+            minutes: { type: [string, "null"] }
     MetricReference:
       type: object
       required: [runId, importId, sourceName, orderId, file, line, column, kind]

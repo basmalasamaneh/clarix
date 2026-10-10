@@ -10,6 +10,8 @@ import {eventCodes,issues} from "../imports/review";
 import * as sources from "../imports/sources";
 import * as quality from "../imports/quality";
 import * as metrics from "../metrics/service";
+import {GetSourceDetailResponse} from "@workspace/api-zod";
+import {sourceDetail} from "../metrics/source-detail";
 const router=Router();
 type Action=(ctx:service.Context,req:Request,res:Response)=>Promise<void>;
 function route(action:Action,allowViewer=false) {
@@ -44,6 +46,12 @@ function route(action:Action,allowViewer=false) {
 }
 const page=(raw:unknown)=>z.coerce.number().int().min(1).max(1000000).parse(raw??1);
 const id=(req:Request)=>String(req.params.id);
+router.get("/source-detail",route(async(ctx,req,res)=>{
+  const parsed=z.object({kind:z.enum(["metric","issue"]),id:z.string().uuid(),metric:z.string().max(100).optional(),
+    other:z.string().uuid().optional(),page:z.coerce.number().int().min(1).max(1000000).default(1)}).safeParse(req.query);
+  if(!parsed.success) throw new ImportError("NOT_FOUND",404);
+  res.json(GetSourceDetailResponse.parse(await sourceDetail(ctx,parsed.data)));
+},true));
 router.get("/runs",route(async(ctx,req,res)=>{
   const input=z.object({page:z.coerce.number().int().min(1).max(1000000).default(1),
     search:z.string().max(200).default(""),source:z.string().max(200).optional(),
