@@ -7,6 +7,17 @@
  */
 
 export * from './accountAudit';
+export * from './aiConsent';
+export * from './aiConsentInput';
+export * from './aiExplanation';
+export * from './aiExplanationInput';
+export * from './aiExplanationInputLanguage';
+export * from './aiExplanationStatus';
+export * from './aiFact';
+export * from './aiFactSource';
+export * from './aiFactStatus';
+export * from './aiStatement';
+export * from './aiStatementType';
 export * from './approvalInput';
 export * from './chartPoint';
 export * from './chartPointStatus';

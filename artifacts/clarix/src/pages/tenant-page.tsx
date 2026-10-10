@@ -1,3 +1,4 @@
+import { AiConsentSection } from '@/components/ai/ai-consent';
 import { Link } from 'wouter';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Lock, RotateCcw } from 'lucide-react';
@@ -72,7 +73,10 @@ export default function TenantPageView({ page, session }: { page: TenantPage; se
         meta={factory ? `${factory.factoryName} · ${t('factory.isolated')}` : undefined}
       />
       {page === 'settings' ? (
-        <FactorySettings factoryId={factoryId} />
+        <>
+          <FactorySettings factoryId={factoryId} />
+          {session.memberships.find((m) => m.factoryId === session.activeFactoryId)?.role === 'factory_manager' && !session.user?.platformAdmin && <AiConsentSection key={factoryId} factoryId={factoryId} />}
+        </>
       ) : page === 'runs' ? (
         <RunsSelect />
       ) : page === 'comparison' ? (

@@ -6,6 +6,7 @@ import { logger } from "./lib/logger";
 import { sessionMiddleware, csrfGuard } from "./lib/session";
 import foundationRouter from "./routes/foundation";
 import importsRouter from "./routes/imports";
+import aiRouter from "./routes/ai";
 import accountsRouter from "./routes/accounts";
 import platformRouter from "./routes/platform";
 
@@ -41,6 +42,7 @@ app.use("/api", router);
 app.use("/api", accountsRouter);
 app.use("/api", foundationRouter);
 app.use("/api", importsRouter);
+app.use("/api", aiRouter);
 app.use("/api", platformRouter);
 app.use((_req, res) => { res.status(404).json({ error: "NOT_FOUND" }); });
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {

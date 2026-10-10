@@ -1,6 +1,6 @@
 import type {PoolClient} from "pg";
 export const importedTables=["events_history","production_records_history","orders_history","data_issues","events","production_records","orders","raw_rows","imports","column_mappings"];
-export const protectedTables=["users","factories","memberships","sessions","invitations","account_audit","platform_audit","factory_settings_audit","platform_invitations","analysis_snapshots","reconciliations","source_row_links","snapshot_audit"];
+export const protectedTables=["users","factories","memberships","sessions","invitations","account_audit","platform_audit","factory_settings_audit","platform_invitations","analysis_snapshots","reconciliations","source_row_links","snapshot_audit","ai_state","ai_usage"];
 export async function requireUnfilteredObserver(c:PoolClient) {
   const role=(await c.query("SELECT rolsuper OR rolbypassrls AS allowed FROM pg_roles WHERE rolname=current_user")).rows[0];
   if(role?.allowed!==true) throw new Error("Isolation evidence requires a privileged BYPASSRLS setup observer; refusing filtered fingerprints");

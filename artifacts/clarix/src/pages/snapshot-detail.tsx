@@ -21,6 +21,7 @@ import { AddReconciliationPanel, ChangesPanel, Pager, ReconciliationTable, canWr
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { ReportExport } from '@/components/snapshots/report-export';
 import '@/lib/phase14-i18n';
+import { AIPanel } from '@/components/ai/ai-panel';
 
 const backCls = 'inline-flex min-h-11 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover-elevate';
 
@@ -126,6 +127,7 @@ export default function SnapshotDetailPage({ id, session }: { id: string; sessio
         <ReportExport key={`${s.id}-${session.activeFactoryId}-${session.user?.id}`} snapshotId={s.id} />
         <ChangesPanel changes={changes} />
         <Result data={comparison} />
+        <AIPanel session={session} snapshotId={s.id} />
         <History_ key={s.id} id={s.id} session={session} />
         {canWriteSnapshots(session)
           ? <AddReconciliationPanel key={s.id} snapshotId={s.id} />

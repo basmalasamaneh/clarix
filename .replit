@@ -27,3 +27,10 @@ packages = ["freetype", "gumbo", "harfbuzz", "jbig2dec", "libjpeg_turbo", "mupdf
 
 [userenv.development]
 SEED_TEST_USERS = "true"
+AI_BREAKER_FAILURES = "3"
+AI_BREAKER_SECONDS = "60"
+AI_CACHE_SECONDS = "300"
+AI_DAILY_CAP = "50"
+AI_TIMEOUT_MS = "12000"
+AI_USER_PER_MINUTE = "3"
+GEMINI_MODEL = "gemini-3.8-flash"

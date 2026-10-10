@@ -8,6 +8,55 @@
 import * as zod from 'zod';
 
 
+export const GetAiConsentResponse = zod.object({
+  "enabled": zod.boolean(),
+  "configured": zod.boolean()
+})
+
+
+export const SaveAiConsentBody = zod.object({
+  "enabled": zod.boolean(),
+  "confirmed": zod.boolean()
+})
+
+export const SaveAiConsentResponse = zod.object({
+  "enabled": zod.boolean(),
+  "configured": zod.boolean()
+})
+
+
+export const ExplainAiBody = zod.object({
+  "language": zod.enum(['en', 'ar']),
+  "snapshotId": zod.string().uuid().optional(),
+  "a": zod.string().uuid().optional(),
+  "b": zod.string().uuid().optional()
+})
+
+export const ExplainAiResponse = zod.object({
+  "status": zod.enum(['verified', 'off', 'unavailable', 'quota', 'error']),
+  "statements": zod.array(zod.object({
+  "type": zod.enum(['FACT', 'HYPOTHESIS', 'SUGGESTION']),
+  "text": zod.string(),
+  "refs": zod.array(zod.string())
+})),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string(),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "source": zod.object({
+  "runId": zod.string(),
+  "metric": zod.string(),
+  "snapshotId": zod.string().optional()
+})
+})),
+  "fallback": zod.string(),
+  "retryAfter": zod.number().int(),
+  "cached": zod.boolean()
+})
+
+
 
 
 

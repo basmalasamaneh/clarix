@@ -11,6 +11,42 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /ai/consent:
+    get:
+      operationId: getAiConsent
+      responses:
+        "200":
+          description: Factory AI consent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiConsent" }
+    put:
+      operationId: saveAiConsent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiConsentInput" }
+      responses:
+        "200":
+          description: Manager confirmed change
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiConsent" }
+  /ai/explain:
+    post:
+      operationId: explainAi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiExplanationInput" }
+      responses:
+        "200":
+          description: Validated explanation or explicit safe fallback
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiExplanation" }
   /platform/factories:
     get:
       operationId: getPlatformFactories
@@ -800,6 +836,59 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    AiConsent:
+      type: object
+      required: [enabled, configured]
+      properties:
+        enabled: { type: boolean }
+        configured: { type: boolean }
+    AiConsentInput:
+      type: object
+      required: [enabled, confirmed]
+      properties:
+        enabled: { type: boolean }
+        confirmed: { type: boolean }
+    AiExplanationInput:
+      type: object
+      required: [language]
+      properties:
+        language: { type: string, enum: [en, ar] }
+        snapshotId: { type: string, format: uuid }
+        a: { type: string, format: uuid }
+        b: { type: string, format: uuid }
+    AiFact:
+      type: object
+      required: [id, label, value, unit, status, source]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        value: { type: [string, "null"] }
+        unit: { type: string }
+        status: { type: string, enum: [green, yellow, red] }
+        source:
+          type: object
+          required: [runId, metric]
+          properties:
+            runId: { type: string }
+            metric: { type: string }
+            snapshotId: { type: string }
+    AiStatement:
+      type: object
+      required: [type, text, refs]
+      properties:
+        type: { type: string, enum: [FACT, HYPOTHESIS, SUGGESTION] }
+        text: { type: string }
+        refs: { type: array, items: { type: string } }
+    AiExplanation:
+      type: object
+      required: [status, statements, facts, fallback, retryAfter, cached]
+      properties:
+        status: { type: string, enum: [verified, off, unavailable, quota, error] }
+        statements: { type: array, items: { $ref: "#/components/schemas/AiStatement" } }
+        facts: { type: array, items: { $ref: "#/components/schemas/AiFact" } }
+        fallback: { type: string }
+        retryAfter: { type: integer }
+        cached: { type: boolean }
     ReportRunFigures:
       type: object
       properties:

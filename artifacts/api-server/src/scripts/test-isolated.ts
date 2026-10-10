@@ -57,7 +57,7 @@ try {
     await c.query(`ALTER TABLE ${schema}."${fk.table_name}" ADD CONSTRAINT "${fk.conname}" ${def}`);
   }
   await c.query(`SET search_path=${schema}`);
-  for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql","snapshot-rls.sql"]) {
+  for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql","snapshot-rls.sql","ai-rls.sql"]) {
     let sql=await readFile(root+"lib/db/"+file,"utf8");
     if(file==="foundation-rls.sql") sql=sql.slice(sql.indexOf("GRANT SELECT ON factories")); // roles already exist; no global role changes
     await c.query(sql);
@@ -79,7 +79,7 @@ try {
     const printProduction=args[1]==="scripts/phase15-browser.cjs";
     if(printProduction)await run("pnpm",["--filter","@workspace/clarix","run","build"],{PORT:String(webPort),BASE_PATH:"/"});
     for(const [filter,command,extras] of [
-      ["@workspace/api-server",["exec","tsx","src/index.ts"],{PORT:String(apiPort)}],
+      ["@workspace/api-server",["exec","tsx","src/index.ts"],{PORT:String(apiPort),...(args[1]==="scripts/phase16-browser.cjs"?{CLARIX_AI_TEST_FAKE:"true"}:{})}],
       ["@workspace/clarix",printProduction?["exec","vite","preview"]:["exec","vite"],{PORT:String(webPort),BASE_PATH:"/",CLARIX_TEST_API_PORT:String(apiPort)}],
     ] as const) children.push(spawn("pnpm",["--filter",filter,...command],{cwd:root,env:{...env,...extras},stdio:"ignore",detached:true}));
     for(const target of [apiPort,webPort]) {

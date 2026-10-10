@@ -5,6 +5,91 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface AiConsent {
+  enabled: boolean;
+  configured: boolean;
+}
+
+export interface AiConsentInput {
+  enabled: boolean;
+  confirmed: boolean;
+}
+
+export type AiExplanationInputLanguage = typeof AiExplanationInputLanguage[keyof typeof AiExplanationInputLanguage];
+
+
+export const AiExplanationInputLanguage = {
+  en: 'en',
+  ar: 'ar',
+} as const;
+
+export interface AiExplanationInput {
+  language: AiExplanationInputLanguage;
+  snapshotId?: string;
+  a?: string;
+  b?: string;
+}
+
+export type AiFactStatus = typeof AiFactStatus[keyof typeof AiFactStatus];
+
+
+export const AiFactStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type AiFactSource = {
+  runId: string;
+  metric: string;
+  snapshotId?: string;
+};
+
+export interface AiFact {
+  id: string;
+  label: string;
+  /** @nullable */
+  value: string | null;
+  unit: string;
+  status: AiFactStatus;
+  source: AiFactSource;
+}
+
+export type AiStatementType = typeof AiStatementType[keyof typeof AiStatementType];
+
+
+export const AiStatementType = {
+  FACT: 'FACT',
+  HYPOTHESIS: 'HYPOTHESIS',
+  SUGGESTION: 'SUGGESTION',
+} as const;
+
+export interface AiStatement {
+  type: AiStatementType;
+  text: string;
+  refs: string[];
+}
+
+export type AiExplanationStatus = typeof AiExplanationStatus[keyof typeof AiExplanationStatus];
+
+
+export const AiExplanationStatus = {
+  verified: 'verified',
+  off: 'off',
+  unavailable: 'unavailable',
+  quota: 'quota',
+  error: 'error',
+} as const;
+
+export interface AiExplanation {
+  status: AiExplanationStatus;
+  statements: AiStatement[];
+  facts: AiFact[];
+  fallback: string;
+  retryAfter: number;
+  cached: boolean;
+}
+
 export interface ReportRunFigures {
   /** @maxLength 80 */
   input_kg?: string;

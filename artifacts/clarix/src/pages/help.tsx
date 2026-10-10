@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { GlossaryTip } from '@/components/charts/glossary';
 import '@/lib/phase14-i18n';
 import '@/lib/phase15-i18n';
+import { GEMINI_TERMS_URL } from '@/lib/phase16-i18n';
 import { GLOSSARY_KEYS } from '@/lib/charts-i18n';
 
 const STEPS: { n: string; icon: LucideIcon }[] = [
@@ -79,6 +80,12 @@ export default function HelpPage() {
         </div>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-snapshots">{t('help.snapBody')}</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-reconciliation">{t('help.recBody')}</p>
+      </section>
+
+      <section className="mt-10 rounded-xl border bg-card p-5" aria-labelledby="help-ai" data-testid="card-help-ai">
+        <h2 id="help-ai" className="font-semibold">{t('help.aiTitle')}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-ai">{t('help.aiBody')}</p>
+        <a href={GEMINI_TERMS_URL} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary underline" data-testid="link-help-ai-terms">{t('help.aiTerms')}</a>
       </section>
 
       <div className="mt-10" data-testid="section-help-reports">

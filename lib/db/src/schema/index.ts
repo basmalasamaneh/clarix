@@ -1,4 +1,5 @@
 export * from "./management";
+export * from "./ai";
 export * from "./snapshots";
 // Export your models here. Add one export per file
 // export * from "./posts";

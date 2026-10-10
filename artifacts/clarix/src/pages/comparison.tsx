@@ -1,3 +1,4 @@
+import { AIPanel } from '@/components/ai/ai-panel';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearch } from 'wouter';
@@ -447,7 +448,7 @@ export default function ComparisonPage({ session }: { session: Session }) {
         </>} /></div>;
     }
   } else if (q.data) {
-    body = <div className="space-y-5"><Result key={`${a}:${b}`} data={q.data} /><ComparisonSnapshotPanel key={`snap-${a}:${b}`} session={session} a={a} b={b} expectedImportA={q.data.a.importId} expectedImportB={q.data.b.importId} /></div>;
+    body = <div className="space-y-5"><Result key={`${a}:${b}`} data={q.data} /><AIPanel session={session} a={a} b={b} /><ComparisonSnapshotPanel key={`snap-${a}:${b}`} session={session} a={a} b={b} expectedImportA={q.data.a.importId} expectedImportB={q.data.b.importId} /></div>;
   }
 
   return (
