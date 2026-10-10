@@ -284,6 +284,23 @@ Wave 3: AI Analyst panel · remaining charts · audit log view · comments · ad
 
 ## 11. Multi-factory (multi-tenant) and security
 
+### Approved Phase 9: isolation, runtime login and scale proof
+
+The approved Phase 9 brief replaces the charts/explanations/PDF roadmap entry.
+Use Najm's baseline through the real UI/API import pipeline, prove applicable
+T1–T12 tenancy checks, audit ENABLE/FORCE RLS on every factory_id table, and
+connect the application directly as clarix_runtime using its own secret.
+Privileged credentials are restricted to setup/migration/development scripts.
+Measure an isolated 20-factory dataset with approximately 200,000 production
+records and 100,000 events (largest factory approximately 50,000 records).
+Report p50/p95 honestly: Runs/Comparison/Source Drawer under 1 second p95,
+Data Quality under 1.5 seconds p95, and a 50,000-row import under 60 seconds
+without blocking other users. Add indexes only on measurement evidence.
+Najm's baseline import is the only authorized development-data addition;
+all adversarial and scale tests remain isolated and are cleaned up.
+Charts, exports, AI, snapshots, reconciliation, resolution workflows and
+Platform Admin delegation are not included.
+
 ### Approved Phase 8: accounts and invite-only onboarding
 
 The accounts-and-invitations brief replaces the original Phase 8 roadmap scope.
@@ -406,7 +423,7 @@ Acceptance (wave 1): E-01 5% / 240 min · E-02 10% / 360 min · +5 pp · +120 mi
 | 6 | Runs list + Comparison page | 1 | baseline shows 5% / 10% / +5 pp / +2 h / 45 min separate |
 | 7 | Source Drawer (drill-down) | 1 | any number opens its file/line rows, excluded and quarantined rows included |
 | 8 | Accounts, roles and invite-only onboarding | 1 | secure invitation lifecycle, member management and session revocation; isolated tests |
-| 9 | Two charts + template explanations + PDF export | 2 | charts match the table; reduced-motion respected |
+| 9 | Second factory, isolation proof, runtime database login and scale check | 2 | applicable tenancy tests and forced-RLS coverage pass; direct least-privilege login proven; measured latency reported |
 | 10 | Second factory + isolation test suite | 2 | all tenancy tests pass |
 | 11 | AI assistant (tools, structured output, validator) | 3 | AI test suite passes |
 | 12 | Remaining charts, demo mode, polish, accessibility, deploy | 3 | demo script (below) runs end-to-end |
