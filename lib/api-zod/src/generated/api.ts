@@ -11,6 +11,94 @@ import * as zod from 'zod';
 
 
 
+export const GetQualityQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "severity": zod.enum(['info', 'warning', 'error']).optional(),
+  "group": zod.enum(['volume', 'changeover', 'downtime', 'file', 'import', 'all']).optional(),
+  "order": zod.coerce.string().optional(),
+  "source": zod.coerce.string().optional(),
+  "includeArchived": zod.coerce.boolean().optional()
+})
+
+export const GetQualityResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "importId": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "severityStatus": zod.enum(['green', 'yellow', 'red']),
+  "sourceName": zod.string(),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "approvedAt": zod.string().optional(),
+  "archived": zod.boolean(),
+  "superseded": zod.boolean(),
+  "comparable": zod.boolean().nullish(),
+  "overallStatus": zod.union([zod.literal('green'),zod.literal('yellow'),zod.literal('red'),zod.literal(null)]).nullish(),
+  "groupStatuses": zod.record(zod.string(), zod.string()).nullish(),
+  "blockedReasons": zod.array(zod.string()),
+  "refs": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int()
+})),
+  "rows": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.unknown()),
+  "references": zod.array(zod.string())
+})).optional()
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int(),
+  "summary": zod.object({
+  "errors": zod.number().int(),
+  "warnings": zod.number().int(),
+  "notes": zod.number().int(),
+  "orders": zod.object({
+  "green": zod.number().int(),
+  "yellow": zod.number().int(),
+  "red": zod.number().int()
+})
+})
+})
+
+
+export const GetQualityIssueParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetQualityIssueResponse = zod.object({
+  "id": zod.string(),
+  "importId": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "severityStatus": zod.enum(['green', 'yellow', 'red']),
+  "sourceName": zod.string(),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "approvedAt": zod.string().optional(),
+  "archived": zod.boolean(),
+  "superseded": zod.boolean(),
+  "comparable": zod.boolean().nullish(),
+  "overallStatus": zod.union([zod.literal('green'),zod.literal('yellow'),zod.literal('red'),zod.literal(null)]).nullish(),
+  "groupStatuses": zod.record(zod.string(), zod.string()).nullish(),
+  "blockedReasons": zod.array(zod.string()),
+  "refs": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int()
+})),
+  "rows": zod.array(zod.object({
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "cells": zod.record(zod.string(), zod.unknown()),
+  "references": zod.array(zod.string())
+})).optional()
+})
+
+
+
+
+
 export const ListImportsQueryParams = zod.object({
   "page": zod.coerce.number().int().min(1).optional()
 })

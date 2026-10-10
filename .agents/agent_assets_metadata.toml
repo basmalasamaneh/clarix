@@ -70,3 +70,31 @@ mtime_ms = 1791631078738
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/e9810f69-79e9-461b-a49c-69327af9218c/3d3040fa-6893-4d01-8338-c80621697416"
 storage_version_token = "1791631101181539"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "1DanwjMr7Sj3mGbz0F2fP"
+uri = "file://generated-artifacts/phase5/report.html"
+type = "html"
+title = "Phase 5 — build and verification report"
+description = "What was built, all 25 Ethmar scenarios plus Najm, expected-versus-actual results, verification limits and manual review steps."
+logical_id = "fa805520-3220-4e03-bcb3-b3881de5474a"
+content_hash = "sha256:b40b34899ab7e030bb01d9cd67c7118aba409eac8e6d460127ba1e0976156807"
+size = 39288
+mtime_ms = 1791634670420
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/fa805520-3220-4e03-bcb3-b3881de5474a/1d3aa802-ecbc-47f2-b3b7-6ae2bf2e524a"
+storage_version_token = "1791634691886771"
+content_type = "text/html"
+
+[[outputs]]
+id = "pwl4-wqWuCITCD95gumPZ"
+uri = "file://generated-artifacts/phase5/screenshots.html"
+type = "html"
+title = "Data Quality — responsive screenshot gallery"
+description = "12 captures: 360, 768 and 1280px × English/Arabic × light/dark, with expanded issue details."
+logical_id = "9c329f41-796d-449a-8198-356f5751f5d5"
+content_hash = "sha256:8dd122f70e4a7292c2b22bb78f5041089f29a6558008934941aa1a8c2b1f26d0"
+size = 9988245
+mtime_ms = 1791634670742
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/9c329f41-796d-449a-8198-356f5751f5d5/41c4d89f-ddad-409b-8eff-3a8635c51656"
+storage_version_token = "1791634692678815"
+content_type = "text/html"

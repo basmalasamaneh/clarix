@@ -2,7 +2,7 @@ import "../testing/require-isolation";
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
-import {readFileSync,readdirSync} from "node:fs";
+import {readFileSync,readdirSync,mkdirSync,writeFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {randomUUID} from "node:crypto";
 import app from "../app";
@@ -71,6 +71,8 @@ test("real API import/approval, isolation, originals, replacement history and un
     const archive={sourceName:sourceA,archived:true};
     await eth.a.patch("/api/data-sources/archive").set("X-CSRF-Token",eth.token).send(archive).expect(403);
     await manager.a.patch("/api/data-sources/archive").set("X-CSRF-Token",manager.token).send(archive).expect(200);
+    assert.equal((await viewer.a.get("/api/quality").query({source:sourceA}).expect(200)).body.summary.orders.green,0);
+    assert.equal((await viewer.a.get("/api/quality").query({source:sourceA,includeArchived:true}).expect(200)).body.summary.orders.green,2);
     assert.equal((await eth.a.get("/api/source-runs").query({search:sourceA}).expect(200)).body.total,2);
     await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(404);
     await eth.a.post("/api/imports").set("X-CSRF-Token",eth.token).send({sourceName:sourceA,files:[{name:"orders.csv",size:1,mime:"text/csv"},{name:"events.csv",size:1,mime:"text/csv"}]}).expect(409);
@@ -221,6 +223,7 @@ test("real API import/approval, isolation, originals, replacement history and un
     }
   });
   await t.test("every golden folder through the real API pipeline",async()=>{
+    const qualityEvidence:any[]=[];
     const expected=JSON.parse(readFileSync(root+"expected/expected_results.json","utf8")).datasets;
     const merge=(a:any,b:any):any=>{
       const out=structuredClone(a);
@@ -233,6 +236,7 @@ test("real API import/approval, isolation, originals, replacement history and un
         const who=dataset==="najm-packaging"?najm:eth;
         const u=await upload(who,`${dataset}/${name}`,`${source}-${name}`);
         const r=await check(who,u),exp=resolve(name);
+        assert.equal((await who.a.get("/api/quality").query({source:`${source}-${name}`}).expect(200)).body.total,0,"checked imports excluded");
         for(const key of ["capability_level","runs","comparison","file_issues","formula_like_cells"]) assert.deepEqual(r.result[key],exp[key],`${dataset}/${name}/${key}`);
         if(!r.duplicateOf) {
           const approved=await approve(who,u.id,r.replacementCount);
@@ -242,7 +246,34 @@ test("real API import/approval, isolation, originals, replacement history and un
             assert.equal(stored.rowCount,Object.keys(r.result.runs).length);
           });
         }
+        const qp=(await who.a.get("/api/quality").query({source:`${source}-${name}`}).expect(200)).body;
+        const expectedStatuses=Object.values(exp.runs).map((run:any)=>run.overall);
+        for(const color of ["green","yellow","red"]) assert.equal(qp.summary.orders[color],expectedStatuses.filter(s=>s===color).length);
+        const allItems=[...qp.items];
+        for(let p=2;(p-1)*20<qp.total;p++) allItems.push(...(await who.a.get("/api/quality").query({source:`${source}-${name}`,page:p}).expect(200)).body.items);
+        const issueSet=new Set<string>();
+        for(const issue of allItems) {
+          issueSet.add(`${issue.code}:${issue.severity}`);
+          if(issue.orderId) {
+            const run=exp.runs[issue.orderId];
+            assert.equal(issue.overallStatus,run.overall);
+            for(const group of ["volume","changeover","downtime"]) assert.equal(issue.groupStatuses[group],run[group].status);
+          }
+          const detail=(await who.a.get(`/api/quality/${issue.id}`).expect(200)).body;
+          assert.equal(detail.id,issue.id);
+          const other=dataset==="najm-packaging"?eth:najm;
+          await other.a.get(`/api/quality/${issue.id}`).expect(404);
+          if(dataset==="ethmar-plastics") await viewer.a.get(`/api/quality/${issue.id}`).expect(200);
+        }
+        const expectedIssues=[...new Set<string>([...Object.values(exp.runs).flatMap((run:any)=>run.issues),...exp.file_issues])].sort();
+        assert.deepEqual([...issueSet].sort(),expectedIssues);
+        const errors=(await who.a.get("/api/quality").query({source:`${source}-${name}`,severity:"error"}).expect(200)).body;
+        assert.equal(errors.total,allItems.filter(i=>i.severity==="error").length);
+        assert.ok(errors.items.every((i:any)=>i.severity==="error"));
+        qualityEvidence.push({scenario:`${dataset}/${name}`,expected:{issues:expectedIssues,statuses:expectedStatuses},actual:{issues:[...issueSet].sort(),summary:qp.summary,groups:allItems.map(i=>({order:i.orderId,statuses:i.groupStatuses,overall:i.overallStatus}))},status:"PASS"});
       }
     }
+    mkdirSync(root+"generated-artifacts/phase5",{recursive:true});
+    writeFileSync(root+"generated-artifacts/phase5/scenarios.json",JSON.stringify(qualityEvidence,null,2));
   });
 });

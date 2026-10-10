@@ -23,6 +23,7 @@ import type {
   ApprovalInput,
   Credentials,
   FactorySelection,
+  GetQualityParams,
   GetSourceComparisonParams,
   HealthStatus,
   ImportDetail,
@@ -39,6 +40,8 @@ import type {
   MappingTemplate,
   PageState,
   Preferences,
+  QualityIssue,
+  QualityPage,
   Session,
   TemplateInput,
   TemplatePage
@@ -70,6 +73,155 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetQualityUrl = (params?: GetQualityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/quality?${stringifiedParams}` : `/api/quality`
+}
+
+export const getQuality = async (params?: GetQualityParams, options?: Parameters<typeof customFetch>[1]): Promise<QualityPage> => {
+
+  return customFetch<QualityPage>(getGetQualityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQualityQueryKey = (params?: GetQualityParams,) => {
+    return [
+    `/api/quality`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetQualityQueryOptions = <TData = Awaited<ReturnType<typeof getQuality>>, TError = ErrorType<unknown>>(params?: GetQualityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuality>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQualityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQuality>>> = ({ signal }) => getQuality(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQuality>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQualityQueryResult = NonNullable<Awaited<ReturnType<typeof getQuality>>>
+export type GetQualityQueryError = ErrorType<unknown>
+
+
+
+export function useGetQuality<TData = Awaited<ReturnType<typeof getQuality>>, TError = ErrorType<unknown>>(
+ params?: GetQualityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQuality>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQualityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetQualityIssueUrl = (id: string,) => {
+
+
+
+
+  return `/api/quality/${id}`
+}
+
+export const getQualityIssue = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<QualityIssue> => {
+
+  return customFetch<QualityIssue>(getGetQualityIssueUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetQualityIssueQueryKey = (id: string,) => {
+    return [
+    `/api/quality/${id}`
+    ] as const;
+    }
+
+
+export const getGetQualityIssueQueryOptions = <TData = Awaited<ReturnType<typeof getQualityIssue>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQualityIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetQualityIssueQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getQualityIssue>>> = ({ signal }) => getQualityIssue(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getQualityIssue>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetQualityIssueQueryResult = NonNullable<Awaited<ReturnType<typeof getQualityIssue>>>
+export type GetQualityIssueQueryError = ErrorType<void>
+
+
+
+export function useGetQualityIssue<TData = Awaited<ReturnType<typeof getQualityIssue>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getQualityIssue>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetQualityIssueQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListImportsUrl = (params?: ListImportsParams,) => {
   const normalizedParams = new URLSearchParams();

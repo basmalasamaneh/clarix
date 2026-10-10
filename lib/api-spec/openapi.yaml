@@ -11,6 +11,35 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /quality:
+    get:
+      operationId: getQuality
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: severity, in: query, schema: { type: string, enum: [info, warning, error] } }
+        - { name: group, in: query, schema: { type: string, enum: [volume, changeover, downtime, file, import, all] } }
+        - { name: order, in: query, schema: { type: string } }
+        - { name: source, in: query, schema: { type: string } }
+        - { name: includeArchived, in: query, schema: { type: boolean } }
+      responses:
+        "200":
+          description: Approved issue history and current-order counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QualityPage" }
+  /quality/{id}:
+    get:
+      operationId: getQualityIssue
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Approved issue with exact source cells
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/QualityIssue" }
+        "404":
+          description: Not found in this factory
   /imports:
     get:
       operationId: listImports
@@ -331,6 +360,74 @@ paths:
               schema: { $ref: "#/components/schemas/PageState" }
 components:
   schemas:
+    QualityIssue:
+      type: object
+      required: [id, importId, code, severity, severityStatus, sourceName, group, orderId, archived, superseded, refs, blockedReasons]
+      properties:
+        id: { type: string }
+        importId: { type: string }
+        code: { type: string }
+        severity: { type: string, enum: [info, warning, error] }
+        severityStatus: { type: string, enum: [green, yellow, red] }
+        sourceName: { type: string }
+        group: { type: string }
+        orderId: { type: [string, "null"] }
+        approvedAt: { type: string }
+        archived: { type: boolean }
+        superseded: { type: boolean }
+        comparable: { type: [boolean, "null"] }
+        overallStatus: { type: [string, "null"], enum: [green, yellow, red, null] }
+        groupStatuses:
+          type: [object, "null"]
+          additionalProperties: { type: string }
+        blockedReasons:
+          type: array
+          items: { type: string }
+        refs:
+          type: array
+          items:
+            type: object
+            required: [file, line]
+            properties:
+              file: { type: string }
+              line: { type: integer }
+        rows:
+          type: array
+          items:
+            type: object
+            required: [file, line, cells, references]
+            properties:
+              file: { type: string }
+              line: { type: integer }
+              cells:
+                type: object
+                additionalProperties: {}
+              references:
+                type: array
+                items: { type: string }
+    QualityPage:
+      type: object
+      required: [items, page, total, summary]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/QualityIssue" }
+        page: { type: integer }
+        total: { type: integer }
+        summary:
+          type: object
+          required: [errors, warnings, notes, orders]
+          properties:
+            errors: { type: integer }
+            warnings: { type: integer }
+            notes: { type: integer }
+            orders:
+              type: object
+              required: [green, yellow, red]
+              properties:
+                green: { type: integer }
+                yellow: { type: integer }
+                red: { type: integer }
     JsonObject:
       type: object
       additionalProperties: true

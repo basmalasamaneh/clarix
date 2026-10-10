@@ -51,7 +51,7 @@ system into simple, checkable comparisons of **waste (scrap)**, **mold-change (c
 | Platform Admin | Create/suspend factories, invite factory managers. **No access to production data** unless a factory manager grants a time-boxed, logged permission. |
 | Factory Manager | Everything inside their factory: team, settings, mappings, approve analyses. |
 | Analyst | Upload files, map columns, review data issues, approve imports, build comparisons. |
-| Viewer | Read comparisons and reports only. |
+| Viewer | Read comparisons, reports, and the Data Quality Center including its issue source-row details. No writes. |
 
 A user belongs to one or more factories through `memberships(user, factory, role)`. Authorisation is enforced **on the server for every read and write**; hiding buttons is not security.
 
@@ -197,6 +197,15 @@ Derived per metric group, then overall = worst group. Only issues attached to th
 | 🔴 red | Not sufficient to compare | غير كافية للمقارنة | at least one error → comparison for that metric is refused (shown as "Not available"/"Not computable") |
 
 Always show **why**, e.g. "One duplicate stop event was excluded (events.csv:5)". Badge is icon + text + colour (never colour alone).
+
+### Phase 5 quality-history scope
+The Data Quality Center is read-only and includes issues from all approved
+imports, with superseded order versions clearly labelled. Its current-order
+green/yellow/red counts use only current approved orders, not old versions.
+Severity/group filters apply to issue counts; source/order/archive filters also
+apply to current-order counts. Archived sources are excluded unless explicitly
+shown. Viewers may read this page and the issue's exact source cells, but gain
+no import, mapping, approval, settings, resolve or ignore write permissions.
 
 ---
 

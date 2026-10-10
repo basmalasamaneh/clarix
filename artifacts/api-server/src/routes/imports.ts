@@ -1,6 +1,6 @@
 import { Router,type Request,type Response,type NextFunction } from "express";
 import { z } from "zod";
-import { CreateImportBody,SaveImportMappingBody,ApproveImportBody,CreateImportTemplateBody } from "@workspace/api-zod";
+import { CreateImportBody,SaveImportMappingBody,ApproveImportBody,CreateImportTemplateBody,GetQualityResponse,GetQualityIssueResponse } from "@workspace/api-zod";
 import { CellReadError } from "@workspace/calculation";
 import { withRequestTenant,TenantAccessError } from "../lib/tenancy";
 import { ImportError,limitConfig,validateMapping } from "../imports/model";
@@ -8,6 +8,7 @@ import * as service from "../imports/service";
 import { approve } from "../imports/approval";
 import {eventCodes,issues} from "../imports/review";
 import * as sources from "../imports/sources";
+import * as quality from "../imports/quality";
 const router=Router();
 type Action=(ctx:service.Context,req:Request,res:Response)=>Promise<void>;
 function route(action:Action,allowViewer=false) {
@@ -42,6 +43,15 @@ function route(action:Action,allowViewer=false) {
 }
 const page=(raw:unknown)=>z.coerce.number().int().min(1).max(1000000).parse(raw??1);
 const id=(req:Request)=>String(req.params.id);
+router.get("/quality",route(async(ctx,req,res)=>{
+  const input=z.object({page:z.coerce.number().int().min(1).max(1000000).default(1),
+    severity:z.enum(["info","warning","error"]).optional(),
+    group:z.enum(["volume","changeover","downtime","file","import","all"]).optional(),
+    order:z.string().max(200).optional(),source:z.string().max(200).optional(),
+    includeArchived:z.enum(["true","false"]).optional().transform(v=>v==="true")}).parse(req.query);
+  res.json(GetQualityResponse.parse(await quality.qualityPage(ctx,input)));
+},true));
+router.get("/quality/:id",route(async(ctx,req,res)=>{res.json(GetQualityIssueResponse.parse(await quality.qualityDetail(ctx,id(req))));},true));
 router.get("/data-sources",route(async(ctx,req,res)=>{res.json(await sources.listSources(ctx,page(req.query.page),String(req.query.search??"")));}));
 router.post("/data-sources/recommend",route(async(ctx,req,res)=>{
   const input=z.object({files:z.array(z.object({name:z.string(),headers:z.array(z.string()).max(1000)})).max(4)}).parse(req.body);

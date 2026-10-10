@@ -5,6 +5,99 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type QualityIssueSeverity = typeof QualityIssueSeverity[keyof typeof QualityIssueSeverity];
+
+
+export const QualityIssueSeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export type QualityIssueSeverityStatus = typeof QualityIssueSeverityStatus[keyof typeof QualityIssueSeverityStatus];
+
+
+export const QualityIssueSeverityStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+/**
+ * @nullable
+ */
+export type QualityIssueOverallStatus = typeof QualityIssueOverallStatus[keyof typeof QualityIssueOverallStatus] | null;
+
+
+export const QualityIssueOverallStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+/**
+ * @nullable
+ */
+export type QualityIssueGroupStatuses = {[key: string]: string} | null;
+
+export type QualityIssueRefsItem = {
+  file: string;
+  line: number;
+};
+
+export type QualityIssueRowsItemCells = {[key: string]: unknown};
+
+export type QualityIssueRowsItem = {
+  file: string;
+  line: number;
+  cells: QualityIssueRowsItemCells;
+  references: string[];
+};
+
+export interface QualityIssue {
+  id: string;
+  importId: string;
+  code: string;
+  severity: QualityIssueSeverity;
+  severityStatus: QualityIssueSeverityStatus;
+  sourceName: string;
+  group: string;
+  /** @nullable */
+  orderId: string | null;
+  approvedAt?: string;
+  archived: boolean;
+  superseded: boolean;
+  /** @nullable */
+  comparable?: boolean | null;
+  /** @nullable */
+  overallStatus?: QualityIssueOverallStatus;
+  /** @nullable */
+  groupStatuses?: QualityIssueGroupStatuses;
+  blockedReasons: string[];
+  refs: QualityIssueRefsItem[];
+  rows?: QualityIssueRowsItem[];
+}
+
+export type QualityPageSummaryOrders = {
+  green: number;
+  yellow: number;
+  red: number;
+};
+
+export type QualityPageSummary = {
+  errors: number;
+  warnings: number;
+  notes: number;
+  orders: QualityPageSummaryOrders;
+};
+
+export interface QualityPage {
+  items: QualityIssue[];
+  page: number;
+  total: number;
+  summary: QualityPageSummary;
+}
+
 export interface JsonObject { [key: string]: unknown }
 
 export interface FileInput {
@@ -269,6 +362,39 @@ export interface PageState {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetQualityParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+severity?: GetQualitySeverity;
+group?: GetQualityGroup;
+order?: string;
+source?: string;
+includeArchived?: boolean;
+};
+
+export type GetQualitySeverity = typeof GetQualitySeverity[keyof typeof GetQualitySeverity];
+
+
+export const GetQualitySeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export type GetQualityGroup = typeof GetQualityGroup[keyof typeof GetQualityGroup];
+
+
+export const GetQualityGroup = {
+  volume: 'volume',
+  changeover: 'changeover',
+  downtime: 'downtime',
+  file: 'file',
+  import: 'import',
+  all: 'all',
+} as const;
 
 export type ListImportsParams = {
 /**
