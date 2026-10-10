@@ -1,17 +1,11 @@
 import pg, { type PoolClient } from "pg";
 import type { Request } from "express";
+import {runtimeConfig} from "@workspace/db";
 
-// Dedicated connections start as restricted roles before ANY application query.
-// DATABASE_URL remains the auth/session/migration credential; never expose those
-// privileged connections to tenant callbacks.
-const runtimePool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  options: `${process.env.PGOPTIONS ?? ""} -c role=clarix_runtime`,
-});
-const discoveryPool = new pg.Pool({
-  connectionString: process.env.DATABASE_URL,
-  options: `${process.env.PGOPTIONS ?? ""} -c role=clarix_identity`,
-});
+// Every connection authenticates as clarix_runtime. Identity discovery uses a
+// subordinate, non-login role; no application connection authenticates as owner.
+const runtimePool = new pg.Pool(runtimeConfig());
+const discoveryPool = new pg.Pool(runtimeConfig("clarix_identity"));
 export async function closeTenantPools() {
   await Promise.all([runtimePool.end(), discoveryPool.end()]);
 }

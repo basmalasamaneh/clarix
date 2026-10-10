@@ -1,5 +1,6 @@
 import argon2 from "argon2";
-import { db, pool, factories, users, memberships } from "@workspace/db";
+import { factories, users, memberships } from "@workspace/db/schema";
+import {db,pool} from "@workspace/db/admin";
 import { assertSeedAllowed } from "../lib/permissions";
 import { logger } from "../lib/logger";
 import { sql } from "drizzle-orm";

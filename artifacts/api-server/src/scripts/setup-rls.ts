@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises";
-import { pool } from "@workspace/db";
+import { pool } from "@workspace/db/admin";
 import { isProduction } from "../lib/permissions";
 
 // Development/post-merge setup only. Publishing owns production migrations.
@@ -21,6 +21,7 @@ try {
   GRANT clarix_accounts TO CURRENT_USER;
   GRANT USAGE ON SCHEMA public TO clarix_accounts;`);
   await pool.query(await readFile(new URL("../../../../lib/db/accounts-rls.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/runtime-grants.sql",import.meta.url),"utf8"));
 } finally {
   await pool.end();
 }
