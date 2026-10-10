@@ -40,7 +40,7 @@ test("Phase14 immutable snapshots, reconciliation and original source gate",asyn
   const runs=(await analyst.a.get("/api/runs").query({source}).expect(200)).body.items;
   const a=runs.find((r:{orderId:string})=>r.orderId==="E-01").id,b=runs.find((r:{orderId:string})=>r.orderId==="E-02").id;
   const input={a,b,title:"Frozen baseline "+source,note:"Original production report"};
-  let saved:any,original:string,sourceOriginal:any;
+  let saved:any,original:string,sourceOriginal:any,exported:any;
   await t.test("save exact comparison, charts, lineage and initial report atomically",async()=>{
     await post(analyst,"/snapshots",{a,b,title:"Stale view",note:"",expectedImportA:randomUUID()}).expect(409);
     const current=(await analyst.a.get("/api/comparison").query({a,b}).expect(200)).body;
@@ -59,6 +59,27 @@ test("Phase14 immutable snapshots, reconciliation and original source gate",asyn
       assert.ok((await c.query("SELECT count(*)::int n FROM source_row_links WHERE snapshot_id=$1",[saved.snapshot.id])).rows[0].n>0);
       const r=(await c.query("SELECT provenance,definitions_version FROM analysis_snapshots WHERE id=$1",[saved.snapshot.id])).rows[0];
       assert.ok(r.provenance[0].files[0].sha256);assert.ok(r.provenance[0].mapping);assert.equal(r.definitions_version,"clarix-locked-v1");
+    });
+  });
+  await t.test("Phase15 report permissions, exact stored payload, metadata and content-free audit",async()=>{
+    for(const actor of [manager,analyst,viewer]) {
+      const report=(await post(actor,`/snapshots/${saved.snapshot.id}/report`,{language:"en"}).expect(200)).body;
+      assert.deepEqual(report.comparison,saved.comparison);
+      assert.equal(report.filename,`clarix-ethmar-plastics-${saved.snapshot.id}-en.pdf`);
+      assert.equal(report.reconciliations.length,1);
+      assert.equal(report.reconciliations[0].result.figures.find((f:any)=>f.side==="b"&&f.key==="scrap_kg").difference,"0.100000000000000001");
+      assert.ok(report.provenance[0].files[0].sha256);
+      exported=report;
+    }
+    const ar=(await post(analyst,`/snapshots/${saved.snapshot.id}/report`,{language:"ar"}).expect(200)).body;
+    assert.deepEqual(ar.comparison,exported.comparison);
+    await post(admin,`/snapshots/${saved.snapshot.id}/report`,{language:"en"}).expect(403);
+    assert.deepEqual((await post(najm,`/snapshots/${saved.snapshot.id}/report`,{language:"en"}).expect(404)).body,
+      (await post(najm,`/snapshots/${randomUUID()}/report`,{language:"en"}).expect(404)).body);
+    await post(viewer,`/snapshots/${saved.snapshot.id}/report`,{language:"fr"}).expect(400);
+    await withTenant(analyst.user,analyst.factory,async c=>{
+      const audits=(await c.query("SELECT action FROM snapshot_audit WHERE snapshot_id=$1 AND action LIKE 'report_prepared_%'",[saved.snapshot.id])).rows;
+      assert.equal(audits.length,4);assert.ok(audits.some(a=>a.action==="report_prepared_ar"));
     });
   });
   await t.test("Viewer read-only, Platform Admin denial, tenant-safe identical404s on every path",async()=>{
@@ -85,6 +106,8 @@ test("Phase14 immutable snapshots, reconciliation and original source gate",asyn
     const after=(await viewer.a.get("/api/snapshots/"+saved.snapshot.id).expect(200)).body;
     assert.equal(JSON.stringify(after.comparison),original);
     assert.equal(after.snapshot.changed,true);
+    const frozenReport=(await post(analyst,`/snapshots/${saved.snapshot.id}/report`,{language:"ar"}).expect(200)).body;
+    assert.deepEqual(frozenReport.comparison,exported.comparison);
     assert.ok(after.changes.some((c:any)=>c.kind==="import"));
     assert.ok(after.changes.some((c:any)=>c.kind==="metric"&&c.key==="scrap_kg"&&c.after===null));
     assert.ok(after.changes.some((c:any)=>c.kind==="status"&&c.after==="red"));
@@ -106,6 +129,14 @@ test("Phase14 immutable snapshots, reconciliation and original source gate",asyn
     assert.equal(v.clarix,"1000");assert.equal(v.difference,null);assert.equal(v.result,"unavailable");
     const missing=result.figures.find((f:any)=>f.side===blockedSide&&f.key==="scrap_kg");
     assert.equal(missing.clarix,null);assert.equal(missing.difference,null);
+    const blocked=(await post(analyst,"/snapshots",{a,b,title:"=Blocked <script>alert(1)</script>",note:"@Untrusted report",
+      figures:{a:{input_kg:"1000"},b:{input_kg:"1000"}}}).expect(201)).body;
+    const report=(await post(analyst,`/snapshots/${blocked.snapshot.id}/report`,{language:"en"}).expect(200)).body;
+    assert.deepEqual(report.comparison,blocked.comparison);
+    assert.ok(report.issues.some((i:any)=>i.refs.length>0));
+    const blockedFigure=report.reconciliations[0].result.figures.find((f:any)=>f.side===blockedSide&&f.key==="input_kg");
+    assert.equal(blockedFigure.result,"unavailable");assert.equal(blockedFigure.difference,null);
+    assert.equal(report.snapshot.title,"=Blocked <script>alert(1)</script>");
     await post(analyst,"/reconciliation-preview",{a,b,figures:{a:{input_kg:"1e3"},b:{}}}).expect(400);
     await post(analyst,"/reconciliation-preview",{a,b,figures:{a:{input_kg:"NaN"},b:{}}}).expect(400);
   });
@@ -117,6 +148,9 @@ test("Phase14 immutable snapshots, reconciliation and original source gate",asyn
     const after=(await viewer.a.get("/api/snapshots/"+saved.snapshot.id).expect(200)).body;
     assert.equal(JSON.stringify(after.comparison),original);
     assert.equal((await viewer.a.get("/api/reconciliations").query({snapshotId:saved.snapshot.id}).expect(200)).body.total,2);
+    const complete=(await post(manager,`/snapshots/${saved.snapshot.id}/report`,{language:"en"}).expect(200)).body;
+    assert.equal(complete.reconciliations.length,2);
+    assert.equal(complete.reconciliations[1].result.figures.find((f:any)=>f.side==="a"&&f.key==="scrap_kg").difference,"-55");
   });
   await t.test("immutable runtime tables, forced RLS and no mutation APIs",async()=>{
     for(const table of ["analysis_snapshots","reconciliations","source_row_links","snapshot_audit"]) {
@@ -133,6 +167,16 @@ test("Phase14 immutable snapshots, reconciliation and original source gate",asyn
     await withTenant(najm.user,najm.factory,async c=>{
       for(const table of ["analysis_snapshots","source_row_links","reconciliations","snapshot_audit"])assert.equal((await c.query(`SELECT * FROM ${table} WHERE factory_id='ethmar'`)).rowCount,0);
     });
+  });
+  await t.test("report quota is persistent, language-aware and independent between readers",async()=>{
+    for(const [actor,action] of [[analyst.user,"report_prepared_en"],[viewer.user,"snapshot_saved"]]) {
+      await assert.rejects(withTenant(viewer.user,viewer.factory,c=>c.query(
+        "INSERT INTO snapshot_audit(id,factory_id,snapshot_id,actor_id,action) VALUES($1,$2,$3,$4,$5)",
+        [randomUUID(),viewer.factory,saved.snapshot.id,actor,action])),{code:"42501"});
+    }
+    for(let i=0;i<9;i++)await post(viewer,`/snapshots/${saved.snapshot.id}/report`,{language:i%2?"ar":"en"}).expect(200);
+    await post(viewer,`/snapshots/${saved.snapshot.id}/report`,{language:"en"}).expect(429);
+    await post(manager,`/snapshots/${saved.snapshot.id}/report`,{language:"ar"}).expect(200);
   });
   await t.test("Najm tonne conversions reconcile; list and records paginate",async()=>{
     const sourceName="snapshot-najm-"+randomUUID();

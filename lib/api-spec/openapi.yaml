@@ -727,6 +727,31 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/ReconciliationList" }
+  /snapshots/{id}/report:
+    post:
+      operationId: prepareSnapshotReport
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SnapshotReportInput" }
+      responses:
+        "200":
+          description: Bounded frozen report prepared for browser Save as PDF
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SnapshotReport" }
+        "404":
+          description: Snapshot not found in the active factory
+        "413":
+          description: Snapshot or reconciliation history exceeds printable limits
+        "429":
+          description: Report preparation rate exceeded
   /snapshots/{id}/reconciliations:
     post:
       operationId: addReconciliation
@@ -790,6 +815,65 @@ components:
         a: { $ref: "#/components/schemas/ReportRunFigures" }
         b: { $ref: "#/components/schemas/ReportRunFigures" }
         origin: { type: string, maxLength: 1000 }
+    SnapshotReportInput:
+      type: object
+      required: [language]
+      additionalProperties: false
+      properties:
+        language: { type: string, enum: [en, ar] }
+    ReportSourceFile:
+      type: object
+      required: [name, sha256]
+      properties:
+        name: { type: string }
+        sha256: { type: string }
+    ReportProvenance:
+      type: object
+      required: [importId, files]
+      properties:
+        importId: { type: string }
+        files:
+          type: array
+          items: { $ref: "#/components/schemas/ReportSourceFile" }
+    SnapshotReport:
+      type: object
+      required: [filename, language, exportedAt, factoryName, snapshot, comparison, definitionsVersion, provenance, reconciliations, issues]
+      properties:
+        filename: { type: string }
+        language: { type: string, enum: [en, ar] }
+        exportedAt: { type: string }
+        factoryName: { type: string }
+        snapshot: { $ref: "#/components/schemas/SnapshotSummary" }
+        comparison: { $ref: "#/components/schemas/RunComparison" }
+        definitionsVersion: { type: string }
+        provenance:
+          type: array
+          items: { $ref: "#/components/schemas/ReportProvenance" }
+        reconciliations:
+          type: array
+          items: { $ref: "#/components/schemas/ReconciliationRecord" }
+        issues:
+          type: array
+          items: { $ref: "#/components/schemas/ReportIssue" }
+    ReportIssueRef:
+      type: object
+      required: [file, line]
+      properties:
+        file: { type: string }
+        line: { type: integer }
+        column: { type: string }
+    ReportIssue:
+      type: object
+      required: [code, group, severity, orderId, sourceName, refs]
+      properties:
+        code: { type: string }
+        group: { type: string }
+        severity: { type: string }
+        orderId: { type: [string, "null"] }
+        sourceName: { type: string }
+        refs:
+          type: array
+          items: { $ref: "#/components/schemas/ReportIssueRef" }
     SnapshotInput:
       type: object
       required: [a, b, title, note]

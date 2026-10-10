@@ -451,6 +451,27 @@ Bilingual key strings:
 
 ## 13. Reconciliation and snapshots (wave 2)
 
+### Approved Phase 15 — printable frozen-snapshot reports
+
+Factory Managers, Analysts and Viewers may prepare a bilingual A4 report from
+a stored snapshot and its saved reconciliation records. Platform Admins are
+denied and foreign-factory IDs return the same 404 as unknown IDs. No engine or
+live comparison is invoked. Include frozen values/charts/statuses/explanations,
+issues and original references, provenance hashes and definition version.
+The user approved import IDs alongside the snapshot ID as a narrow exception;
+exclude other internal database IDs from the document.
+
+Use a dedicated print document and the browser's Save as PDF fallback because
+the current production build does not provision a verified headless browser.
+Bundle/embed IBM Plex Sans Arabic and Inter; verify actual generated PDFs.
+The suggested filename is predictable, but the user controls the save dialog.
+Preparation audit records actor, snapshot and language, not content; it does
+not assert that the user completed saving. Server-side size, time and persistent
+per-user export limits apply. Oversize reports fail explicitly, never truncate.
+Escape user text and prefix formula-like text with an apostrophe, without
+changing trusted numeric signs. No public links, emails, schedules, AI, live
+comparison exports or metric changes.
+
 ### Approved Phase 14
 
 Factory Managers and Analysts can save immutable comparisons and append factory

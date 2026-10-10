@@ -19,6 +19,7 @@ import { ForbiddenState } from '@/pages/tenant-page';
 import { Result } from '@/pages/comparison';
 import { AddReconciliationPanel, ChangesPanel, Pager, ReconciliationTable, canWriteSnapshots, useFmtDate } from '@/components/snapshots/reconcile';
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
+import { ReportExport } from '@/components/snapshots/report-export';
 import '@/lib/phase14-i18n';
 
 const backCls = 'inline-flex min-h-11 items-center gap-2 rounded-md border bg-card px-3 text-sm font-medium hover-elevate';
@@ -122,6 +123,7 @@ export default function SnapshotDetailPage({ id, session }: { id: string; sessio
             <p className="mt-2 text-xs text-muted-foreground" lang={ar ? 'ar' : 'en'}>{t('snp.frozenBody')}</p>
           </div>
         </header>
+        <ReportExport key={`${s.id}-${session.activeFactoryId}-${session.user?.id}`} snapshotId={s.id} />
         <ChangesPanel changes={changes} />
         <Result data={comparison} />
         <History_ key={s.id} id={s.id} session={session} />

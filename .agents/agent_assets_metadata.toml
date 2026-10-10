@@ -182,3 +182,59 @@ mtime_ms = 1791665609448
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/73f48068-9a03-42b9-84b9-1829a13afc58/7480f0a1-aa24-42bc-9b81-b4d5cdd11317"
 storage_version_token = "1791665614573965"
 content_type = "text/html"
+
+[[outputs]]
+id = "H3vyl9XAnFhSPnOhWP9md"
+uri = "file://generated-artifacts/phase15/2026-10-10T21-09-28-566Z/clarix-baseline-en.pdf"
+type = "pdf"
+title = "Clarix sample report — English"
+description = "Frozen baseline snapshot from isolated test data; A4 with embedded fonts."
+logical_id = "743e5f46-90ab-4b64-89cb-44b08dd961a6"
+content_hash = "sha256:02e042394a34764320417b584f056792aa90616785743908f191ce8eb22fef4a"
+size = 354813
+mtime_ms = 1791666807861
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/743e5f46-90ab-4b64-89cb-44b08dd961a6/ccd70fc8-506e-4778-a6b8-e7a528a1fc91"
+storage_version_token = "1791666874571964"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "cRylEWLjRHr2G3rBPDFBZ"
+uri = "file://generated-artifacts/phase15/2026-10-10T21-09-28-566Z/clarix-baseline-ar.pdf"
+type = "pdf"
+title = "Clarix sample report — Arabic"
+description = "Arabic RTL report from the same isolated snapshot."
+logical_id = "a44cf9ed-acf7-4628-8408-8a0ac8fce072"
+content_hash = "sha256:d8b2f0842f81a2b175c7b1047698d62560e3fc45fd0504c4adebf9e13dda59d1"
+size = 239232
+mtime_ms = 1791666805829
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/a44cf9ed-acf7-4628-8408-8a0ac8fce072/1f124257-0a80-4f92-bab2-a848779a1839"
+storage_version_token = "1791666875071429"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "7BxYd-PNgBUlr-w1Uuxym"
+uri = "file://generated-artifacts/phase15/2026-10-10T21-09-28-566Z/clarix-baseline-ar.png"
+type = "image"
+title = "Arabic PDF — first-page image"
+description = "Rasterised PDF page for your review of Arabic joining, order and layout. Automated checks do not certify visual quality."
+logical_id = "cb2957fb-5d95-4bc7-b5f3-1f31f7aa5d2c"
+content_hash = "sha256:d86f3b0507d99c66218463004bb554170a1a1a9ecd89008b27cf2c92f71fdd0a"
+size = 127210
+mtime_ms = 1791666820349
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/cb2957fb-5d95-4bc7-b5f3-1f31f7aa5d2c/be6858ca-31a7-415f-979b-da8494d19c8e"
+storage_version_token = "1791666875566358"
+content_type = "image/png"
+
+[[outputs]]
+id = "df96D7hBHReWZwh6EAcT5"
+uri = "file://generated-artifacts/phase15/browser-isolation.json"
+type = "unspecified"
+title = "Before/after development-data evidence"
+description = "Counts and content fingerprints: Ethmar and Najm unchanged."
+logical_id = "cd646e89-4a88-484b-ab26-afab037f5da5"
+content_hash = "sha256:d34f64d2b83223c6ecfd507ceeb133c1f9951c87c2a5c51c2a991e628e7416f1"
+size = 14674
+mtime_ms = 1791666656212
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/cd646e89-4a88-484b-ab26-afab037f5da5/3a765f84-17f5-42c0-af51-0b10e27b9080"
+storage_version_token = "1791666876122214"
+content_type = "application/octet-stream"

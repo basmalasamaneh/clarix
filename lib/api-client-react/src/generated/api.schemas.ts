@@ -25,83 +25,35 @@ export interface ReportFigures {
   origin?: string;
 }
 
-export interface SnapshotInput {
-  a: string;
-  b: string;
-  expectedImportA?: string;
-  expectedImportB?: string;
-  /**
-     * @minLength 1
-     * @maxLength 160
-     */
-  title: string;
-  /** @maxLength 2000 */
-  note: string;
-  figures?: ReportFigures;
-}
-
-export interface ReconciliationPreviewInput {
-  a: string;
-  b: string;
-  figures: ReportFigures;
-}
-
-export type ReconciliationFigureSide = typeof ReconciliationFigureSide[keyof typeof ReconciliationFigureSide];
+export type SnapshotReportInputLanguage = typeof SnapshotReportInputLanguage[keyof typeof SnapshotReportInputLanguage];
 
 
-export const ReconciliationFigureSide = {
-  a: 'a',
-  b: 'b',
+export const SnapshotReportInputLanguage = {
+  en: 'en',
+  ar: 'ar',
 } as const;
 
-export type ReconciliationFigureResult = typeof ReconciliationFigureResult[keyof typeof ReconciliationFigureResult];
+export interface SnapshotReportInput {
+  language: SnapshotReportInputLanguage;
+}
+
+export interface ReportSourceFile {
+  name: string;
+  sha256: string;
+}
+
+export interface ReportProvenance {
+  importId: string;
+  files: ReportSourceFile[];
+}
+
+export type SnapshotReportLanguage = typeof SnapshotReportLanguage[keyof typeof SnapshotReportLanguage];
 
 
-export const ReconciliationFigureResult = {
-  not_provided: 'not_provided',
-  unavailable: 'unavailable',
-  matches: 'matches',
-  differs: 'differs',
+export const SnapshotReportLanguage = {
+  en: 'en',
+  ar: 'ar',
 } as const;
-
-export interface SourceText {
-  en: string;
-  ar: string;
-}
-
-export interface ReconciliationFigure {
-  side: ReconciliationFigureSide;
-  runId: string;
-  key: string;
-  unit: string;
-  /** @nullable */
-  clarix: string | null;
-  /** @nullable */
-  reported: string | null;
-  /** @nullable */
-  difference: string | null;
-  result: ReconciliationFigureResult;
-  reason: SourceText;
-  sentence: SourceText;
-}
-
-export interface ReconciliationResult {
-  origin: string;
-  figures: ReconciliationFigure[];
-}
-
-export interface ReconciliationRecord {
-  id: string;
-  author: string;
-  createdAt: string;
-  result: ReconciliationResult;
-}
-
-export interface ReconciliationList {
-  items: ReconciliationRecord[];
-  total: number;
-  page: number;
-}
 
 export type SnapshotSummaryOverall = typeof SnapshotSummaryOverall[keyof typeof SnapshotSummaryOverall];
 
@@ -121,40 +73,6 @@ export interface SnapshotSummary {
   overall: SnapshotSummaryOverall;
   runs: string[];
   changed: boolean;
-}
-
-export interface SnapshotList {
-  items: SnapshotSummary[];
-  total: number;
-  page: number;
-}
-
-export type SnapshotChangeSide = typeof SnapshotChangeSide[keyof typeof SnapshotChangeSide];
-
-
-export const SnapshotChangeSide = {
-  a: 'a',
-  b: 'b',
-} as const;
-
-export type SnapshotChangeKind = typeof SnapshotChangeKind[keyof typeof SnapshotChangeKind];
-
-
-export const SnapshotChangeKind = {
-  import: 'import',
-  metric: 'metric',
-  status: 'status',
-  unavailable: 'unavailable',
-} as const;
-
-export interface SnapshotChange {
-  side: SnapshotChangeSide;
-  kind: SnapshotChangeKind;
-  key: string;
-  /** @nullable */
-  before: string | null;
-  /** @nullable */
-  after: string | null;
 }
 
 export type ChartSpecKind = typeof ChartSpecKind[keyof typeof ChartSpecKind];
@@ -400,6 +318,147 @@ export interface RunComparison {
   hasBlockedGroups: boolean;
   summary: RunComparisonSummary;
   questions: RunComparisonQuestionsItem[];
+}
+
+export type ReconciliationFigureSide = typeof ReconciliationFigureSide[keyof typeof ReconciliationFigureSide];
+
+
+export const ReconciliationFigureSide = {
+  a: 'a',
+  b: 'b',
+} as const;
+
+export type ReconciliationFigureResult = typeof ReconciliationFigureResult[keyof typeof ReconciliationFigureResult];
+
+
+export const ReconciliationFigureResult = {
+  not_provided: 'not_provided',
+  unavailable: 'unavailable',
+  matches: 'matches',
+  differs: 'differs',
+} as const;
+
+export interface SourceText {
+  en: string;
+  ar: string;
+}
+
+export interface ReconciliationFigure {
+  side: ReconciliationFigureSide;
+  runId: string;
+  key: string;
+  unit: string;
+  /** @nullable */
+  clarix: string | null;
+  /** @nullable */
+  reported: string | null;
+  /** @nullable */
+  difference: string | null;
+  result: ReconciliationFigureResult;
+  reason: SourceText;
+  sentence: SourceText;
+}
+
+export interface ReconciliationResult {
+  origin: string;
+  figures: ReconciliationFigure[];
+}
+
+export interface ReconciliationRecord {
+  id: string;
+  author: string;
+  createdAt: string;
+  result: ReconciliationResult;
+}
+
+export interface ReportIssueRef {
+  file: string;
+  line: number;
+  column?: string;
+}
+
+export interface ReportIssue {
+  code: string;
+  group: string;
+  severity: string;
+  /** @nullable */
+  orderId: string | null;
+  sourceName: string;
+  refs: ReportIssueRef[];
+}
+
+export interface SnapshotReport {
+  filename: string;
+  language: SnapshotReportLanguage;
+  exportedAt: string;
+  factoryName: string;
+  snapshot: SnapshotSummary;
+  comparison: RunComparison;
+  definitionsVersion: string;
+  provenance: ReportProvenance[];
+  reconciliations: ReconciliationRecord[];
+  issues: ReportIssue[];
+}
+
+export interface SnapshotInput {
+  a: string;
+  b: string;
+  expectedImportA?: string;
+  expectedImportB?: string;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** @maxLength 2000 */
+  note: string;
+  figures?: ReportFigures;
+}
+
+export interface ReconciliationPreviewInput {
+  a: string;
+  b: string;
+  figures: ReportFigures;
+}
+
+export interface ReconciliationList {
+  items: ReconciliationRecord[];
+  total: number;
+  page: number;
+}
+
+export interface SnapshotList {
+  items: SnapshotSummary[];
+  total: number;
+  page: number;
+}
+
+export type SnapshotChangeSide = typeof SnapshotChangeSide[keyof typeof SnapshotChangeSide];
+
+
+export const SnapshotChangeSide = {
+  a: 'a',
+  b: 'b',
+} as const;
+
+export type SnapshotChangeKind = typeof SnapshotChangeKind[keyof typeof SnapshotChangeKind];
+
+
+export const SnapshotChangeKind = {
+  import: 'import',
+  metric: 'metric',
+  status: 'status',
+  unavailable: 'unavailable',
+} as const;
+
+export interface SnapshotChange {
+  side: SnapshotChangeSide;
+  kind: SnapshotChangeKind;
+  key: string;
+  /** @nullable */
+  before: string | null;
+  /** @nullable */
+  after: string | null;
 }
 
 export interface SnapshotDetail {

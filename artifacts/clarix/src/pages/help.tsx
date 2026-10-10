@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheck, Columns2, FileUp, CircleHelp, Ban, Info, Archive, type LucideIcon } from 'lucide-react';
+import { ClipboardCheck, Columns2, FileDown, FileUp, CircleHelp, Ban, Info, Archive, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GlossaryTip } from '@/components/charts/glossary';
 import '@/lib/phase14-i18n';
+import '@/lib/phase15-i18n';
 import { GLOSSARY_KEYS } from '@/lib/charts-i18n';
 
 const STEPS: { n: string; icon: LucideIcon }[] = [
@@ -79,6 +80,10 @@ export default function HelpPage() {
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-snapshots">{t('help.snapBody')}</p>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-reconciliation">{t('help.recBody')}</p>
       </section>
+
+      <div className="mt-10" data-testid="section-help-reports">
+        <Note icon={FileDown} title={t('help.reportTitle')} body={t('help.reportBody')} testId="card-help-reports" />
+      </div>
 
       <div className="mt-10 grid gap-4 md:grid-cols-2">
         <Note icon={Ban} tip="na" title={t('help.naTitle')} body={t('help.naBody')} testId="card-help-na" />

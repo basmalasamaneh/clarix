@@ -27,3 +27,17 @@ BEGIN
   EXECUTE format('CREATE TRIGGER snapshot_no_truncate BEFORE TRUNCATE ON %I FOR EACH STATEMENT EXECUTE FUNCTION reject_history_mutation()',tbl);
  END LOOP;
 END $$;
+
+-- Export is a read capability. Viewers may append only their own content-free
+-- export-preparation audit, never a snapshot or reconciliation.
+DROP POLICY IF EXISTS snapshot_export_audit ON snapshot_audit;
+CREATE POLICY snapshot_export_audit ON snapshot_audit FOR INSERT TO clarix_runtime WITH CHECK(
+ factory_id=nullif(current_setting('app.factory_id',true),'')
+ AND actor_id=nullif(current_setting('app.user_id',true),'')
+ AND action IN ('report_prepared_en','report_prepared_ar')
+ AND EXISTS(
+  SELECT 1 FROM memberships m JOIN factories f ON f.id=m.factory_id JOIN users u ON u.id=m.user_id
+  WHERE m.factory_id=nullif(current_setting('app.factory_id',true),'')
+  AND m.user_id=nullif(current_setting('app.user_id',true),'') AND m.active AND NOT m.recovery_required
+  AND NOT u.platform_admin AND m.role='viewer' AND f.status='active'
+ ));

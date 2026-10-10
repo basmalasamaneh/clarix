@@ -20,6 +20,8 @@ import {overview} from "../imports/overview";
 import * as snapshots from "../snapshots/service";
 import {reconcile} from "../snapshots/reconciliation";
 import {SaveSnapshotBody,AddReconciliationBody,PreviewReconciliationBody} from "@workspace/api-zod";
+import {PrepareSnapshotReportBody} from "@workspace/api-zod";
+import {prepareReport} from "../reports/service";
 const router=Router();
 const uploadLimit=rateLimit({windowMs:15*60*1000,limit:60,standardHeaders:"draft-8",legacyHeaders:false,
   keyGenerator:req=>req.session.userId!,skip:req=>!req.session.userId,message:{error:"TOO_MANY_ATTEMPTS"}});
@@ -64,6 +66,10 @@ router.post("/snapshots",route(async(ctx,req,res)=>{
 }));
 router.get("/snapshots/:id",route(async(ctx,req,res)=>{
   res.json(await snapshots.snapshotDetail(ctx,id(req)));
+},true));
+router.post("/snapshots/:id/report",route(async(ctx,req,res)=>{
+  const {language}=PrepareSnapshotReportBody.strict().parse(req.body);
+  res.json(await prepareReport(ctx,id(req),language));
 },true));
 router.get("/reconciliations",route(async(ctx,req,res)=>{
   const parsed=z.string().uuid().safeParse(req.query.snapshotId);

@@ -87,6 +87,8 @@ import type {
   SnapshotDetail,
   SnapshotInput,
   SnapshotList,
+  SnapshotReport,
+  SnapshotReportInput,
   SourceDetail,
   TemplateInput,
   TemplatePage
@@ -4441,6 +4443,89 @@ export function useListReconciliations<TData = Awaited<ReturnType<typeof listRec
 
 
 
+
+export const getPrepareSnapshotReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/snapshots/${id}/report`
+}
+
+export const prepareSnapshotReport = async (id: string,
+    snapshotReportInput: SnapshotReportInput, options?: Parameters<typeof customFetch>[1]): Promise<SnapshotReport> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SnapshotReport>(getPrepareSnapshotReportUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(snapshotReportInput)
+  }
+);}
+
+
+
+
+
+export const getPrepareSnapshotReportMutationKey = () => ['prepareSnapshotReport'] as const;
+
+export const getPrepareSnapshotReportMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareSnapshotReport>>, TError,PrepareSnapshotReportMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof prepareSnapshotReport>>, TError,PrepareSnapshotReportMutationVariables, TContext> => {
+
+const mutationKey = getPrepareSnapshotReportMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof prepareSnapshotReport>>, PrepareSnapshotReportMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  prepareSnapshotReport(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrepareSnapshotReportMutationResult = NonNullable<Awaited<ReturnType<typeof prepareSnapshotReport>>>
+    export type PrepareSnapshotReportMutationBody = BodyType<SnapshotReportInput>
+    export type PrepareSnapshotReportMutationError = ErrorType<void>
+    export type PrepareSnapshotReportMutationVariables = {id: string;data: BodyType<SnapshotReportInput>}
+
+    export const usePrepareSnapshotReport = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareSnapshotReport>>, TError,PrepareSnapshotReportMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof prepareSnapshotReport>>,
+        TError,
+        PrepareSnapshotReportMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPrepareSnapshotReportMutationOptions(options));
+    }
 
 export const getAddReconciliationUrl = (id: string,) => {
 
