@@ -46,6 +46,7 @@ try{
   // Simulate the tables produced by Publish, not a startup migration.
   await c.query(await readFile(resolve(root,"lib/db/drizzle/0000_production-foundation.sql"),"utf8"));
   await c.query(await readFile(resolve(root,"lib/db/platform-migration.sql"),"utf8"));
+  await c.query(await readFile(resolve(root,"lib/db/snapshot-migration.sql"),"utf8"));
   await c.query("ALTER TABLE invitations ALTER COLUMN created_by DROP NOT NULL");
   // Provision through a table-owning CREATEROLE login, not a superuser or
   // BYPASSRLS login. Keep fixture administration separate in this test cluster.

@@ -18,10 +18,10 @@ test("clean-setup verification uses a genuine non-bypass owner", { skip: process
 });
 const accounts = [
   ["platform.admin@clarix.test", null, ["platform"]],
-  ["ethmar.manager@clarix.test", "ethmar", ["overview", "imports", "runs", "comparison", "quality", "settings", "members"]],
-  ["ethmar.analyst@clarix.test", "ethmar", ["overview", "imports", "runs", "comparison", "quality"]],
-  ["ethmar.viewer@clarix.test", "ethmar", ["overview","runs","comparison","quality"]],
-  ["najm.manager@clarix.test", "najm", ["overview", "imports", "runs", "comparison", "quality", "settings", "members"]],
+  ["ethmar.manager@clarix.test", "ethmar", ["overview", "imports", "runs", "comparison", "quality", "settings", "members", "snapshots"]],
+  ["ethmar.analyst@clarix.test", "ethmar", ["overview", "imports", "runs", "comparison", "quality", "snapshots"]],
+  ["ethmar.viewer@clarix.test", "ethmar", ["overview","runs","comparison","quality","snapshots"]],
+  ["najm.manager@clarix.test", "najm", ["overview", "imports", "runs", "comparison", "quality", "settings", "members", "snapshots"]],
 ] as const;
 
 test("seeding is explicit and never permitted in production", () => {
@@ -62,7 +62,7 @@ for (const [email, factory, pages] of accounts) {
     const other = factory === "najm" ? "ethmar" : "najm";
     await agent.get(`/api/factories/${other}/pages/comparison`).expect(403);
     await agent.post("/api/active-factory").set("X-CSRF-Token", token).send({ factoryId: other }).expect(403);
-    for (const page of ["overview", "imports", "runs", "comparison", "quality", "settings", "members"]) {
+    for (const page of ["overview", "imports", "runs", "comparison", "quality", "settings", "members", "snapshots"]) {
       await agent.get(`/api/factories/${factory ?? "ethmar"}/pages/${page}`)
         .expect((pages as readonly string[]).includes(page) ? 200 : 403);
     }

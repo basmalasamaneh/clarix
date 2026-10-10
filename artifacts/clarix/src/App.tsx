@@ -5,6 +5,9 @@ import { Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter
 import '@/lib/accounts-i18n';
 import '@/lib/phase10-i18n';
 import '@/lib/phase13-i18n';
+import '@/lib/phase14-i18n';
+import SnapshotsPage from '@/pages/snapshots';
+import SnapshotDetailPage from '@/pages/snapshot-detail';
 import HelpPage from '@/pages/help';
 import MembersPage from '@/pages/members';
 import AccountPage from '@/pages/account';
@@ -92,6 +95,7 @@ function TenantRoute({ page, session }: { page: TenantPage; session: Session }) 
   if (page === 'imports') return <ImportsPage key={session.activeFactoryId} session={session} />;
   if (page === 'runs') return <RunsPage key={session.activeFactoryId} session={session} />;
   if (page === 'comparison') return <ComparisonPage key={session.activeFactoryId} session={session} />;
+  if (page === 'snapshots') return <SnapshotsPage key={session.activeFactoryId} session={session} />;
   if (page === 'quality') return <QualityPageView key={session.activeFactoryId} session={session} />;
   return <TenantPageView key={`${session.activeFactoryId}:${page}`} page={page} session={session} />;
 }
@@ -134,6 +138,15 @@ function AuthedRoutes({ session }: { session: Session }) {
               {() => <TenantRoute page={p} session={session} />}
             </Route>
           ))}
+          <Route path="/snapshots/:id">
+            {(params) =>
+              !user.platformAdmin && session.allowedPages.includes('snapshots') && session.activeFactoryId ? (
+                <SnapshotDetailPage key={`${session.activeFactoryId}:${params.id}`} id={params.id} session={session} />
+              ) : (
+                <ForbiddenState session={session} />
+              )
+            }
+          </Route>
           <Route path="/members">
             {() =>
               !user.platformAdmin && session.allowedPages.includes('members') && session.activeFactoryId ? (

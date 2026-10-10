@@ -1,5 +1,5 @@
 import {D,fmt,parseNumber,parseLocalTime,type Mapping,type Run} from "@workspace/calculation";
-import type {SourceDetail,SourceRow,SourceText,RunIssue} from "@workspace/api-zod";
+import type {SourceDetail,SourceRow,SourceText,RunIssue,RunComparison} from "@workspace/api-zod";
 import type {Context} from "../imports/service";
 import {ImportError} from "../imports/model";
 import {getRuns,compare} from "./service";
@@ -173,23 +173,30 @@ async function single(ctx:Context,importId:string,orderId:string|null,key:string
     imports:[{id:imp.id,sourceName:imp.source_name,orderId,approvedAt:imp.approved_at.toISOString()}],
     issues:issues.map(({rawIds,...i})=>i),alternatives,duplicatePairs:pairs} satisfies SourceDetail;
 }
-export async function sourceDetail(ctx:Context,input:{kind:"metric"|"issue";id:string;metric?:string;other?:string;page:number}):Promise<SourceDetail> {
+export async function sourceDetail(ctx:Context,input:{kind:"metric"|"issue";id:string;metric?:string;other?:string;page:number},frozen?:RunComparison):Promise<SourceDetail> {
   let result:SourceDetail;
   if(input.kind==="issue") {
+    if(frozen&&![...frozen.a.issues,...frozen.b.issues].some(i=>i.id===input.id))throw new ImportError("NOT_FOUND",404);
     const issue=(await ctx.db.query("SELECT import_id,source_order_id,code FROM data_issues WHERE factory_id=$1 AND id=$2",[ctx.factory,input.id])).rows[0];
     if(!issue) throw new ImportError("NOT_FOUND",404);
     result=await single(ctx,issue.import_id,issue.source_order_id,issue.code,null,null,"",input.id);
   } else {
     const key=input.metric??"";
     if(!formulas[key]) throw new ImportError("NOT_FOUND",404);
-    const [a,...others]=await getRuns(ctx,input.other?[input.id,input.other]:[input.id]);
+    const ids=input.other?[input.id,input.other]:[input.id];
+    // Frozen sources follow original approved import IDs, never current order
+    // pointers. Immutable raw rows and retained import results survive replacement.
+    const saved=frozen?ids.map(id=>[frozen.a,frozen.b].find(r=>r.id===id)):null;
+    if(saved?.some(r=>!r))throw new ImportError("NOT_FOUND",404);
+    const [a,...others]=saved?saved.map(r=>r!):await getRuns(ctx,ids);
     const metric=a.metrics.find(m=>m.key===key);
     result=await single(ctx,a.importId,a.orderId,key,key==="date"?a.date:metric!.value,key==="date"?a.date:metric!.display,metric?.unit??"");
     if(others.length) {
       if(key==="date") throw new ImportError("NOT_FOUND",404);
       const b=others[0],m=b.metrics.find(m=>m.key===key)!;
       const right=await single(ctx,b.importId,b.orderId,key,m.value,m.display,m.unit);
-      const difference=(await compare(ctx,a.id,b.id)).differences.find(m=>m.key===key)!;
+       if(frozen&&(a.id!==frozen.a.id||b.id!==frozen.b.id))throw new ImportError("NOT_FOUND",404);
+       const difference=(frozen??await compare(ctx,a.id,b.id)).differences.find(m=>m.key===key)!;
       result={...result,value:difference.value,display:difference.display,unit:difference.unit,
         formula:text("Difference = Run B − Run A","الفرق = الدفعة ب − الدفعة أ"),
         inputs:[{key:"run_b",value:m.value,unit:m.unit},{key:"run_a",value:metric!.value,unit:metric!.unit}],

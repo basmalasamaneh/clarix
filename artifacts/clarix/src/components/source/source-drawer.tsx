@@ -421,8 +421,9 @@ function Body({ target, session }: { target: SourceTarget; session: Session }) {
     (target.kind === 'metric' || target.kind === 'issue') &&
     UUID_RE.test(target.id) &&
     (target.kind === 'issue' || !!target.metric) &&
-    (!target.other || UUID_RE.test(target.other));
-  const params: GetSourceDetailParams = { kind: target.kind, id: target.id, metric: target.metric, other: target.other, page };
+    (!target.other || UUID_RE.test(target.other)) &&
+    (!target.snapshot || UUID_RE.test(target.snapshot));
+  const params: GetSourceDetailParams = { ...(target.snapshot ? { snapshot: target.snapshot } : {}), kind: target.kind, id: target.id, metric: target.metric, other: target.other, page };
   const q = useGetSourceDetail(params, { query: {
     queryKey: [...getGetSourceDetailQueryKey(params), session.activeFactoryId, session.user?.id],
     enabled: valid,

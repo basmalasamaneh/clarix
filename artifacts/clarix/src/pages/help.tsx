@@ -1,7 +1,8 @@
 import { useTranslation } from 'react-i18next';
-import { ClipboardCheck, Columns2, FileUp, CircleHelp, Ban, Info, type LucideIcon } from 'lucide-react';
+import { ClipboardCheck, Columns2, FileUp, CircleHelp, Ban, Info, Archive, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GlossaryTip } from '@/components/charts/glossary';
+import '@/lib/phase14-i18n';
 import { GLOSSARY_KEYS } from '@/lib/charts-i18n';
 
 const STEPS: { n: string; icon: LucideIcon }[] = [
@@ -66,6 +67,17 @@ export default function HelpPage() {
             </div>
           ))}
         </dl>
+      </section>
+
+      <section className="mt-10 rounded-xl border bg-card p-5" aria-labelledby="help-snap" data-testid="card-help-snapshots">
+        <div className="flex items-center gap-2">
+          <Archive className="size-4 text-primary" aria-hidden="true" />
+          <h2 id="help-snap" className="font-semibold">{t('help.snapTitle')}</h2>
+          <GlossaryTip term="snapshot" testId="button-help-snapshot-glossary" />
+          <GlossaryTip term="reconciliation" testId="button-help-reconciliation-glossary" />
+        </div>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-snapshots">{t('help.snapBody')}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-reconciliation">{t('help.recBody')}</p>
       </section>
 
       <div className="mt-10 grid gap-4 md:grid-cols-2">

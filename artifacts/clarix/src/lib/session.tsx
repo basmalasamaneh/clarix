@@ -209,7 +209,7 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-export const NAV_PAGES = ['overview', 'imports', 'runs', 'comparison', 'quality', 'settings'] as const;
+export const NAV_PAGES = ['overview', 'imports', 'runs', 'comparison', 'snapshots', 'quality', 'settings'] as const;
 export type TenantPage = (typeof NAV_PAGES)[number];
 
 export function firstAllowedPath(session: Session | undefined): string {

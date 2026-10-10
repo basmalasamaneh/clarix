@@ -4,5 +4,6 @@
 - [Import/source policy](import-history.md) — Source-scoped versions, reversible archives, append-only tenant-safe history and first-line source references.
 - [Test isolation](test-isolation.md) — Automated verification must never write to Ethmar/Najm dev factories; reset is privileged dev-only maintenance.
 - [Comparison policy](comparison-policy.md) — User chose per-group refusal, not whole-comparison blocking; run dates mean earliest included production date.
+- [Reconciliation policy](reconciliation-policy.md) — Refuse all figures in red groups, even non-null values preserved in comparison tables.
 - [Vite JSX metadata](vite-jsx-metadata.md) — explicit generic JSX tags can break preview instrumentation despite passing tsc; prefer inference and verify Vite.
 - [Production setup boundary](production-setup.md) — privileged explicit bootstrap, immutable migration baseline, and isolated production-mode proof.

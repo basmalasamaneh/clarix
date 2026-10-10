@@ -679,10 +679,89 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/PageState" }
+  /snapshots:
+    get:
+      operationId: listSnapshots
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: search, in: query, schema: { type: string, maxLength: 200 } }
+      responses:
+        "200":
+          description: Frozen comparisons
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SnapshotList" }
+    post:
+      operationId: saveSnapshot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SnapshotInput" }
+      responses:
+        "201":
+          description: Immutable saved comparison
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SnapshotDetail" }
+  /snapshots/{id}:
+    get:
+      operationId: getSnapshot
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Frozen payload plus separate current-data changes
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SnapshotDetail" }
+  /reconciliations:
+    get:
+      operationId: listReconciliations
+      parameters:
+        - { name: snapshotId, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Immutable reconciliation history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReconciliationList" }
+  /snapshots/{id}/reconciliations:
+    post:
+      operationId: addReconciliation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReportFigures" }
+      responses:
+        "201":
+          description: New record; snapshot unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReconciliationRecord" }
+  /reconciliation-preview:
+    post:
+      operationId: previewReconciliation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ReconciliationPreviewInput" }
+      responses:
+        "200":
+          description: Server-calculated preview, not yet saved
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReconciliationResult" }
   /source-detail:
     get:
       operationId: getSourceDetail
       parameters:
+        - { name: snapshot, in: query, schema: { type: string, format: uuid } }
         - { name: kind, in: query, required: true, schema: { type: string, enum: [metric, issue] } }
         - { name: id, in: query, required: true, schema: { type: string } }
         - { name: metric, in: query, schema: { type: string } }
@@ -696,6 +775,110 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    ReportRunFigures:
+      type: object
+      properties:
+        input_kg: { type: string, maxLength: 80 }
+        good_kg: { type: string, maxLength: 80 }
+        scrap_kg: { type: string, maxLength: 80 }
+        changeover_min: { type: string, maxLength: 80 }
+        downtime_min: { type: string, maxLength: 80 }
+    ReportFigures:
+      type: object
+      required: [a, b]
+      properties:
+        a: { $ref: "#/components/schemas/ReportRunFigures" }
+        b: { $ref: "#/components/schemas/ReportRunFigures" }
+        origin: { type: string, maxLength: 1000 }
+    SnapshotInput:
+      type: object
+      required: [a, b, title, note]
+      properties:
+        a: { type: string, format: uuid }
+        b: { type: string, format: uuid }
+        expectedImportA: { type: string, format: uuid }
+        expectedImportB: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 160 }
+        note: { type: string, maxLength: 2000 }
+        figures: { $ref: "#/components/schemas/ReportFigures" }
+    ReconciliationPreviewInput:
+      type: object
+      required: [a, b, figures]
+      properties:
+        a: { type: string, format: uuid }
+        b: { type: string, format: uuid }
+        figures: { $ref: "#/components/schemas/ReportFigures" }
+    ReconciliationFigure:
+      type: object
+      required: [side, runId, key, unit, clarix, reported, difference, result, reason, sentence]
+      properties:
+        side: { type: string, enum: [a, b] }
+        runId: { type: string }
+        key: { type: string }
+        unit: { type: string }
+        clarix: { type: [string, "null"] }
+        reported: { type: [string, "null"] }
+        difference: { type: [string, "null"] }
+        result: { type: string, enum: [not_provided, unavailable, matches, differs] }
+        reason: { $ref: "#/components/schemas/SourceText" }
+        sentence: { $ref: "#/components/schemas/SourceText" }
+    ReconciliationResult:
+      type: object
+      required: [origin, figures]
+      properties:
+        origin: { type: string }
+        figures: { type: array, items: { $ref: "#/components/schemas/ReconciliationFigure" } }
+    ReconciliationRecord:
+      type: object
+      required: [id, author, createdAt, result]
+      properties:
+        id: { type: string }
+        author: { type: string }
+        createdAt: { type: string }
+        result: { $ref: "#/components/schemas/ReconciliationResult" }
+    ReconciliationList:
+      type: object
+      required: [items, total, page]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/ReconciliationRecord" } }
+        total: { type: integer }
+        page: { type: integer }
+    SnapshotSummary:
+      type: object
+      required: [id, title, note, author, createdAt, overall, runs, changed]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        note: { type: string }
+        author: { type: string }
+        createdAt: { type: string }
+        overall: { type: string, enum: [green, yellow, red] }
+        runs: { type: array, items: { type: string } }
+        changed: { type: boolean }
+    SnapshotList:
+      type: object
+      required: [items, total, page]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/SnapshotSummary" } }
+        total: { type: integer }
+        page: { type: integer }
+    SnapshotChange:
+      type: object
+      required: [side, kind, key, before, after]
+      properties:
+        side: { type: string, enum: [a, b] }
+        kind: { type: string, enum: [import, metric, status, unavailable] }
+        key: { type: string }
+        before: { type: [string, "null"] }
+        after: { type: [string, "null"] }
+    SnapshotDetail:
+      type: object
+      required: [snapshot, comparison, definitionsVersion, changes]
+      properties:
+        snapshot: { $ref: "#/components/schemas/SnapshotSummary" }
+        comparison: { $ref: "#/components/schemas/RunComparison" }
+        definitionsVersion: { type: string }
+        changes: { type: array, items: { $ref: "#/components/schemas/SnapshotChange" } }
     FactoryLimits:
       type: object
       required: [maxMembers, maxFileBytes, maxRows]

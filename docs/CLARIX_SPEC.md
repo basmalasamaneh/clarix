@@ -451,6 +451,20 @@ Bilingual key strings:
 
 ## 13. Reconciliation and snapshots (wave 2)
 
+### Approved Phase 14
+
+Factory Managers and Analysts can save immutable comparisons and append factory
+report reconciliation records; Viewers can read only, and Platform Admins have
+no access. Snapshots retain original imports, hashes, mappings, definition
+version, exact results, statuses, issues, chart specifications and source links.
+Later imports never modify a snapshot. Current-data differences are separate.
+Reconciliation uses reported minus Clarix, with exact equality and decimal
+arithmetic. Empty inputs are Not provided. The user explicitly chose to refuse
+reconciliation for **every figure in a red group**, including non-null Input and
+Good output in scenario 07. This does not change table or chart availability.
+Lists and reconciliation history are paginated. No editing, deletion, exports,
+AI, report uploads, targets, trends or email is included.
+
 - **Snapshot:** every saved comparison stores the file hashes, mapping version, metric-definition version, results and warnings. Uploading new files creates new data; old snapshots never change. Reports print the snapshot id and date.
 - **Reconciliation:** the user types the totals from the factory's own report; the app shows per figure "Matches ✓" or the difference.
 

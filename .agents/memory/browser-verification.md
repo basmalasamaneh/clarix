@@ -3,6 +3,15 @@ name: Secret-safe browser verification
 description: Testing environment boundary for password-based browser checks.
 ---
 
+Gate a large responsive matrix on a successful critical journey.
+**Why:** A failed post-save assertion followed by a large matrix consumed time
+without establishing the save/append/source-history flow; repeated whole runs
+then hit timeouts. Partial screenshots are not an acceptance sign-off.
+**How to apply:** Capture the mutation response and actual resulting state first.
+Correct driver-only expectations from that evidence, then run remaining checks.
+After interruption, explicitly clean only that run's namespace and storage and
+recheck ordinary-data fingerprints before reporting isolation.
+
 Preflight the entire browser driver before starting costly isolated fixture setup.
 **Why:** Setup/path mistakes, stale fixture assumptions and omitted first-run
 onboarding handling consumed repeated full import preparations without testing

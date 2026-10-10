@@ -59,6 +59,8 @@ import type {
   ListImportsParams,
   ListProductionRuns200,
   ListProductionRunsParams,
+  ListReconciliationsParams,
+  ListSnapshotsParams,
   ListSourceRunsParams,
   ManagementAuditPage,
   MappingInput,
@@ -75,8 +77,16 @@ import type {
   ProductionRun,
   QualityIssue,
   QualityPage,
+  ReconciliationList,
+  ReconciliationPreviewInput,
+  ReconciliationRecord,
+  ReconciliationResult,
+  ReportFigures,
   RunComparison,
   Session,
+  SnapshotDetail,
+  SnapshotInput,
+  SnapshotList,
   SourceDetail,
   TemplateInput,
   TemplatePage
@@ -4122,6 +4132,480 @@ export function useGetPage<TData = Awaited<ReturnType<typeof getPage>>, TError =
 
 
 
+
+export const getListSnapshotsUrl = (params?: ListSnapshotsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/snapshots?${stringifiedParams}` : `/api/snapshots`
+}
+
+export const listSnapshots = async (params?: ListSnapshotsParams, options?: Parameters<typeof customFetch>[1]): Promise<SnapshotList> => {
+
+  return customFetch<SnapshotList>(getListSnapshotsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSnapshotsQueryKey = (params?: ListSnapshotsParams,) => {
+    return [
+    `/api/snapshots`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSnapshotsQueryOptions = <TData = Awaited<ReturnType<typeof listSnapshots>>, TError = ErrorType<unknown>>(params?: ListSnapshotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSnapshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSnapshotsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSnapshots>>> = ({ signal }) => listSnapshots(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSnapshots>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSnapshotsQueryResult = NonNullable<Awaited<ReturnType<typeof listSnapshots>>>
+export type ListSnapshotsQueryError = ErrorType<unknown>
+
+
+
+export function useListSnapshots<TData = Awaited<ReturnType<typeof listSnapshots>>, TError = ErrorType<unknown>>(
+ params?: ListSnapshotsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSnapshots>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSnapshotsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSaveSnapshotUrl = () => {
+
+
+
+
+  return `/api/snapshots`
+}
+
+export const saveSnapshot = async (snapshotInput: SnapshotInput, options?: Parameters<typeof customFetch>[1]): Promise<SnapshotDetail> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SnapshotDetail>(getSaveSnapshotUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(snapshotInput)
+  }
+);}
+
+
+
+
+
+export const getSaveSnapshotMutationKey = () => ['saveSnapshot'] as const;
+
+export const getSaveSnapshotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveSnapshot>>, TError,SaveSnapshotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof saveSnapshot>>, TError,SaveSnapshotMutationVariables, TContext> => {
+
+const mutationKey = getSaveSnapshotMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof saveSnapshot>>, SaveSnapshotMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  saveSnapshot(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SaveSnapshotMutationResult = NonNullable<Awaited<ReturnType<typeof saveSnapshot>>>
+    export type SaveSnapshotMutationBody = BodyType<SnapshotInput>
+    export type SaveSnapshotMutationError = ErrorType<unknown>
+    export type SaveSnapshotMutationVariables = {data: BodyType<SnapshotInput>}
+
+    export const useSaveSnapshot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof saveSnapshot>>, TError,SaveSnapshotMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof saveSnapshot>>,
+        TError,
+        SaveSnapshotMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSaveSnapshotMutationOptions(options));
+    }
+
+export const getGetSnapshotUrl = (id: string,) => {
+
+
+
+
+  return `/api/snapshots/${id}`
+}
+
+export const getSnapshot = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<SnapshotDetail> => {
+
+  return customFetch<SnapshotDetail>(getGetSnapshotUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSnapshotQueryKey = (id: string,) => {
+    return [
+    `/api/snapshots/${id}`
+    ] as const;
+    }
+
+
+export const getGetSnapshotQueryOptions = <TData = Awaited<ReturnType<typeof getSnapshot>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSnapshot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSnapshotQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSnapshot>>> = ({ signal }) => getSnapshot(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSnapshot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSnapshotQueryResult = NonNullable<Awaited<ReturnType<typeof getSnapshot>>>
+export type GetSnapshotQueryError = ErrorType<unknown>
+
+
+
+export function useGetSnapshot<TData = Awaited<ReturnType<typeof getSnapshot>>, TError = ErrorType<unknown>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSnapshot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSnapshotQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListReconciliationsUrl = (params: ListReconciliationsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/reconciliations?${stringifiedParams}` : `/api/reconciliations`
+}
+
+export const listReconciliations = async (params: ListReconciliationsParams, options?: Parameters<typeof customFetch>[1]): Promise<ReconciliationList> => {
+
+  return customFetch<ReconciliationList>(getListReconciliationsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListReconciliationsQueryKey = (params?: ListReconciliationsParams,) => {
+    return [
+    `/api/reconciliations`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListReconciliationsQueryOptions = <TData = Awaited<ReturnType<typeof listReconciliations>>, TError = ErrorType<unknown>>(params: ListReconciliationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReconciliations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListReconciliationsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listReconciliations>>> = ({ signal }) => listReconciliations(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listReconciliations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListReconciliationsQueryResult = NonNullable<Awaited<ReturnType<typeof listReconciliations>>>
+export type ListReconciliationsQueryError = ErrorType<unknown>
+
+
+
+export function useListReconciliations<TData = Awaited<ReturnType<typeof listReconciliations>>, TError = ErrorType<unknown>>(
+ params: ListReconciliationsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listReconciliations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListReconciliationsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddReconciliationUrl = (id: string,) => {
+
+
+
+
+  return `/api/snapshots/${id}/reconciliations`
+}
+
+export const addReconciliation = async (id: string,
+    reportFigures: ReportFigures, options?: Parameters<typeof customFetch>[1]): Promise<ReconciliationRecord> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReconciliationRecord>(getAddReconciliationUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reportFigures)
+  }
+);}
+
+
+
+
+
+export const getAddReconciliationMutationKey = () => ['addReconciliation'] as const;
+
+export const getAddReconciliationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addReconciliation>>, TError,AddReconciliationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addReconciliation>>, TError,AddReconciliationMutationVariables, TContext> => {
+
+const mutationKey = getAddReconciliationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addReconciliation>>, AddReconciliationMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  addReconciliation(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddReconciliationMutationResult = NonNullable<Awaited<ReturnType<typeof addReconciliation>>>
+    export type AddReconciliationMutationBody = BodyType<ReportFigures>
+    export type AddReconciliationMutationError = ErrorType<unknown>
+    export type AddReconciliationMutationVariables = {id: string;data: BodyType<ReportFigures>}
+
+    export const useAddReconciliation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addReconciliation>>, TError,AddReconciliationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addReconciliation>>,
+        TError,
+        AddReconciliationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAddReconciliationMutationOptions(options));
+    }
+
+export const getPreviewReconciliationUrl = () => {
+
+
+
+
+  return `/api/reconciliation-preview`
+}
+
+export const previewReconciliation = async (reconciliationPreviewInput: ReconciliationPreviewInput, options?: Parameters<typeof customFetch>[1]): Promise<ReconciliationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<ReconciliationResult>(getPreviewReconciliationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reconciliationPreviewInput)
+  }
+);}
+
+
+
+
+
+export const getPreviewReconciliationMutationKey = () => ['previewReconciliation'] as const;
+
+export const getPreviewReconciliationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewReconciliation>>, TError,PreviewReconciliationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof previewReconciliation>>, TError,PreviewReconciliationMutationVariables, TContext> => {
+
+const mutationKey = getPreviewReconciliationMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof previewReconciliation>>, PreviewReconciliationMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  previewReconciliation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PreviewReconciliationMutationResult = NonNullable<Awaited<ReturnType<typeof previewReconciliation>>>
+    export type PreviewReconciliationMutationBody = BodyType<ReconciliationPreviewInput>
+    export type PreviewReconciliationMutationError = ErrorType<unknown>
+    export type PreviewReconciliationMutationVariables = {data: BodyType<ReconciliationPreviewInput>}
+
+    export const usePreviewReconciliation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof previewReconciliation>>, TError,PreviewReconciliationMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof previewReconciliation>>,
+        TError,
+        PreviewReconciliationMutationVariables,
+        TContext
+      > => {
+      return useMutation(getPreviewReconciliationMutationOptions(options));
+    }
 
 export const getGetSourceDetailUrl = (params: GetSourceDetailParams,) => {
   const normalizedParams = new URLSearchParams();

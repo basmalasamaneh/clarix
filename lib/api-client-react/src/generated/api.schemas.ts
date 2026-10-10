@@ -5,6 +5,410 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export interface ReportRunFigures {
+  /** @maxLength 80 */
+  input_kg?: string;
+  /** @maxLength 80 */
+  good_kg?: string;
+  /** @maxLength 80 */
+  scrap_kg?: string;
+  /** @maxLength 80 */
+  changeover_min?: string;
+  /** @maxLength 80 */
+  downtime_min?: string;
+}
+
+export interface ReportFigures {
+  a: ReportRunFigures;
+  b: ReportRunFigures;
+  /** @maxLength 1000 */
+  origin?: string;
+}
+
+export interface SnapshotInput {
+  a: string;
+  b: string;
+  expectedImportA?: string;
+  expectedImportB?: string;
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  title: string;
+  /** @maxLength 2000 */
+  note: string;
+  figures?: ReportFigures;
+}
+
+export interface ReconciliationPreviewInput {
+  a: string;
+  b: string;
+  figures: ReportFigures;
+}
+
+export type ReconciliationFigureSide = typeof ReconciliationFigureSide[keyof typeof ReconciliationFigureSide];
+
+
+export const ReconciliationFigureSide = {
+  a: 'a',
+  b: 'b',
+} as const;
+
+export type ReconciliationFigureResult = typeof ReconciliationFigureResult[keyof typeof ReconciliationFigureResult];
+
+
+export const ReconciliationFigureResult = {
+  not_provided: 'not_provided',
+  unavailable: 'unavailable',
+  matches: 'matches',
+  differs: 'differs',
+} as const;
+
+export interface SourceText {
+  en: string;
+  ar: string;
+}
+
+export interface ReconciliationFigure {
+  side: ReconciliationFigureSide;
+  runId: string;
+  key: string;
+  unit: string;
+  /** @nullable */
+  clarix: string | null;
+  /** @nullable */
+  reported: string | null;
+  /** @nullable */
+  difference: string | null;
+  result: ReconciliationFigureResult;
+  reason: SourceText;
+  sentence: SourceText;
+}
+
+export interface ReconciliationResult {
+  origin: string;
+  figures: ReconciliationFigure[];
+}
+
+export interface ReconciliationRecord {
+  id: string;
+  author: string;
+  createdAt: string;
+  result: ReconciliationResult;
+}
+
+export interface ReconciliationList {
+  items: ReconciliationRecord[];
+  total: number;
+  page: number;
+}
+
+export type SnapshotSummaryOverall = typeof SnapshotSummaryOverall[keyof typeof SnapshotSummaryOverall];
+
+
+export const SnapshotSummaryOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export interface SnapshotSummary {
+  id: string;
+  title: string;
+  note: string;
+  author: string;
+  createdAt: string;
+  overall: SnapshotSummaryOverall;
+  runs: string[];
+  changed: boolean;
+}
+
+export interface SnapshotList {
+  items: SnapshotSummary[];
+  total: number;
+  page: number;
+}
+
+export type SnapshotChangeSide = typeof SnapshotChangeSide[keyof typeof SnapshotChangeSide];
+
+
+export const SnapshotChangeSide = {
+  a: 'a',
+  b: 'b',
+} as const;
+
+export type SnapshotChangeKind = typeof SnapshotChangeKind[keyof typeof SnapshotChangeKind];
+
+
+export const SnapshotChangeKind = {
+  import: 'import',
+  metric: 'metric',
+  status: 'status',
+  unavailable: 'unavailable',
+} as const;
+
+export interface SnapshotChange {
+  side: SnapshotChangeSide;
+  kind: SnapshotChangeKind;
+  key: string;
+  /** @nullable */
+  before: string | null;
+  /** @nullable */
+  after: string | null;
+}
+
+export type ChartSpecKind = typeof ChartSpecKind[keyof typeof ChartSpecKind];
+
+
+export const ChartSpecKind = {
+  bars: 'bars',
+  status_stack: 'status_stack',
+  indicator: 'indicator',
+} as const;
+
+export interface ChartText {
+  en: string;
+  ar: string;
+}
+
+export type ChartSpecUnit = typeof ChartSpecUnit[keyof typeof ChartSpecUnit];
+
+
+export const ChartSpecUnit = {
+  pct: 'pct',
+  min: 'min',
+  count: 'count',
+} as const;
+
+export type ChartSpecStatus = typeof ChartSpecStatus[keyof typeof ChartSpecStatus];
+
+
+export const ChartSpecStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type ChartPointStatus = typeof ChartPointStatus[keyof typeof ChartPointStatus];
+
+
+export const ChartPointStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
+
+
+export const MetricReferenceKind = {
+  included: 'included',
+  excluded: 'excluded',
+  quarantined: 'quarantined',
+} as const;
+
+export interface MetricReference {
+  runId: string;
+  importId: string;
+  sourceName: string;
+  orderId: string;
+  file: string;
+  line: number;
+  column: string;
+  kind: MetricReferenceKind;
+}
+
+export interface ChartPoint {
+  frames: string[];
+  key: string;
+  label: string;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  display: string | null;
+  /** @nullable */
+  hours: string | null;
+  /** @nullable */
+  plotValue: number | null;
+  /** @nullable */
+  width: string | null;
+  available: boolean;
+  status: ChartPointStatus;
+  reason: ChartText;
+  refs: MetricReference[];
+  /** @nullable */
+  runId: string | null;
+  /** @nullable */
+  sourceName: string | null;
+  noEvents: boolean;
+}
+
+export type RunMetricGroup = typeof RunMetricGroup[keyof typeof RunMetricGroup];
+
+
+export const RunMetricGroup = {
+  volume: 'volume',
+  changeover: 'changeover',
+  downtime: 'downtime',
+} as const;
+
+export type RunMetricUnit = typeof RunMetricUnit[keyof typeof RunMetricUnit];
+
+
+export const RunMetricUnit = {
+  kg: 'kg',
+  pct: 'pct',
+  pp: 'pp',
+  min: 'min',
+} as const;
+
+export type RunMetricStatus = typeof RunMetricStatus[keyof typeof RunMetricStatus];
+
+
+export const RunMetricStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunMetricAlternativesItem = {
+  key: string;
+  /** @nullable */
+  display: string | null;
+};
+
+export interface RunMetric {
+  key: string;
+  group: RunMetricGroup;
+  unit: RunMetricUnit;
+  status: RunMetricStatus;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  display: string | null;
+  /** @nullable */
+  hours: string | null;
+  available: boolean;
+  noEvents: boolean;
+  refs: MetricReference[];
+  alternatives: RunMetricAlternativesItem[];
+}
+
+export type ChartSpecDirection = typeof ChartSpecDirection[keyof typeof ChartSpecDirection];
+
+
+export const ChartSpecDirection = {
+  higher: 'higher',
+  lower: 'lower',
+  same: 'same',
+  unavailable: 'unavailable',
+} as const;
+
+export interface ChartSpec {
+  key: string;
+  kind: ChartSpecKind;
+  title: ChartText;
+  unit: ChartSpecUnit;
+  status: ChartSpecStatus;
+  caption: ChartText;
+  howToRead: ChartText;
+  series: ChartPoint[];
+  difference?: RunMetric;
+  direction: ChartSpecDirection;
+  changeText: ChartText;
+  axisMax: number;
+  axisMin: number;
+}
+
+export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
+
+
+export const ProductionRunOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
+
+
+export const RunIssueSeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export interface RunIssue {
+  id: string;
+  code: string;
+  severity: RunIssueSeverity;
+  group: string;
+  /** @nullable */
+  orderId: string | null;
+  sourceName: string;
+}
+
+export type ProductionRunGroups = {[key: string]: 'green' | 'yellow' | 'red'};
+
+export interface ProductionRun {
+  id: string;
+  orderId: string;
+  sourceName: string;
+  importId: string;
+  /** @nullable */
+  date: string | null;
+  dateRefs: MetricReference[];
+  capabilityLevel: number;
+  overall: ProductionRunOverall;
+  groups: ProductionRunGroups;
+  metrics: RunMetric[];
+  issues: RunIssue[];
+}
+
+export type RunComparisonOverall = typeof RunComparisonOverall[keyof typeof RunComparisonOverall];
+
+
+export const RunComparisonOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunComparisonGroups = {[key: string]: 'green' | 'yellow' | 'red'};
+
+export type RunComparisonSummary = {
+  en: string;
+  ar: string;
+};
+
+export type RunComparisonQuestionsItem = {
+  key: string;
+  metricKey: string;
+  en: string;
+  ar: string;
+};
+
+export interface RunComparison {
+  chart_spec: ChartSpec[];
+  indicators: ChartSpec[];
+  a: ProductionRun;
+  b: ProductionRun;
+  differences: RunMetric[];
+  overall: RunComparisonOverall;
+  groups: RunComparisonGroups;
+  hasWarnings: boolean;
+  hasBlockedGroups: boolean;
+  summary: RunComparisonSummary;
+  questions: RunComparisonQuestionsItem[];
+}
+
+export interface SnapshotDetail {
+  snapshot: SnapshotSummary;
+  comparison: RunComparison;
+  definitionsVersion: string;
+  changes: SnapshotChange[];
+}
+
 export interface FactoryLimits {
   /**
      * @minimum 1
@@ -198,169 +602,6 @@ export type OverviewStatuses = {
   red: number | null;
 };
 
-export type ChartSpecKind = typeof ChartSpecKind[keyof typeof ChartSpecKind];
-
-
-export const ChartSpecKind = {
-  bars: 'bars',
-  status_stack: 'status_stack',
-  indicator: 'indicator',
-} as const;
-
-export interface ChartText {
-  en: string;
-  ar: string;
-}
-
-export type ChartSpecUnit = typeof ChartSpecUnit[keyof typeof ChartSpecUnit];
-
-
-export const ChartSpecUnit = {
-  pct: 'pct',
-  min: 'min',
-  count: 'count',
-} as const;
-
-export type ChartSpecStatus = typeof ChartSpecStatus[keyof typeof ChartSpecStatus];
-
-
-export const ChartSpecStatus = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type ChartPointStatus = typeof ChartPointStatus[keyof typeof ChartPointStatus];
-
-
-export const ChartPointStatus = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
-
-
-export const MetricReferenceKind = {
-  included: 'included',
-  excluded: 'excluded',
-  quarantined: 'quarantined',
-} as const;
-
-export interface MetricReference {
-  runId: string;
-  importId: string;
-  sourceName: string;
-  orderId: string;
-  file: string;
-  line: number;
-  column: string;
-  kind: MetricReferenceKind;
-}
-
-export interface ChartPoint {
-  frames: string[];
-  key: string;
-  label: string;
-  /** @nullable */
-  value: string | null;
-  /** @nullable */
-  display: string | null;
-  /** @nullable */
-  hours: string | null;
-  /** @nullable */
-  plotValue: number | null;
-  /** @nullable */
-  width: string | null;
-  available: boolean;
-  status: ChartPointStatus;
-  reason: ChartText;
-  refs: MetricReference[];
-  /** @nullable */
-  runId: string | null;
-  /** @nullable */
-  sourceName: string | null;
-  noEvents: boolean;
-}
-
-export type RunMetricGroup = typeof RunMetricGroup[keyof typeof RunMetricGroup];
-
-
-export const RunMetricGroup = {
-  volume: 'volume',
-  changeover: 'changeover',
-  downtime: 'downtime',
-} as const;
-
-export type RunMetricUnit = typeof RunMetricUnit[keyof typeof RunMetricUnit];
-
-
-export const RunMetricUnit = {
-  kg: 'kg',
-  pct: 'pct',
-  pp: 'pp',
-  min: 'min',
-} as const;
-
-export type RunMetricStatus = typeof RunMetricStatus[keyof typeof RunMetricStatus];
-
-
-export const RunMetricStatus = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type RunMetricAlternativesItem = {
-  key: string;
-  /** @nullable */
-  display: string | null;
-};
-
-export interface RunMetric {
-  key: string;
-  group: RunMetricGroup;
-  unit: RunMetricUnit;
-  status: RunMetricStatus;
-  /** @nullable */
-  value: string | null;
-  /** @nullable */
-  display: string | null;
-  /** @nullable */
-  hours: string | null;
-  available: boolean;
-  noEvents: boolean;
-  refs: MetricReference[];
-  alternatives: RunMetricAlternativesItem[];
-}
-
-export type ChartSpecDirection = typeof ChartSpecDirection[keyof typeof ChartSpecDirection];
-
-
-export const ChartSpecDirection = {
-  higher: 'higher',
-  lower: 'lower',
-  same: 'same',
-  unavailable: 'unavailable',
-} as const;
-
-export interface ChartSpec {
-  key: string;
-  kind: ChartSpecKind;
-  title: ChartText;
-  unit: ChartSpecUnit;
-  status: ChartSpecStatus;
-  caption: ChartText;
-  howToRead: ChartText;
-  series: ChartPoint[];
-  difference?: RunMetric;
-  direction: ChartSpecDirection;
-  changeText: ChartText;
-  axisMax: number;
-  axisMin: number;
-}
-
 export type OverviewImportStatus = typeof OverviewImportStatus[keyof typeof OverviewImportStatus];
 
 
@@ -377,51 +618,6 @@ export interface OverviewImport {
   /** @nullable */
   date: string | null;
   status: OverviewImportStatus;
-}
-
-export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
-
-
-export const ProductionRunOverall = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
-
-
-export const RunIssueSeverity = {
-  info: 'info',
-  warning: 'warning',
-  error: 'error',
-} as const;
-
-export interface RunIssue {
-  id: string;
-  code: string;
-  severity: RunIssueSeverity;
-  group: string;
-  /** @nullable */
-  orderId: string | null;
-  sourceName: string;
-}
-
-export type ProductionRunGroups = {[key: string]: 'green' | 'yellow' | 'red'};
-
-export interface ProductionRun {
-  id: string;
-  orderId: string;
-  sourceName: string;
-  importId: string;
-  /** @nullable */
-  date: string | null;
-  dateRefs: MetricReference[];
-  capabilityLevel: number;
-  overall: ProductionRunOverall;
-  groups: ProductionRunGroups;
-  metrics: RunMetric[];
-  issues: RunIssue[];
 }
 
 export interface Overview {
@@ -616,11 +812,6 @@ export const SourceRowKind = {
   related: 'related',
 } as const;
 
-export interface SourceText {
-  en: string;
-  ar: string;
-}
-
 export type SourceRowCellsItem = {
   column: string;
   value: string;
@@ -680,43 +871,6 @@ export interface SourceDetail {
   issues: RunIssue[];
   alternatives: SourceDetailAlternativesItem[];
   duplicatePairs: SourceDetailDuplicatePairsItem[];
-}
-
-export type RunComparisonOverall = typeof RunComparisonOverall[keyof typeof RunComparisonOverall];
-
-
-export const RunComparisonOverall = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type RunComparisonGroups = {[key: string]: 'green' | 'yellow' | 'red'};
-
-export type RunComparisonSummary = {
-  en: string;
-  ar: string;
-};
-
-export type RunComparisonQuestionsItem = {
-  key: string;
-  metricKey: string;
-  en: string;
-  ar: string;
-};
-
-export interface RunComparison {
-  chart_spec: ChartSpec[];
-  indicators: ChartSpec[];
-  a: ProductionRun;
-  b: ProductionRun;
-  differences: RunMetric[];
-  overall: RunComparisonOverall;
-  groups: RunComparisonGroups;
-  hasWarnings: boolean;
-  hasBlockedGroups: boolean;
-  summary: RunComparisonSummary;
-  questions: RunComparisonQuestionsItem[];
 }
 
 export type QualityIssueSeverity = typeof QualityIssueSeverity[keyof typeof QualityIssueSeverity];
@@ -1262,7 +1416,27 @@ left: string;
 right: string;
 };
 
+export type ListSnapshotsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @maxLength 200
+ */
+search?: string;
+};
+
+export type ListReconciliationsParams = {
+snapshotId: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
 export type GetSourceDetailParams = {
+snapshot?: string;
 kind: GetSourceDetailKind;
 id: string;
 metric?: string;

@@ -17,6 +17,9 @@ import {GetSourceDetailResponse} from "@workspace/api-zod";
 import {sourceDetail} from "../metrics/source-detail";
 import {GetOverviewResponse} from "@workspace/api-zod";
 import {overview} from "../imports/overview";
+import * as snapshots from "../snapshots/service";
+import {reconcile} from "../snapshots/reconciliation";
+import {SaveSnapshotBody,AddReconciliationBody,PreviewReconciliationBody} from "@workspace/api-zod";
 const router=Router();
 const uploadLimit=rateLimit({windowMs:15*60*1000,limit:60,standardHeaders:"draft-8",legacyHeaders:false,
   keyGenerator:req=>req.session.userId!,skip:req=>!req.session.userId,message:{error:"TOO_MANY_ATTEMPTS"}});
@@ -53,14 +56,36 @@ function route(action:Action,allowViewer=false) {
 }
 const page=(raw:unknown)=>z.coerce.number().int().min(1).max(1000000).parse(raw??1);
 const id=(req:Request)=>String(req.params.id);
+router.get("/snapshots",route(async(ctx,req,res)=>{
+  res.json(await snapshots.listSnapshots(ctx,page(req.query.page),z.string().max(200).parse(req.query.search??"")));
+},true));
+router.post("/snapshots",route(async(ctx,req,res)=>{
+  res.status(201).json(await snapshots.saveSnapshot(ctx,SaveSnapshotBody.parse(req.body)));
+}));
+router.get("/snapshots/:id",route(async(ctx,req,res)=>{
+  res.json(await snapshots.snapshotDetail(ctx,id(req)));
+},true));
+router.get("/reconciliations",route(async(ctx,req,res)=>{
+  const parsed=z.string().uuid().safeParse(req.query.snapshotId);
+  if(!parsed.success)throw new ImportError("NOT_FOUND",404);
+  res.json(await snapshots.listReconciliations(ctx,parsed.data,page(req.query.page)));
+},true));
+router.post("/snapshots/:id/reconciliations",route(async(ctx,req,res)=>{
+  res.status(201).json(await snapshots.addReconciliation(ctx,id(req),AddReconciliationBody.parse(req.body)));
+}));
+router.post("/reconciliation-preview",route(async(ctx,req,res)=>{
+  const input=PreviewReconciliationBody.parse(req.body);
+  res.json(reconcile(await metrics.compare(ctx,input.a,input.b),input.figures));
+}));
 router.get("/overview",route(async(ctx,_req,res)=>{
   res.json(GetOverviewResponse.parse(await overview(ctx)));
 },true));
 router.get("/source-detail",route(async(ctx,req,res)=>{
   const parsed=z.object({kind:z.enum(["metric","issue"]),id:z.string().uuid(),metric:z.string().max(100).optional(),
-    other:z.string().uuid().optional(),page:z.coerce.number().int().min(1).max(1000000).default(1)}).safeParse(req.query);
+    other:z.string().uuid().optional(),snapshot:z.string().uuid().optional(),page:z.coerce.number().int().min(1).max(1000000).default(1)}).safeParse(req.query);
   if(!parsed.success) throw new ImportError("NOT_FOUND",404);
-  res.json(GetSourceDetailResponse.parse(await sourceDetail(ctx,parsed.data)));
+  const frozen=parsed.data.snapshot?(await snapshots.loadSnapshot(ctx,parsed.data.snapshot)).payload:undefined;
+  res.json(GetSourceDetailResponse.parse(await sourceDetail(ctx,parsed.data,frozen)));
 },true));
 router.get("/runs",route(async(ctx,req,res)=>{
   const input=z.object({page:z.coerce.number().int().min(1).max(1000000).default(1),

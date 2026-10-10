@@ -29,7 +29,7 @@ export async function verifyDeploymentSecurity(c:PoolClient){
     AND (c.relname='factories' OR EXISTS(SELECT 1 FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attname='factory_id' AND NOT a.attisdropped))`)).rows;
   if(tenantTables.some(t=>!tables.some(r=>r.relname===t))||tables.some(r=>!r.relrowsecurity||!r.relforcerowsecurity||roles.includes(r.owner)))
     throw new Error("Unsafe tenant tables");
-  for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit","platform_audit","factory_settings_audit"]){
+  for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit","platform_audit","factory_settings_audit","analysis_snapshots","reconciliations","source_row_links","snapshot_audit"]){
     const triggers=(await c.query(`SELECT tgtype::int FROM pg_trigger WHERE tgrelid=$1::regclass AND NOT tgisinternal AND tgenabled IN('O','A')`,[`public.${table}`])).rows;
     for(const bit of [8,16,32])if(!triggers.some(t=>(t.tgtype&bit)!==0))throw new Error("Immutable protection missing");
     for(const role of roles){
@@ -56,7 +56,7 @@ export async function configureDeployment(c:PoolClient,env:NodeJS.ProcessEnv,sql
         await c.query(`CREATE ROLE ${role} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS`);
     }
     await c.query("GRANT clarix_accounts,clarix_platform TO CURRENT_USER; GRANT USAGE ON SCHEMA public TO clarix_accounts,clarix_platform");
-    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql"])
+    for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql","platform-rls.sql","snapshot-rls.sql"])
       await c.query(await readFile(resolve(sqlDir,file),"utf8"));
     // These SQL files deliberately restore policies/triggers, not table structure.
     for(const table of ["raw_rows","orders_history","production_records_history","events_history","account_audit"])

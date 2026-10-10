@@ -112,7 +112,7 @@ const ar: typeof en = {
 i18n.addResourceBundle('en', 'translation', en, true, true);
 i18n.addResourceBundle('ar', 'translation', ar, true, true);
 
-export const GLOSSARY_KEYS = ['scrap_rate', 'good_rate', 'material_balance', 'changeover', 'downtime', 'pp', 'na', 'ok', 'check', 'blocked'] as const;
+export const GLOSSARY_KEYS = ['scrap_rate', 'good_rate', 'material_balance', 'changeover', 'downtime', 'pp', 'na', 'ok', 'check', 'blocked', 'snapshot', 'reconciliation', 'frozen'] as const;
 export type GlossaryKey = (typeof GLOSSARY_KEYS)[number];
 
 /** Map metric keys and status values to glossary entries. */

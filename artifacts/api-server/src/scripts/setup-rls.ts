@@ -27,6 +27,8 @@ try {
   await pool.query(await readFile(new URL("../../../../lib/db/accounts-rls.sql",import.meta.url),"utf8"));
   await pool.query(await readFile(new URL("../../../../lib/db/runtime-grants.sql",import.meta.url),"utf8"));
   await pool.query(await readFile(new URL("../../../../lib/db/platform-rls.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/snapshot-migration.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/snapshot-rls.sql",import.meta.url),"utf8"));
 } finally {
   await pool.end();
 }

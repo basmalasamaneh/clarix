@@ -2128,9 +2128,931 @@ export const GetPageResponse = zod.object({
 
 
 
+export const listSnapshotsQuerySearchMax = 200;
+
+
+
+export const ListSnapshotsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "search": zod.coerce.string().max(listSnapshotsQuerySearchMax).optional()
+})
+
+export const ListSnapshotsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "note": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.string(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "runs": zod.array(zod.string()),
+  "changed": zod.boolean()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int()
+})
+
+
+export const saveSnapshotBodyTitleMax = 160;
+
+export const saveSnapshotBodyNoteMax = 2000;
+
+export const saveSnapshotBodyFiguresAInputKgMax = 80;
+
+export const saveSnapshotBodyFiguresAGoodKgMax = 80;
+
+export const saveSnapshotBodyFiguresAScrapKgMax = 80;
+
+export const saveSnapshotBodyFiguresAChangeoverMinMax = 80;
+
+export const saveSnapshotBodyFiguresADowntimeMinMax = 80;
+
+export const saveSnapshotBodyFiguresBInputKgMax = 80;
+
+export const saveSnapshotBodyFiguresBGoodKgMax = 80;
+
+export const saveSnapshotBodyFiguresBScrapKgMax = 80;
+
+export const saveSnapshotBodyFiguresBChangeoverMinMax = 80;
+
+export const saveSnapshotBodyFiguresBDowntimeMinMax = 80;
+
+export const saveSnapshotBodyFiguresOriginMax = 1000;
+
+
+
+export const SaveSnapshotBody = zod.object({
+  "a": zod.string().uuid(),
+  "b": zod.string().uuid(),
+  "expectedImportA": zod.string().uuid().optional(),
+  "expectedImportB": zod.string().uuid().optional(),
+  "title": zod.string().min(1).max(saveSnapshotBodyTitleMax),
+  "note": zod.string().max(saveSnapshotBodyNoteMax),
+  "figures": zod.object({
+  "a": zod.object({
+  "input_kg": zod.string().max(saveSnapshotBodyFiguresAInputKgMax).optional(),
+  "good_kg": zod.string().max(saveSnapshotBodyFiguresAGoodKgMax).optional(),
+  "scrap_kg": zod.string().max(saveSnapshotBodyFiguresAScrapKgMax).optional(),
+  "changeover_min": zod.string().max(saveSnapshotBodyFiguresAChangeoverMinMax).optional(),
+  "downtime_min": zod.string().max(saveSnapshotBodyFiguresADowntimeMinMax).optional()
+}),
+  "b": zod.object({
+  "input_kg": zod.string().max(saveSnapshotBodyFiguresBInputKgMax).optional(),
+  "good_kg": zod.string().max(saveSnapshotBodyFiguresBGoodKgMax).optional(),
+  "scrap_kg": zod.string().max(saveSnapshotBodyFiguresBScrapKgMax).optional(),
+  "changeover_min": zod.string().max(saveSnapshotBodyFiguresBChangeoverMinMax).optional(),
+  "downtime_min": zod.string().max(saveSnapshotBodyFiguresBDowntimeMinMax).optional()
+}),
+  "origin": zod.string().max(saveSnapshotBodyFiguresOriginMax).optional()
+}).optional()
+})
+
+export const SaveSnapshotResponse = zod.object({
+  "snapshot": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "note": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.string(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "runs": zod.array(zod.string()),
+  "changed": zod.boolean()
+}),
+  "comparison": zod.object({
+  "chart_spec": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['bars', 'status_stack', 'indicator']),
+  "title": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "unit": zod.enum(['pct', 'min', 'count']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "caption": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "howToRead": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "series": zod.array(zod.object({
+  "frames": zod.array(zod.string()),
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "plotValue": zod.number().nullable(),
+  "width": zod.string().nullable(),
+  "available": zod.boolean(),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "runId": zod.string().nullable(),
+  "sourceName": zod.string().nullable(),
+  "noEvents": zod.boolean()
+})),
+  "difference": zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+}).optional(),
+  "direction": zod.enum(['higher', 'lower', 'same', 'unavailable']),
+  "changeText": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "axisMax": zod.number(),
+  "axisMin": zod.number()
+})),
+  "indicators": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['bars', 'status_stack', 'indicator']),
+  "title": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "unit": zod.enum(['pct', 'min', 'count']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "caption": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "howToRead": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "series": zod.array(zod.object({
+  "frames": zod.array(zod.string()),
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "plotValue": zod.number().nullable(),
+  "width": zod.string().nullable(),
+  "available": zod.boolean(),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "runId": zod.string().nullable(),
+  "sourceName": zod.string().nullable(),
+  "noEvents": zod.boolean()
+})),
+  "difference": zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+}).optional(),
+  "direction": zod.enum(['higher', 'lower', 'same', 'unavailable']),
+  "changeText": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "axisMax": zod.number(),
+  "axisMin": zod.number()
+})),
+  "a": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}),
+  "b": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}),
+  "differences": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "hasWarnings": zod.boolean(),
+  "hasBlockedGroups": zod.boolean(),
+  "summary": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "questions": zod.array(zod.object({
+  "key": zod.string(),
+  "metricKey": zod.string(),
+  "en": zod.string(),
+  "ar": zod.string()
+}))
+}),
+  "definitionsVersion": zod.string(),
+  "changes": zod.array(zod.object({
+  "side": zod.enum(['a', 'b']),
+  "kind": zod.enum(['import', 'metric', 'status', 'unavailable']),
+  "key": zod.string(),
+  "before": zod.string().nullable(),
+  "after": zod.string().nullable()
+}))
+})
+
+
+export const GetSnapshotParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetSnapshotResponse = zod.object({
+  "snapshot": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "note": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.string(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "runs": zod.array(zod.string()),
+  "changed": zod.boolean()
+}),
+  "comparison": zod.object({
+  "chart_spec": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['bars', 'status_stack', 'indicator']),
+  "title": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "unit": zod.enum(['pct', 'min', 'count']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "caption": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "howToRead": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "series": zod.array(zod.object({
+  "frames": zod.array(zod.string()),
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "plotValue": zod.number().nullable(),
+  "width": zod.string().nullable(),
+  "available": zod.boolean(),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "runId": zod.string().nullable(),
+  "sourceName": zod.string().nullable(),
+  "noEvents": zod.boolean()
+})),
+  "difference": zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+}).optional(),
+  "direction": zod.enum(['higher', 'lower', 'same', 'unavailable']),
+  "changeText": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "axisMax": zod.number(),
+  "axisMin": zod.number()
+})),
+  "indicators": zod.array(zod.object({
+  "key": zod.string(),
+  "kind": zod.enum(['bars', 'status_stack', 'indicator']),
+  "title": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "unit": zod.enum(['pct', 'min', 'count']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "caption": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "howToRead": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "series": zod.array(zod.object({
+  "frames": zod.array(zod.string()),
+  "key": zod.string(),
+  "label": zod.string(),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "plotValue": zod.number().nullable(),
+  "width": zod.string().nullable(),
+  "available": zod.boolean(),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "runId": zod.string().nullable(),
+  "sourceName": zod.string().nullable(),
+  "noEvents": zod.boolean()
+})),
+  "difference": zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+}).optional(),
+  "direction": zod.enum(['higher', 'lower', 'same', 'unavailable']),
+  "changeText": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "axisMax": zod.number(),
+  "axisMin": zod.number()
+})),
+  "a": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}),
+  "b": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}),
+  "differences": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "hasWarnings": zod.boolean(),
+  "hasBlockedGroups": zod.boolean(),
+  "summary": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "questions": zod.array(zod.object({
+  "key": zod.string(),
+  "metricKey": zod.string(),
+  "en": zod.string(),
+  "ar": zod.string()
+}))
+}),
+  "definitionsVersion": zod.string(),
+  "changes": zod.array(zod.object({
+  "side": zod.enum(['a', 'b']),
+  "kind": zod.enum(['import', 'metric', 'status', 'unavailable']),
+  "key": zod.string(),
+  "before": zod.string().nullable(),
+  "after": zod.string().nullable()
+}))
+})
+
+
+
+
+
+export const ListReconciliationsQueryParams = zod.object({
+  "snapshotId": zod.coerce.string().uuid(),
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const ListReconciliationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.string(),
+  "result": zod.object({
+  "origin": zod.string(),
+  "figures": zod.array(zod.object({
+  "side": zod.enum(['a', 'b']),
+  "runId": zod.string(),
+  "key": zod.string(),
+  "unit": zod.string(),
+  "clarix": zod.string().nullable(),
+  "reported": zod.string().nullable(),
+  "difference": zod.string().nullable(),
+  "result": zod.enum(['not_provided', 'unavailable', 'matches', 'differs']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "sentence": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})
+}))
+})
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int()
+})
+
+
+export const AddReconciliationParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const addReconciliationBodyAInputKgMax = 80;
+
+export const addReconciliationBodyAGoodKgMax = 80;
+
+export const addReconciliationBodyAScrapKgMax = 80;
+
+export const addReconciliationBodyAChangeoverMinMax = 80;
+
+export const addReconciliationBodyADowntimeMinMax = 80;
+
+export const addReconciliationBodyBInputKgMax = 80;
+
+export const addReconciliationBodyBGoodKgMax = 80;
+
+export const addReconciliationBodyBScrapKgMax = 80;
+
+export const addReconciliationBodyBChangeoverMinMax = 80;
+
+export const addReconciliationBodyBDowntimeMinMax = 80;
+
+export const addReconciliationBodyOriginMax = 1000;
+
+
+
+export const AddReconciliationBody = zod.object({
+  "a": zod.object({
+  "input_kg": zod.string().max(addReconciliationBodyAInputKgMax).optional(),
+  "good_kg": zod.string().max(addReconciliationBodyAGoodKgMax).optional(),
+  "scrap_kg": zod.string().max(addReconciliationBodyAScrapKgMax).optional(),
+  "changeover_min": zod.string().max(addReconciliationBodyAChangeoverMinMax).optional(),
+  "downtime_min": zod.string().max(addReconciliationBodyADowntimeMinMax).optional()
+}),
+  "b": zod.object({
+  "input_kg": zod.string().max(addReconciliationBodyBInputKgMax).optional(),
+  "good_kg": zod.string().max(addReconciliationBodyBGoodKgMax).optional(),
+  "scrap_kg": zod.string().max(addReconciliationBodyBScrapKgMax).optional(),
+  "changeover_min": zod.string().max(addReconciliationBodyBChangeoverMinMax).optional(),
+  "downtime_min": zod.string().max(addReconciliationBodyBDowntimeMinMax).optional()
+}),
+  "origin": zod.string().max(addReconciliationBodyOriginMax).optional()
+})
+
+export const AddReconciliationResponse = zod.object({
+  "id": zod.string(),
+  "author": zod.string(),
+  "createdAt": zod.string(),
+  "result": zod.object({
+  "origin": zod.string(),
+  "figures": zod.array(zod.object({
+  "side": zod.enum(['a', 'b']),
+  "runId": zod.string(),
+  "key": zod.string(),
+  "unit": zod.string(),
+  "clarix": zod.string().nullable(),
+  "reported": zod.string().nullable(),
+  "difference": zod.string().nullable(),
+  "result": zod.enum(['not_provided', 'unavailable', 'matches', 'differs']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "sentence": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})
+}))
+})
+})
+
+
+export const previewReconciliationBodyFiguresAInputKgMax = 80;
+
+export const previewReconciliationBodyFiguresAGoodKgMax = 80;
+
+export const previewReconciliationBodyFiguresAScrapKgMax = 80;
+
+export const previewReconciliationBodyFiguresAChangeoverMinMax = 80;
+
+export const previewReconciliationBodyFiguresADowntimeMinMax = 80;
+
+export const previewReconciliationBodyFiguresBInputKgMax = 80;
+
+export const previewReconciliationBodyFiguresBGoodKgMax = 80;
+
+export const previewReconciliationBodyFiguresBScrapKgMax = 80;
+
+export const previewReconciliationBodyFiguresBChangeoverMinMax = 80;
+
+export const previewReconciliationBodyFiguresBDowntimeMinMax = 80;
+
+export const previewReconciliationBodyFiguresOriginMax = 1000;
+
+
+
+export const PreviewReconciliationBody = zod.object({
+  "a": zod.string().uuid(),
+  "b": zod.string().uuid(),
+  "figures": zod.object({
+  "a": zod.object({
+  "input_kg": zod.string().max(previewReconciliationBodyFiguresAInputKgMax).optional(),
+  "good_kg": zod.string().max(previewReconciliationBodyFiguresAGoodKgMax).optional(),
+  "scrap_kg": zod.string().max(previewReconciliationBodyFiguresAScrapKgMax).optional(),
+  "changeover_min": zod.string().max(previewReconciliationBodyFiguresAChangeoverMinMax).optional(),
+  "downtime_min": zod.string().max(previewReconciliationBodyFiguresADowntimeMinMax).optional()
+}),
+  "b": zod.object({
+  "input_kg": zod.string().max(previewReconciliationBodyFiguresBInputKgMax).optional(),
+  "good_kg": zod.string().max(previewReconciliationBodyFiguresBGoodKgMax).optional(),
+  "scrap_kg": zod.string().max(previewReconciliationBodyFiguresBScrapKgMax).optional(),
+  "changeover_min": zod.string().max(previewReconciliationBodyFiguresBChangeoverMinMax).optional(),
+  "downtime_min": zod.string().max(previewReconciliationBodyFiguresBDowntimeMinMax).optional()
+}),
+  "origin": zod.string().max(previewReconciliationBodyFiguresOriginMax).optional()
+})
+})
+
+export const PreviewReconciliationResponse = zod.object({
+  "origin": zod.string(),
+  "figures": zod.array(zod.object({
+  "side": zod.enum(['a', 'b']),
+  "runId": zod.string(),
+  "key": zod.string(),
+  "unit": zod.string(),
+  "clarix": zod.string().nullable(),
+  "reported": zod.string().nullable(),
+  "difference": zod.string().nullable(),
+  "result": zod.enum(['not_provided', 'unavailable', 'matches', 'differs']),
+  "reason": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "sentence": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+})
+}))
+})
+
+
+
 
 
 export const GetSourceDetailQueryParams = zod.object({
+  "snapshot": zod.coerce.string().uuid().optional(),
   "kind": zod.enum(['metric', 'issue']),
   "id": zod.coerce.string(),
   "metric": zod.coerce.string().optional(),

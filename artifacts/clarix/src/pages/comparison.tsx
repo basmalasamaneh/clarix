@@ -25,6 +25,7 @@ import { issueText } from '@/lib/import-model';
 import { cn } from '@/lib/utils';
 import { BarsChart, KpiCard } from '@/components/charts/chart-card';
 import { GlossaryTip, GroupTip, MetricTerm, StatusTip } from '@/components/charts/glossary';
+import { ComparisonSnapshotPanel } from '@/components/snapshots/reconcile';
 import '@/lib/charts-i18n';
 import '@/lib/runs-i18n';
 import '@/lib/quality-i18n';
@@ -262,7 +263,7 @@ function RunCard({ run, side }: { run: ProductionRun; side: 'a' | 'b' }) {
 
 /* ---------------- result ---------------- */
 
-function Result({ data }: { data: RunComparison }) {
+export function Result({ data }: { data: RunComparison }) {
   const { t, i18n } = useTranslation();
   const blocked = (g: Group) => data.groups[g] === 'red';
   const ar = i18n.language.startsWith('ar');
@@ -446,7 +447,7 @@ export default function ComparisonPage({ session }: { session: Session }) {
         </>} /></div>;
     }
   } else if (q.data) {
-    body = <Result key={`${a}:${b}`} data={q.data} />;
+    body = <div className="space-y-5"><Result key={`${a}:${b}`} data={q.data} /><ComparisonSnapshotPanel key={`snap-${a}:${b}`} session={session} a={a} b={b} expectedImportA={q.data.a.importId} expectedImportB={q.data.b.importId} /></div>;
   }
 
   return (

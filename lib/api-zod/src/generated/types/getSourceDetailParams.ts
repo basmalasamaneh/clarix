@@ -8,6 +8,7 @@
 import type { GetSourceDetailKind } from './getSourceDetailKind';
 
 export type GetSourceDetailParams = {
+snapshot?: string;
 kind: GetSourceDetailKind;
 id: string;
 metric?: string;

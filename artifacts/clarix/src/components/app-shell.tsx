@@ -1,3 +1,4 @@
+import { Archive } from 'lucide-react';
 import { SourceDrawerProvider } from '@/components/source/source-context';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
@@ -52,6 +53,7 @@ export const PAGE_ICONS: Record<string, LucideIcon> = {
   imports: FileUp,
   runs: ListOrdered,
   comparison: Columns2,
+  snapshots: Archive,
   quality: ClipboardCheck,
   settings: Settings2,
   platform: ShieldHalf,
