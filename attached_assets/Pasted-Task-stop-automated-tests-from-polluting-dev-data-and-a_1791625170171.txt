@@ -1,0 +1,31 @@
+Task: stop automated tests from polluting dev data, and add a safe dev-only way to reset a factory's imported data so I can test manually from a clean state.
+
+Context: Import history for the Ethmar dev factory is full of "API verification <uuid>-NN_<scenario>" approved imports created by your automated API tests. Imports are intentionally immutable and undeletable in the app. Do NOT weaken that, and do NOT add any delete button or delete API to the app.
+
+Do exactly this:
+
+1. Test isolation
+   - Automated tests (engine tests, API verification, fixture-loading tests) must never write to the Ethmar or Najm dev factories.
+   - Run them against an isolated target: a separate test database/schema, or temporary test factories created at test start and fully removed at test end (using the privileged setup connection, not the app role).
+   - Test imports must never appear in my Import history. After a test run, the dev factories must be exactly as they were before.
+
+2. Dev-only reset command
+   - Add a script (e.g. `pnpm dev:reset-factory -- --factory <slug>`) that deletes ONE factory's imported data: imports, raw rows, orders, production records, events, issues, mappings, sources, and superseded history rows.
+   - It runs through the privileged setup connection only. It must not be reachable from the app role, the UI, or any API route.
+   - Guards (all required, else it refuses with a clear message): NODE_ENV is not production; SEED_TEST_USERS=true; the factory slug is given explicitly; the user types an explicit confirmation (e.g. `--confirm <slug>`).
+   - It never touches: users, factories, memberships, sessions, roles, the files in test-data/, expected/, tools/.
+   - It is factory-scoped: resetting Ethmar must not change one row of Najm.
+   - Add a short section in the docs explaining how to run it and its guards.
+
+3. Run it
+   - Run it once for Ethmar and once for Najm.
+   - Then show me a count per table before and after, proving users/factories/memberships are untouched and the import history is empty.
+
+4. Tests
+   - Guard tests: refuses in production, refuses without SEED_TEST_USERS, refuses without explicit slug/confirm.
+   - Scope test: resetting one factory leaves the other unchanged.
+   - Isolation test: running the full test suite leaves dev factory row counts unchanged.
+   - Confirm the app role still cannot delete/update raw rows (the immutability tests still pass).
+
+5. Final report
+   - What you built, what you deliberately did not build, test results, and the exact command I should run if I want to reset again.
