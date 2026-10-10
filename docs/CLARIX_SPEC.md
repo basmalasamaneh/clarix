@@ -493,11 +493,53 @@ AI, report uploads, targets, trends or email is included.
 
 ## 14. AI (wave 3 only)
 
+### Approved Phase 16 — Gemini foundation
+
+The Phase 16 brief supersedes the older logging and statement-schema rules
+below. Code calculates; AI explains and suggests only. AI is OFF by default
+per factory. Only a Factory Manager may change consent, after confirming a
+bilingual data-disclosure notice; changes record actor/time/old/new values.
+Platform Admin has no tenant AI access. Manager, Analyst and Viewer may request
+an explanation only while their factory has consent enabled.
+
+Use a swappable AIProvider, a server-side GeminiProvider using GEMINI_API_KEY
+and configurable GEMINI_MODEL, and a deterministic FakeProvider for tests.
+Only allowlisted, server-computed facts are sent: exact decimal strings, units,
+fixed labels, statuses, issue codes and order identifiers. Never send raw rows,
+file contents, filenames, cell text, names, emails, notes or snapshot titles.
+Source links resolve inside Clarix; source cells are not prompt material.
+Questions are untrusted data and are not exposed as a UI feature this phase.
+
+Output uses FACT / HYPOTHESIS / SUGGESTION statements with cited fact IDs.
+Reject the whole answer for uncited facts, unsupported numbers or relations,
+status mismatches, invented entities, factual causation, unlabeled hypotheses,
+links, markup or execution instructions. Hypotheses must be labelled possible
+explanations to check and include a way to check them. Retry invalid output once,
+then use the existing code-template explanation with an AI-unavailable notice.
+Never display unvalidated model output.
+
+Store/log interaction metadata only (factory/user/task/status/latency/model
+and token counts when available), never questions, prompts or responses.
+Validated-response caching is a separate, bounded, factory-scoped facility,
+not an interaction log or snapshot record. Its key includes facts, task,
+language and model. Configure quotas, timeouts and circuit-breaker limits;
+do not hard-code Google's model-specific limits. Missing credentials or
+disabled consent must leave the core app fully usable.
+
+Add only Explain in simple words on Comparison and snapshot detail, a shared
+AIPanel with source links and visible facts, consent controls and Help.
+No chat, free-form question UI, quality assistant, mapping suggestions,
+saved AI text, PDF AI content, extra providers, trends, images or voice.
+Use isolated tests and FakeProvider, with at most one optional live baseline
+smoke call if a key is supplied. Google free-tier disclosure must be grounded
+in current official terms, including product-improvement/human-review use and
+the prohibition on submitting sensitive, confidential or personal information.
+
 Role: explain, never calculate.
 Features: performance summary (cites rows) · "Ask your data" · data-quality explainer and mapping suggestions (user confirms) · hypotheses for investigation.
 
 Flow: user asks → server checks permission and factory → **fixed tools only** (`get_run_metrics`, `list_runs_above_threshold`, `get_issues`, …; no free SQL) → bounded summary sent to the model → model returns **structured output**:
-`{ "statements": [ { "type": "fact" | "hypothesis", "text": "...", "refs": [ "<snapshot metric id>" | "<file:line>" ] } ] }`
+`{ "statements": [ { "type": "FACT" | "HYPOTHESIS" | "SUGGESTION", "text": "...", "refs": [ "<fact id>" ] } ] }`
 → automatic validation → render with links to source rows.
 
 Validation rules (reject and regenerate or show "insufficient information" if any fails):
@@ -505,7 +547,7 @@ Validation rules (reject and regenerate or show "insufficient information" if an
 2. A **fact** may not contain causal wording ("because", "due to", "caused by", "as a result of", «بسبب»، «نتيجة»…). Causal language is allowed **only** in a statement typed `hypothesis`, phrased "may be…/قد يكون…", always displayed with the **Hypothesis / فرضية** badge in a separate section.
 3. A hypothesis must reference real recorded differences that motivate the question (e.g. different mold ids), never invented data.
 4. Numbers verified ≠ explanation verified: also check that each fact's stated relation (higher/lower/longer/separate) agrees with the computed comparison.
-5. No cross-factory data in a prompt; no free SQL; the API key stays server-side; per-user limits; every interaction logged (question, answer, refs, model).
+5. No cross-factory data in a prompt; no free SQL; the API key stays server-side; configurable per-user and per-factory limits; metadata-only interaction auditing, never question/answer content.
 6. If data is insufficient → say so. If the AI service fails → all calculations and comparisons keep working.
 
 AI test suite before release: valid questions; questions without data; leading questions that push for causes ("prove the stop caused the scrap" → must refuse the causal claim); prompt-injection text inside a CSV cell; cross-factory questions.
