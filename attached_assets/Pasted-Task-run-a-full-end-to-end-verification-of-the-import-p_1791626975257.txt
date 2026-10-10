@@ -1,0 +1,30 @@
+Task: run a full end-to-end verification of the import pipeline and give me a results report I can review. Do NOT build new features. Do NOT change code unless a check fails (then report the failure first, do not silently fix).
+
+Isolation (mandatory): run everything against an isolated test target (separate test database/schema or temporary test factories created at start and removed at end). Never write to the Ethmar or Najm dev factories. At the end, show row counts of the dev factories before vs after to prove nothing changed.
+
+Run through the REAL import pipeline (same API/code path the UI uses, not shortcuts), using the files in test-data/ and the values in expected/expected_results.json:
+
+A. Mapping and codes
+ 1. Upload 00_baseline without mapping event codes: confirm CHG (2 rows) and UDT (1 row) are listed and Continue is blocked until each code is mapped.
+ 2. Map CHG=Changeover, UDT=Unplanned downtime: confirm 0 errors, 0 warnings, level 3, and that Approve is available.
+B. Approval and duplicates
+ 3. Approve it. Confirm E-01 = 5% scrap / 240 min changeover, E-02 = 10% / 360 min + 45 min separate stop, matching expected_results.json exactly.
+ 4. Re-upload the same files with the same mapping: confirm "duplicate" is shown and Approve is blocked.
+ 5. Re-upload the same files with a DIFFERENT mapping: confirm it is NOT flagged as a duplicate.
+ 6. Upload a different file with the same order ids into the same source: confirm the "orders replaced" message lists them, and old rows are kept in history tables.
+ 7. Same, but into a different source: confirm nothing is replaced and sources stay separate.
+C. Fixtures
+ 8. Load all 25 Ethmar scenarios and the Najm baseline. For each, compare issue codes, severities, group colours, and numbers against expected_results.json. Report a table: scenario | expected | actual | PASS/FAIL.
+ 9. Specifically confirm: 21_arabic_cp1256 text is readable (not garbled); 07 can be approved only after the explicit confirmation; SUSPECTED_DUPLICATE_RECORD blocks comparison; missing values show as "Not available", never 0.
+D. Safety
+ 10. Tenancy: run all tests T1–T12 in docs/TENANCY_TESTS.md that apply today and report PASS/FAIL/not-applicable-yet for each.
+ 11. Confirm the app role still cannot UPDATE/DELETE/TRUNCATE raw rows.
+E. UI (only what you can actually check automatically)
+ 12. Take screenshots of the Import steps 1–3 and the Import history at 360px and 1280px, in Arabic (RTL) and English, light and dark. Report any horizontal scroll, overlapping text, or missing translation keys. State clearly that you cannot judge visual quality and that I will review the screenshots myself.
+
+Final report format:
+ - A single table: check # | what was done | expected | actual | PASS/FAIL
+ - Every FAIL listed first with evidence (request, response, row counts).
+ - What you could not check automatically, and why.
+ - Before/after counts proving dev data was untouched.
+Do not mark anything PASS without showing the actual value you observed.
