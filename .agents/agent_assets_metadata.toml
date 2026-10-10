@@ -28,3 +28,45 @@ mtime_ms = 1791626305870
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/2f64fa2d-21c3-43af-9b0d-4291b801afb6/407cf5eb-6a03-4f55-a9e0-0d7e83d026c6"
 storage_version_token = "1791626306395232"
 content_type = "text/html"
+
+[[outputs]]
+id = "f8n3wjvrsc5Cd1WvONd3O"
+uri = "file://generated-artifacts/import-audit/report.html"
+type = "html"
+title = "Import pipeline verification report"
+description = "Checks 1–12, all 26 scenarios, tenancy evidence, limitations and before/after dev counts."
+logical_id = "d129d613-ad9b-44f5-b24c-1e480815d39a"
+content_hash = "sha256:1e6ff22ec211bf8be0521f009c34c31faf0f7b2ff26e841664f4f68b5f6e979e"
+size = 305762
+mtime_ms = 1791631077921
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/d129d613-ad9b-44f5-b24c-1e480815d39a/947cf9bd-5188-4dda-9130-da80effd8d89"
+storage_version_token = "1791631099824012"
+content_type = "text/html"
+
+[[outputs]]
+id = "QlSuNkUdMPxUL5aKX7VKc"
+uri = "file://generated-artifacts/import-audit/screenshots.html"
+type = "html"
+title = "Review all 32 screenshots"
+description = "Upload, Map, Check and History at 360/1280px, Arabic/English, light/dark. Potential overlaps are flagged for your review."
+logical_id = "38cc37a4-2a5d-44b3-8f13-3eb458ac5aa2"
+content_hash = "sha256:5dbd334d4352fae0baeba9fd4607efb5daae9bb979f422dcdeb6253908ed53e8"
+size = 11697862
+mtime_ms = 1791631078222
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/38cc37a4-2a5d-44b3-8f13-3eb458ac5aa2/6565af68-da36-4d77-9047-ad3d36311a7f"
+storage_version_token = "1791631100538720"
+content_type = "text/html"
+
+[[outputs]]
+id = "2Xh3kLI-uQYr7ZiNeqQx0"
+uri = "file://generated-artifacts/import-audit/verification-evidence.zip"
+type = "unspecified"
+title = "Download verification evidence"
+description = "Report, 32 screenshots, observed API results, fixture comparisons and both isolation proofs."
+logical_id = "e9810f69-79e9-461b-a49c-69327af9218c"
+content_hash = "sha256:a110702cae558c3db99d05cb4e40900a4652963c8436a2d538dda9fa033cc598"
+size = 8382135
+mtime_ms = 1791631078738
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/e9810f69-79e9-461b-a49c-69327af9218c/3d3040fa-6893-4d01-8338-c80621697416"
+storage_version_token = "1791631101181539"
+content_type = "application/octet-stream"
