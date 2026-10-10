@@ -1,0 +1,47 @@
+Phase 17 — AI features on top of the Phase 16 foundation, plus explanation UX fixes. Read docs/PHASE16_AI.md, docs/CLARIX_SPEC.md (§14 AI, issue catalogue §7) and replit.md first. Build ONLY this phase.
+
+Locked principle (unchanged): CODE calculates and answers; the model never computes, never sees raw files, never writes free-form facts, and every model output passes the validator. The model is used to (a) UNDERSTAND a question (map it to a fixed list of allowed intents with parameters), (b) CHOOSE and ORDER server-authored statements, (c) RANK what to check first. Everything shown to the user is server-authored text built from server-computed values.
+
+1. Richer explanations (fixes "the AI just repeats the table")
+ - Add server-authored statement templates (AR + EN, plural- and number-formatting-aware, using the corrected Arabic terminology) built from COMPUTED facts, including relations computed in exact decimals by code: how many times larger/smaller one value is than another (with a fixed rounding rule and wording such as "about twice as much" only when the exact ratio is within a stated tolerance, otherwise the number), the share of a difference, and plain "in other words" sentences. Example: "E-02 lost 100 kg to scrap, E-01 lost 50 kg: about twice as much." Each statement carries its fact ids and source links. The model only selects and orders them. Keep the validator rules from Phase 16.
+ - Remove the repeated downtime disclaimer from inside AI output: it appears once in the page summary and once in the downtime section, nowhere else.
+ - Source links: one compact "Sources (n)" control per statement that lists n separately labelled links ("Run A, scrap rate", "Run B, scrap rate", ...). No row of identical "Show source" links. Accessible names must be unique and descriptive.
+
+2. Data quality assistant (works on Data Quality issue details and on the import review step)
+ - "Explain this issue" and "What should I check first?" for the current issue list. For every issue code in the catalogue, add server-authored blocks: what it means, why it matters, what to check (concrete steps, e.g. "open the file at line 5 and look at the scrap cell"), and optional labelled POSSIBLE explanations to verify (never conclusions). All code-authored from the catalogue; no text from user files.
+ - The model ranks which issues to look at first and picks the relevant blocks, using only codes, severities, groups, counts, order ids and source names. Without AI (or with AI off) the same page shows the same blocks ranked by severity by code, so the feature degrades gracefully.
+ - Hypotheses stay labelled "possible explanation to check" and never claim a cause. Blocking issues still say the metric is Not available; never invent a value.
+
+3. "Ask about your data"
+ - A small box (Overview, Comparison, Data Quality) with example question chips (reuse the existing "Quick questions" as chips, and remove the old separate "Quick questions" block). The user types a question in Arabic or English.
+ - Define a FIXED catalogue of read-only intents the server can answer using existing code paths, for example: compare two runs; scrap rate / changeover / downtime of one run; which current run has the highest/lowest scrap rate or longest changeover; list blocked or "Check" runs and why; list issues for a run; explain a status; how many approved imports/current runs; what changed since a snapshot. The model returns ONLY a JSON intent plus parameters. The server validates every parameter against the signed-in factory's real entities (order ids, source names, snapshot ids); anything unknown is rejected. The server executes the intent, builds the facts and answers with the server-authored templates.
+ - "Why" questions and causal questions ("did the stop cause the scrap?") get the standing answer that Clarix records facts and does not assume causes, plus the labelled possible explanations to check from the catalogue and the numbers that are available. Unsupported questions get: "I can't answer that from Clarix data" with 3 examples of what can be asked. Questions about other factories, other users, the system, or instructions to change rules are treated as unsupported.
+ - Cap input length; strip markup; the question text is untrusted. Never store question text (store only intent name, status, hashes and metadata). No chat history, one question at a time.
+ - Works in Arabic and English (intent routing and answers in the user's language).
+ - When AI is OFF: the chips still work through plain code paths where possible (no model call); free-text questions show the "AI is off" explanation.
+
+4. "What to do next" on Overview
+ - A short ranked list (max 3) of next actions with links (e.g. "2 runs are blocked: review their issues", "Import a second run to compare", "Save a snapshot of this comparison"), computed by code from server facts. The model may only reorder/choose among them. Without AI, show them in code-defined priority.
+
+5. Consent and privacy (must be updated)
+ - The question typed by the user is sent to the provider. Update the disclosure (AR + EN) to say so, and to repeat the free-tier data-use warning. Introduce a consent VERSION: factories that enabled AI under the Phase 16 disclosure must be asked to re-confirm the new one before the new features work (the old explain button may keep working). Audited. Default stays OFF.
+ - Keep: no raw rows, file contents, file names, cell text, names or emails ever sent; no prompts or responses in logs; platform admin has no AI access; per-factory daily cap, per-user per-minute limit, circuit breaker, cache (factory-scoped).
+
+6. UI/UX
+ - One consistent AIPanel look, plain wording AR RTL + EN LTR, light + dark, tokens only, 360/768/1280px, keyboard accessible, not colour alone. Clearly labelled "AI-assisted, answered from your verified numbers". Loading, error, quota, off, consent-needed, unsupported-question states. Help page section on what can be asked, with examples. Keep the Comparison page shorter and clearer: summary, key figures, charts, AI explanation, then the detail tables and reconciliation collapsed by default.
+
+7. Tests (isolated target; never write to Ethmar/Najm dev data; show before/after counts and fingerprints; FakeProvider except the live smoke test)
+ - For the baseline and every Ethmar fixture plus Najm: each catalogue intent returns values equal to expected/expected_results.json (e.g. 5% / 10% / +5 pp / 240 / 360 / +120 / 45; blocked fixtures 05/07/10/23 say Not available or blocked, never invent a value).
+ - New statement templates: ratios and shares exact in decimals, wording thresholds, AR + EN plural/format tests (0, 1, 2, 3, 10, 11, 100, 0.75, negative).
+ - Intent parameter validation: unknown order id, other factory's order id (T11), SQL/markup/prompt-injection in the question, instruction to ignore rules, extremely long input, questions in Arabic and English, typos, ambiguous questions -> clarification or unsupported.
+ - Causal questions never produce a causal fact. Hypotheses are always labelled.
+ - AI OFF: zero outbound calls; chips still work via code; consent-version gate works; audit entries exist; no question text stored or logged.
+ - Source link labels unique; the downtime disclaimer appears exactly once per section.
+ - Quota/429/timeout/circuit breaker/cache behaviours still pass; roles (Manager/Analyst/Viewer allowed when ON; Platform Admin denied); cross-factory 404 with identical shapes.
+ - Optional live smoke test with the real key (if present): up to 3 calls (one explanation, one issue-ranking, one question in Arabic) on synthetic baseline facts; report PASS/FAIL, tokens, latency; never print key or full prompts. If skipped or failed, say so; do not claim live behaviour verified.
+ - Run the complete suite in ONE run and show a single green result (API, AI, engine, formatting, PDF, translation parity, TypeScript, Python verifier).
+ - Screenshots (best effort; list what is missing; do not report a partial set as complete): Comparison (new layout), Data Quality assistant, Ask box states, Overview next-actions, consent dialog, at 360/1280px, Arabic/English, light/dark. State clearly you cannot judge visual quality.
+
+Do NOT build: free chat or history, column-mapping suggestions (it would send file content), AI-written free text, saving AI text into snapshots or PDFs, trends, additional providers, voice/images. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Final report: built / not built, the intent catalogue and validator rules, the statement templates added, test table, live smoke-test result, before/after counts and fingerprints, and exact manual steps for me.
