@@ -10,12 +10,17 @@ export async function sessionView(req: Request) {
   const id = req.session.userId;
   const [user] = id ? await db.select().from(users).where(eq(users.id, id)) : [];
   const expired = req.session.authenticatedAt && Date.now() - req.session.authenticatedAt > 8 * 60 * 60 * 1000;
-  if (!user || expired || (user.testAccount && isProduction())) {
+  if (!user || expired || (user.testAccount && isProduction()) || (req.session.authVersion??0)!==user.sessionVersion) {
     delete req.session.userId;
     delete req.session.activeFactoryId;
     return { user: null, csrfToken: csrfToken(req), memberships: [], activeFactoryId: null, allowedPages: [] };
   }
   const memberships = user.platformAdmin ? [] : await getMemberships(user.id);
+  if(!user.platformAdmin&&!memberships.length) {
+    delete req.session.userId;
+    delete req.session.activeFactoryId;
+    return {user:null,csrfToken:csrfToken(req),memberships:[],activeFactoryId:null,allowedPages:[]};
+  }
   const active = memberships.find((m) => m.factoryId === req.session.activeFactoryId) ?? memberships[0];
   req.session.activeFactoryId = active?.factoryId;
   return GetSessionResponse.parse({

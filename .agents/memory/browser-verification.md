@@ -3,6 +3,15 @@ name: Secret-safe browser verification
 description: Testing environment boundary for password-based browser checks.
 ---
 
+Preflight the entire browser driver before starting costly isolated fixture setup.
+**Why:** Setup/path mistakes, stale fixture assumptions and omitted first-run
+onboarding handling consumed repeated full import preparations without testing
+the requested UI. Those failures are test-harness failures, not evidence that
+the application itself is broken.
+**How to apply:** Validate variable scope, output parent directories, seed
+assumptions and onboarding handling before running. After repeated driver failures,
+stop and report unverified coverage rather than repeatedly rebuilding fixtures.
+
 Wait for drawer animations to finish before strict geometry measurements.
 **Why:** A near-edge readiness condition (within one pixel) allowed measurements
 while the drawer was still moving, producing bounds flags without document overflow.

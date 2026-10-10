@@ -25,6 +25,11 @@ Both `NODE_ENV=production` and `REPLIT_DEPLOYMENT=1` prohibit test seeding.
 Production authentication also rejects any user marked as a test account,
 even if development data has been copied into production.
 
+Before publishing, set `SEED_TEST_USERS=false` in the publishing environment.
+Do not run the development seed in production or change its production guards.
+Create real members through invitations; the seeded test identities cannot be
+used to sign in to a production deployment.
+
 Managed authentication was not selected because a supported way of provisioning
 all five independent usable identities was not verified. The creator explicitly
 approved email/password as the fallback.

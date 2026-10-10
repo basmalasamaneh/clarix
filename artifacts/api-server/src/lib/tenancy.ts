@@ -33,7 +33,7 @@ export async function withTenant<T>(
     await client.query("BEGIN");
     await client.query("SELECT set_config('app.user_id', $1, true), set_config('app.factory_id', $2, true)", [userId, factoryId]);
     const membership = await client.query(
-      "SELECT 1 FROM memberships m JOIN factories f ON f.id=m.factory_id WHERE m.user_id=$1 AND m.factory_id=$2 AND f.status='active'",
+      "SELECT 1 FROM memberships m JOIN factories f ON f.id=m.factory_id WHERE m.user_id=$1 AND m.factory_id=$2 AND m.active AND NOT m.recovery_required AND f.status='active'",
       [userId, factoryId],
     );
     if (!membership.rowCount) throw new TenantAccessError();
@@ -56,7 +56,7 @@ export async function getMemberships(userId: string) {
     const result = await client.query<{ factoryId: string; factoryName: string; role: string }>(
       `SELECT m.factory_id AS "factoryId", f.name AS "factoryName", m.role
        FROM memberships m JOIN factories f ON f.id=m.factory_id
-       WHERE m.user_id=$1 AND f.status='active' ORDER BY f.name`, [userId],
+       WHERE m.user_id=$1 AND m.active AND NOT m.recovery_required AND f.status='active' ORDER BY f.name`, [userId],
     );
     await client.query("COMMIT");
     return result.rows;

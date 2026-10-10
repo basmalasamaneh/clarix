@@ -11,6 +11,214 @@ import * as zod from 'zod';
 
 
 
+export const GetMembersQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const GetMembersResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "active": zod.boolean(),
+  "lastLogin": zod.string().nullable(),
+  "loginSuccessCount": zod.number().int(),
+  "loginFailureCount": zod.number().int()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int()
+})
+
+
+export const UpdateMemberParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const UpdateMemberBody = zod.object({
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']).optional(),
+  "active": zod.boolean().optional()
+})
+
+export const UpdateMemberResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "active": zod.boolean(),
+  "lastLogin": zod.string().nullable(),
+  "loginSuccessCount": zod.number().int(),
+  "loginFailureCount": zod.number().int()
+})
+
+
+
+
+
+export const GetInvitationsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
+})
+
+export const GetInvitationsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "status": zod.enum(['pending', 'expired']),
+  "createdAt": zod.string(),
+  "expiresAt": zod.string()
+})),
+  "total": zod.number().int(),
+  "page": zod.number().int()
+})
+
+
+export const createInvitationBodyEmailMax = 254;
+
+
+
+export const CreateInvitationBody = zod.object({
+  "email": zod.string().email().max(createInvitationBodyEmailMax),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
+})
+
+export const CreateInvitationResponse = zod.object({
+  "invitation": zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "status": zod.enum(['pending', 'expired']),
+  "createdAt": zod.string(),
+  "expiresAt": zod.string()
+}),
+  "path": zod.string()
+})
+
+
+export const RevokeInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RevokeInvitationResponse = zod.void()
+
+
+export const ReissueInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ReissueInvitationResponse = zod.object({
+  "invitation": zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "status": zod.enum(['pending', 'expired']),
+  "createdAt": zod.string(),
+  "expiresAt": zod.string()
+}),
+  "path": zod.string()
+})
+
+
+export const GetMemberAuditResponseItem = zod.object({
+  "id": zod.string(),
+  "action": zod.string(),
+  "actorName": zod.string().nullable(),
+  "subjectName": zod.string().nullable(),
+  "createdAt": zod.string(),
+  "role": zod.string().nullable(),
+  "count": zod.number().int()
+})
+export const GetMemberAuditResponse = zod.array(GetMemberAuditResponseItem)
+
+
+export const GetInvitationDetailsQueryParams = zod.object({
+  "token": zod.coerce.string()
+})
+
+export const GetInvitationDetailsResponse = zod.object({
+  "factoryName": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer']),
+  "email": zod.string(),
+  "expiresAt": zod.string()
+})
+
+
+export const acceptInvitationBodyTokenMin = 32;
+export const acceptInvitationBodyTokenMax = 128;
+
+export const acceptInvitationBodyNameMax = 100;
+
+export const acceptInvitationBodyPasswordMin = 12;
+export const acceptInvitationBodyPasswordMax = 256;
+
+
+
+export const AcceptInvitationBody = zod.object({
+  "token": zod.string().min(acceptInvitationBodyTokenMin).max(acceptInvitationBodyTokenMax),
+  "name": zod.string().min(1).max(acceptInvitationBodyNameMax),
+  "password": zod.string().min(acceptInvitationBodyPasswordMin).max(acceptInvitationBodyPasswordMax)
+})
+
+export const AcceptInvitationResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "platformAdmin": zod.boolean(),
+  "language": zod.enum(['en', 'ar']),
+  "theme": zod.enum(['light', 'dark', 'system']),
+  "tourCompleted": zod.boolean()
+}),zod.null()]),
+  "csrfToken": zod.string(),
+  "activeFactoryId": zod.string().nullable(),
+  "memberships": zod.array(zod.object({
+  "factoryId": zod.string(),
+  "factoryName": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
+})),
+  "allowedPages": zod.array(zod.string())
+})
+
+
+export const changePasswordBodyCurrentPasswordMax = 256;
+
+export const changePasswordBodyNewPasswordMin = 12;
+export const changePasswordBodyNewPasswordMax = 256;
+
+
+
+export const ChangePasswordBody = zod.object({
+  "currentPassword": zod.string().min(1).max(changePasswordBodyCurrentPasswordMax),
+  "newPassword": zod.string().min(changePasswordBodyNewPasswordMin).max(changePasswordBodyNewPasswordMax)
+})
+
+export const ChangePasswordResponse = zod.object({
+  "user": zod.union([zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "name": zod.string(),
+  "platformAdmin": zod.boolean(),
+  "language": zod.enum(['en', 'ar']),
+  "theme": zod.enum(['light', 'dark', 'system']),
+  "tourCompleted": zod.boolean()
+}),zod.null()]),
+  "csrfToken": zod.string(),
+  "activeFactoryId": zod.string().nullable(),
+  "memberships": zod.array(zod.object({
+  "factoryId": zod.string(),
+  "factoryName": zod.string(),
+  "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
+})),
+  "allowedPages": zod.array(zod.string())
+})
+
+
+export const LogoutEverywhereResponse = zod.void()
+
+
+
+
+
 export const ListProductionRunsQueryParams = zod.object({
   "page": zod.coerce.number().int().min(1).optional(),
   "search": zod.coerce.string().optional(),

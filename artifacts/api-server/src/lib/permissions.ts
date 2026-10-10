@@ -1,5 +1,5 @@
 export const pagesByRole = {
-  factory_manager: ["overview", "imports", "runs", "comparison", "quality", "settings"],
+  factory_manager: ["overview", "imports", "runs", "comparison", "quality", "settings", "members"],
   analyst: ["overview", "imports", "runs", "comparison", "quality"],
   viewer: ["runs", "comparison", "quality"],
 } as const;

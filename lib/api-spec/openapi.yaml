@@ -11,6 +11,148 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /members:
+    get:
+      operationId: getMembers
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Factory members
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, page]
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Member" } }
+                  total: { type: integer }
+                  page: { type: integer }
+  /members/{id}:
+    patch:
+      operationId: updateMember
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MemberUpdate" }
+      responses:
+        "200":
+          description: Updated member
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Member" }
+  /members/invitations:
+    get:
+      operationId: getInvitations
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Pending invitations, including expired links
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, page]
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/Invitation" } }
+                  total: { type: integer }
+                  page: { type: integer }
+    post:
+      operationId: createInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationInput" }
+      responses:
+        "201":
+          description: One-time link
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvitationLink" }
+  /members/invitations/{id}/revoke:
+    post:
+      operationId: revokeInvitation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "204": { description: Revoked }
+  /members/invitations/{id}/reissue:
+    post:
+      operationId: reissueInvitation
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "201":
+          description: Replacement one-time link; old invitation revoked
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InvitationLink" }
+  /members/audit:
+    get:
+      operationId: getMemberAudit
+      responses:
+        "200":
+          description: Latest 50 factory account audit entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AccountAudit" }
+  /auth/invitation:
+    get:
+      operationId: getInvitationDetails
+      parameters:
+        - { name: token, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Valid invitation only; invalid tokens return neutral 404
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [factoryName, role, email, expiresAt]
+                properties:
+                  factoryName: { type: string }
+                  role: { $ref: "#/components/schemas/MemberRole" }
+                  email: { type: string }
+                  expiresAt: { type: string }
+    post:
+      operationId: acceptInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InvitationAcceptance" }
+      responses:
+        "200":
+          description: Accepted and signed in
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /auth/password:
+    post:
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PasswordChange" }
+      responses:
+        "200":
+          description: Password changed, other sessions invalidated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Session" }
+  /auth/logout-everywhere:
+    post:
+      operationId: logoutEverywhere
+      responses:
+        "204": { description: All sessions invalidated }
   /runs:
     get:
       operationId: listProductionRuns
@@ -421,6 +563,72 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    MemberRole:
+      type: string
+      enum: [factory_manager, analyst, viewer]
+    Member:
+      type: object
+      required: [id, name, email, role, active, lastLogin, loginSuccessCount, loginFailureCount]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/MemberRole" }
+        active: { type: boolean }
+        lastLogin: { type: [string, "null"] }
+        loginSuccessCount: { type: integer }
+        loginFailureCount: { type: integer }
+    MemberUpdate:
+      type: object
+      properties:
+        role: { $ref: "#/components/schemas/MemberRole" }
+        active: { type: boolean }
+    InvitationInput:
+      type: object
+      required: [email, role]
+      properties:
+        email: { type: string, format: email, maxLength: 254 }
+        role: { $ref: "#/components/schemas/MemberRole" }
+    Invitation:
+      type: object
+      required: [id, email, role, status, createdAt, expiresAt]
+      properties:
+        id: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/MemberRole" }
+        status: { type: string, enum: [pending, expired] }
+        createdAt: { type: string }
+        expiresAt: { type: string }
+    InvitationLink:
+      type: object
+      required: [invitation, path]
+      properties:
+        invitation: { $ref: "#/components/schemas/Invitation" }
+        path: { type: string }
+    InvitationAcceptance:
+      type: object
+      required: [token, name, password]
+      properties:
+        token: { type: string, minLength: 32, maxLength: 128 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+        password: { type: string, minLength: 12, maxLength: 256 }
+    PasswordChange:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword: { type: string, minLength: 1, maxLength: 256 }
+        newPassword: { type: string, minLength: 12, maxLength: 256 }
+    AccountAudit:
+      type: object
+      required: [id, action, actorName, subjectName, createdAt, role, count]
+      properties:
+        id: { type: string }
+        action: { type: string }
+        actorName: { type: [string, "null"] }
+        subjectName: { type: [string, "null"] }
+        createdAt: { type: string }
+        role: { type: [string, "null"] }
+        count: { type: integer }
     SourceDetail:
       type: object
       required: [key, value, display, unit, formula, inputs, breakdown, rows, total, page, imports, issues, alternatives, notes, duplicatePairs]

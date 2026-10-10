@@ -17,7 +17,7 @@ export type ThemePref = 'light' | 'dark' | 'system';
 
 export function useSession() {
   return useGetSession({
-    query: { queryKey: getGetSessionQueryKey(), staleTime: 30_000, retry: 1, refetchOnWindowFocus: true },
+    query: { queryKey: getGetSessionQueryKey(), staleTime: 30_000, retry: 1, refetchOnWindowFocus: true, refetchInterval: 60_000 },
     request: { credentials: 'include' },
   });
 }

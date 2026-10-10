@@ -11,6 +11,7 @@ declare module "express-session" {
     csrfToken?: string;
     activeFactoryId?: string;
     authenticatedAt?: number;
+    authVersion?: number;
   }
 }
 const secret = process.env.SESSION_SECRET;

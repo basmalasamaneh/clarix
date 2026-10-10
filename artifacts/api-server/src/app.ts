@@ -6,6 +6,7 @@ import { logger } from "./lib/logger";
 import { sessionMiddleware, csrfGuard } from "./lib/session";
 import foundationRouter from "./routes/foundation";
 import importsRouter from "./routes/imports";
+import accountsRouter from "./routes/accounts";
 
 const app: Express = express();
 
@@ -17,7 +18,7 @@ app.use(
         return {
           id: req.id,
           method: req.method,
-          url: req.url?.split("?")[0],
+          url: req.url?.split("?")[0]?.replace(/\/invite\/[^/]+/g,"/invite/[redacted]"),
         };
       },
       res(res) {
@@ -36,6 +37,7 @@ app.use("/api", (_req, res, next) => { res.setHeader("Cache-Control", "no-store"
 app.use("/api", csrfGuard);
 
 app.use("/api", router);
+app.use("/api", accountsRouter);
 app.use("/api", foundationRouter);
 app.use("/api", importsRouter);
 app.use((_req, res) => { res.status(404).json({ error: "NOT_FOUND" }); });

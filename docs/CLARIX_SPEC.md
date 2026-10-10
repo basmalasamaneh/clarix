@@ -284,6 +284,19 @@ Wave 3: AI Analyst panel · remaining charts · audit log view · comments · ad
 
 ## 11. Multi-factory (multi-tenant) and security
 
+### Approved Phase 8: accounts and invite-only onboarding
+
+The accounts-and-invitations brief replaces the original Phase 8 roadmap scope.
+Only Factory Managers manage their factory's members and single-use invitations.
+Invitation secrets are stored only as hashes and expire after seven days; links
+are shown once for manual sharing. No public signup or email sending.
+New passwords require at least 12 characters, accept spaces and Arabic text,
+and are hashed with Argon2id. Existing passwords are required for password changes.
+Role changes, deactivation, invitation actions and password changes are audited.
+The last active Factory Manager cannot be demoted or deactivated.
+Password reset by email, Platform Admin delegation, second-factory features,
+reconciliation and snapshots are outside this phase.
+
 - One platform, logical isolation: every row has `factory_id`; every query is scoped server-side from the authenticated membership, never from a client-supplied id alone. Add PostgreSQL Row-Level Security as a **second** layer, with tests.
 - Adding a factory: create → invite manager → set units/time zone → upload sample → review mapping → approve. No code change per factory.
 - Cross-factory comparison is a future feature requiring explicit consent from both sides and aligned definitions.
@@ -392,7 +405,7 @@ Acceptance (wave 1): E-01 5% / 240 min · E-02 10% / 360 min · +5 pp · +120 mi
 | 5 | Data Quality Center + status badge | 1 | each scenario shows the right colour and reason |
 | 6 | Runs list + Comparison page | 1 | baseline shows 5% / 10% / +5 pp / +2 h / 45 min separate |
 | 7 | Source Drawer (drill-down) | 1 | any number opens its file/line rows, excluded and quarantined rows included |
-| 8 | Reconciliation + snapshots | 2 | old snapshot unchanged after new upload |
+| 8 | Accounts, roles and invite-only onboarding | 1 | secure invitation lifecycle, member management and session revocation; isolated tests |
 | 9 | Two charts + template explanations + PDF export | 2 | charts match the table; reduced-motion respected |
 | 10 | Second factory + isolation test suite | 2 | all tenancy tests pass |
 | 11 | AI assistant (tools, structured output, validator) | 3 | AI test suite passes |

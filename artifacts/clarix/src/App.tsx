@@ -2,6 +2,10 @@ import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
+import '@/lib/accounts-i18n';
+import MembersPage from '@/pages/members';
+import AccountPage from '@/pages/account';
+import InvitePage from '@/pages/invite';
 import { Building2, CloudOff, RotateCcw, UserRoundX } from 'lucide-react';
 import type { Session } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -121,6 +125,16 @@ function AuthedRoutes({ session }: { session: Session }) {
               {() => <TenantRoute page={p} session={session} />}
             </Route>
           ))}
+          <Route path="/members">
+            {() =>
+              !user.platformAdmin && session.allowedPages.includes('members') && session.activeFactoryId ? (
+                <MembersPage key={session.activeFactoryId} session={session} />
+              ) : (
+                <ForbiddenState session={session} />
+              )
+            }
+          </Route>
+          <Route path="/account">{() => <AccountPage session={session} />}</Route>
           <Route path="/compare">{() => <CompareAlias />}</Route>
           <Route path="/platform">
             {() =>
@@ -142,6 +156,8 @@ function Gate() {
   const { t } = useTranslation();
   const [location] = useLocation();
   const { data: session, isLoading, isError, error, refetch, isFetching } = useSession();
+  const inviteMatch = /^\/invite\/([^/?#]+)$/.exec(location);
+  if (inviteMatch) return <InvitePage token={decodeURIComponent(inviteMatch[1])} />;
 
   if (isLoading) return <SessionLoading />;
   if (isError || !session) {

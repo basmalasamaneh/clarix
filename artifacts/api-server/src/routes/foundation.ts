@@ -9,6 +9,8 @@ import { sessionView } from "../lib/identity";
 import { saveSession } from "../lib/session";
 import { isProduction, allowedPages } from "../lib/permissions";
 import { withRequestTenant } from "../lib/tenancy";
+import {getMemberships} from "../lib/tenancy";
+import {loginAudit,signIn} from "../accounts/auth";
 
 const router: IRouter = Router();
 const loginLimit = rateLimit({
@@ -27,14 +29,13 @@ router.post("/auth/login", loginLimit, async (req, res) => {
   if (!input.success) { res.status(400).json({ error: "INVALID_INPUT" }); return; }
   const [user] = await db.select().from(users).where(eq(users.email, input.data.email.trim().toLowerCase()));
   const valid = await argon2.verify(user?.passwordHash ?? await dummyHash, input.data.password);
-  if (!user || !valid || (user.testAccount && isProduction())) {
+  const memberships=user&&!user.platformAdmin?await getMemberships(user.id):[];
+  const permitted=!!user&&valid&&!(user.testAccount&&isProduction())&&(user.platformAdmin||memberships.length>0);
+  if(user) await loginAudit(user.id,permitted);
+  if (!permitted) {
     res.status(401).json({ error: "INVALID_CREDENTIALS" }); return;
   }
-  await new Promise<void>((resolve, reject) => req.session.regenerate((err) => err ? reject(err) : resolve()));
-  req.session.userId = user.id;
-  req.session.authenticatedAt = Date.now();
-  const view = await sessionView(req);
-  await saveSession(req);
+  const view = await signIn(req,user.id,user.sessionVersion);
   req.log.info({ userId: user.id }, "User authenticated");
   res.json(view);
 });

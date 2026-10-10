@@ -5,6 +5,104 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MemberRole = typeof MemberRole[keyof typeof MemberRole];
+
+
+export const MemberRole = {
+  factory_manager: 'factory_manager',
+  analyst: 'analyst',
+  viewer: 'viewer',
+} as const;
+
+export interface Member {
+  id: string;
+  name: string;
+  email: string;
+  role: MemberRole;
+  active: boolean;
+  /** @nullable */
+  lastLogin: string | null;
+  loginSuccessCount: number;
+  loginFailureCount: number;
+}
+
+export interface MemberUpdate {
+  role?: MemberRole;
+  active?: boolean;
+}
+
+export interface InvitationInput {
+  /** @maxLength 254 */
+  email: string;
+  role: MemberRole;
+}
+
+export type InvitationStatus = typeof InvitationStatus[keyof typeof InvitationStatus];
+
+
+export const InvitationStatus = {
+  pending: 'pending',
+  expired: 'expired',
+} as const;
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: MemberRole;
+  status: InvitationStatus;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface InvitationLink {
+  invitation: Invitation;
+  path: string;
+}
+
+export interface InvitationAcceptance {
+  /**
+     * @minLength 32
+     * @maxLength 128
+     */
+  token: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minLength 12
+     * @maxLength 256
+     */
+  password: string;
+}
+
+export interface PasswordChange {
+  /**
+     * @minLength 1
+     * @maxLength 256
+     */
+  currentPassword: string;
+  /**
+     * @minLength 12
+     * @maxLength 256
+     */
+  newPassword: string;
+}
+
+export interface AccountAudit {
+  id: string;
+  action: string;
+  /** @nullable */
+  actorName: string | null;
+  /** @nullable */
+  subjectName: string | null;
+  createdAt: string;
+  /** @nullable */
+  role: string | null;
+  count: number;
+}
+
 export type SourceDetailInputsItem = {
   key: string;
   /** @nullable */
@@ -612,6 +710,43 @@ export interface PageState {
 export interface HealthStatus {
   status: string;
 }
+
+export type GetMembersParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type GetMembers200 = {
+  items: Member[];
+  total: number;
+  page: number;
+};
+
+export type GetInvitationsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+};
+
+export type GetInvitations200 = {
+  items: Invitation[];
+  total: number;
+  page: number;
+};
+
+export type GetInvitationDetailsParams = {
+token: string;
+};
+
+export type GetInvitationDetails200 = {
+  factoryName: string;
+  role: MemberRole;
+  email: string;
+  expiresAt: string;
+};
 
 export type ListProductionRunsParams = {
 /**

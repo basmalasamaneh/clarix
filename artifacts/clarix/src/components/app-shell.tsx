@@ -16,6 +16,8 @@ import {
   Menu,
   Settings2,
   ShieldHalf,
+  UserCog,
+  Users,
   Sparkles,
   type LucideIcon,
 } from 'lucide-react';
@@ -52,6 +54,8 @@ export const PAGE_ICONS: Record<string, LucideIcon> = {
   quality: ClipboardCheck,
   settings: Settings2,
   platform: ShieldHalf,
+  members: Users,
+  account: UserCog,
 };
 
 function initials(name: string) {
@@ -63,6 +67,7 @@ function NavList({ session, onNavigate }: { session: Session; onNavigate?: () =>
   const { t } = useTranslation();
   const [location] = useLocation();
   const tenant = NAV_PAGES.filter((p) => session.allowedPages.includes(p));
+  const showMembers = !session.user?.platformAdmin && session.allowedPages.includes('members');
   const showPlatform = session.user?.platformAdmin && session.allowedPages.includes('platform');
   const item = (p: string) => {
     const Icon = PAGE_ICONS[p] ?? BarChart3;
@@ -99,7 +104,7 @@ function NavList({ session, onNavigate }: { session: Session; onNavigate?: () =>
           <div className="px-3 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
             {t('nav.section')}
           </div>
-          <ul className="flex flex-col gap-0.5">{tenant.map(item)}</ul>
+          <ul className="flex flex-col gap-0.5">{tenant.map(item)}{showMembers && item('members')}</ul>
         </div>
       )}
       {showPlatform && (
@@ -208,6 +213,12 @@ function UserMenu({ session, csrf, onReplayTour }: { session: Session; csrf: str
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="gap-2">
+          <Link href="/account" data-testid="link-account">
+            <UserCog className="size-4" aria-hidden="true" />
+            {t('nav.account')}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem onSelect={onReplayTour} className="gap-2" data-testid="button-replay-tour">
           <Sparkles className="size-4" aria-hidden="true" />
           {t('user.replayTour')}

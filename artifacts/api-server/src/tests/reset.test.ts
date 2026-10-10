@@ -29,14 +29,14 @@ test("privileged reset scope, rollback, protected rows and immutable runtime",as
   const schema=process.env.CLARIX_TEST_SCHEMA!;
   // Add minimal nonempty data in each isolated tenant, independent of other tests.
   await c.query("BEGIN");
-  for(const t of [...importedTables,"factories","memberships"]) await c.query(`ALTER TABLE ${t} NO FORCE ROW LEVEL SECURITY`);
+  for(const t of [...importedTables,"factories","memberships","invitations","account_audit"]) await c.query(`ALTER TABLE ${t} NO FORCE ROW LEVEL SECURITY`);
   for(const [factory,user] of [["ethmar","test-manager"],["najm","test-najm"]]) {
    const id=randomUUID();
    await c.query("INSERT INTO imports(id,factory_id,source_name,file_names,content_hash,uploaded_by) VALUES($1::uuid,$2,'reset-proof','[]',$1::text,$3)",[id,factory,user]);
    await c.query("INSERT INTO raw_rows(factory_id,source_name,import_id,file,line_number,cells) VALUES($1,'reset-proof',$2,'test.csv',1,'{}')",[factory,id]);
   }
   const other=await fingerprint(c,schema,"najm"),protectedBefore=await fingerprint(c,schema,undefined,true);
-  for(const t of [...importedTables,"factories","memberships"]) await c.query(`ALTER TABLE ${t} FORCE ROW LEVEL SECURITY`);
+  for(const t of [...importedTables,"factories","memberships","invitations","account_audit"]) await c.query(`ALTER TABLE ${t} FORCE ROW LEVEL SECURITY`);
   await c.query("COMMIT");
   // Observe nonempty FORCE-RLS test tables using the same privileged connection
   // configuration as the harness, never inserting a sentinel into dev tables.
@@ -64,7 +64,7 @@ test("privileged reset scope, rollback, protected rows and immutable runtime",as
   assert.ok(result.otherFactoriesUnchanged&&result.protectedUnchanged);
   for(const t of importedTables) assert.equal(result.after[t].count,0);
   await c.query("BEGIN");
-  for(const t of [...importedTables,"factories","memberships"]) await c.query(`ALTER TABLE ${t} NO FORCE ROW LEVEL SECURITY`);
+  for(const t of [...importedTables,"factories","memberships","invitations","account_audit"]) await c.query(`ALTER TABLE ${t} NO FORCE ROW LEVEL SECURITY`);
   assert.deepEqual(await fingerprint(c,schema,"najm"),other);
   const protectedAfter=await fingerprint(c,schema,undefined,true);
   for(const t of ["users","factories","memberships","sessions"]) assert.deepEqual(protectedAfter[t],protectedBefore[t]);
