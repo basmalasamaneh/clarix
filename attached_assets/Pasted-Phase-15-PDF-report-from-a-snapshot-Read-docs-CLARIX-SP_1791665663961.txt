@@ -1,0 +1,40 @@
+Phase 15 — PDF report from a snapshot. Read docs/CLARIX_SPEC.md (report/export, design system, traceability), docs/PHASE14_RECONCILIATION.md and replit.md first. Build ONLY this phase.
+
+Goal
+A user downloads a clear, printable PDF of a frozen snapshot (with its reconciliation, if any), readable by a manager who never opens the app. Numbers come only from the stored snapshot; nothing is recalculated and nothing is AI.
+
+1. Options first (short)
+ Before building, evaluate how to produce the PDF on THIS platform's production deployment and tell me the options with trade-offs in plain language: (a) server-side PDF generation with a library, (b) server-side rendering of an HTML page through a headless browser if one is available in the published deployment, (c) a dedicated print-optimised page that the user saves as PDF from the browser. Check that Arabic is rendered correctly (joined letters, right-to-left order, correct numerals, bundled fonts IBM Plex Sans Arabic and Inter embedded) and that it works in production, not only in development. Recommend one and implement it. If a server-side option cannot guarantee correct Arabic in production, choose the print-page option and say so.
+
+2. Report content (A4, page numbers, header and footer on every page)
+ - Title, factory name, snapshot title and date/time, who saved it, snapshot id, export date/time, and language chosen at export time (AR RTL or EN LTR; the user picks).
+ - The two runs (order ids, source names, import ids), overall and per-group status with word + icon (never colour alone; the PDF must also be legible in black and white).
+ - KPI table and the two charts from the stored chart values (vector if possible), downtime shown separately with the standing sentence "Downtime is recorded separately and is not assumed to explain the difference."
+ - The plain-language sentences stored with the snapshot.
+ - Issues present at snapshot time: code, plain message, group, source file + physical line (+ column).
+ - Reconciliation records (if any): report value, Clarix value, difference, result, who/when, and the "where do these numbers come from" text. "Not provided" is shown as such, never as 0; blocked figures show "Cannot be reconciled" with the reason.
+ - A short "How to read this report" box and a final "Method" note: numbers are calculated by code from the approved imports listed; every number can be traced in Clarix to file and line.
+ - Light, print-friendly design (no dark mode in print), tokens only for brand green.
+
+3. Safety
+ - Only roles that can read the snapshot can export it (Factory manager, Analyst, Viewer). Platform Admin: denied. Cross-factory: 404 with the same error shape as non-existent ids.
+ - Any text that came from user files or user input (titles, notes, reasons, cell values) is escaped and, where it begins with =, +, - or @, neutralised, so the PDF can never carry a formula or injected markup. No raw cell contents beyond what the snapshot already stores.
+ - Sanitised, predictable file name (e.g. clarix-<factory-slug>-<snapshot-id>-<language>.pdf). No secrets, tokens or internal ids beyond the snapshot id in the file.
+ - Rate limit exports, cap size/time, and keep other users responsive while generating. Write an audit entry (who, which snapshot, language; no content).
+
+4. UI/UX
+ - "Download PDF" on the snapshot detail page, with language choice (Arabic / English), a loading state, a clear error state, and a note that the PDF reflects the frozen snapshot. Plain wording AR + EN, light + dark app UI, 360/768/1280px, keyboard accessible.
+ - Add a short Help entry about reports.
+
+5. Tests (isolated target; do not write to Ethmar/Najm dev data; show before/after counts and fingerprints)
+ - Generate the PDF for the baseline snapshot in English and Arabic; extract the text and assert every number in the PDF equals the snapshot's stored value (exact strings), including the 5% / 10% / +5 pp / 240 / 360 / +120 min / 45 min figures.
+ - A snapshot with a blocked group (fixture 07 or 05): the PDF shows "Not available / Cannot be reconciled" and no fake zero or invented difference.
+ - A snapshot later superseded by a new import: the PDF still shows the frozen values, not current ones.
+ - Arabic check: verify (and explain how) that Arabic letters are joined and ordered correctly, e.g. by rasterising a page and showing me the image; state clearly that you cannot judge visual quality and that I will review.
+ - Injection test: a title or reason starting with = or @ appears neutralised; HTML in a title is escaped.
+ - Permissions and cross-factory tests; rate limiting; audit entry; file name sanitised.
+ - Existing suite still passes (fixtures vs expected_results.json, 52 verifier checks, tenancy, accounts, platform, snapshots).
+
+Do NOT build: public share links, email sending, scheduled reports, AI summaries, PDF of non-snapshot (live) comparisons, new metrics. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Final report: options considered and why chosen, built / not built, test table, before/after counts and fingerprints, sample PDF files (English and Arabic) delivered to me, and exact manual steps for me.
