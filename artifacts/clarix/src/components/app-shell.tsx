@@ -146,13 +146,13 @@ function FactorySelector({ session, csrf }: { session: Session; csrf: string }) 
       }
     >
       <SelectTrigger
-        className="h-11 w-full min-w-0 gap-2 bg-card sm:w-64"
+        className="h-11 w-full min-w-0 gap-2 bg-card sm:w-64 md:w-80"
         aria-label={t('factory.label')}
         data-testid="select-factory"
       >
         <Building2 className="size-4 shrink-0 text-primary" aria-hidden="true" />
-        <div className="flex min-w-0 flex-1 flex-col items-start text-start leading-tight">
-          <SelectValue placeholder={t('factory.choose')} />
+        <div className="min-w-0 flex-1 overflow-hidden text-start leading-tight">
+          <SelectValue className="block max-w-full truncate" placeholder={t('factory.choose')} />
         </div>
         {active && (
           <span className="hidden shrink-0 rounded border px-1.5 py-px text-[0.68rem] text-muted-foreground md:inline">
