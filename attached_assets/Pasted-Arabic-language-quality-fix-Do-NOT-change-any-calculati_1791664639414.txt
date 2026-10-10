@@ -1,0 +1,12 @@
+Arabic language quality fix. Do NOT change any calculation, value, status, test fixture or layout logic. Wording and formatting only.
+
+1. Terminology: use ONE Arabic term for "run" everywhere (UI, Help, glossary, chart captions, KPI labels, snapshot and reconciliation texts, PDF text if present): "تشغيلة" (plural "تشغيلات", dual "تشغيلتان"). Replace every "دفعة / دفعات / التشغيل" used with that meaning. Keep the brand name as "Clarix" in Latin letters in both languages (replace "كلاريكس"). List every changed string.
+2. Plurals and numbers: use proper plural-aware formatting (Intl.PluralRules or equivalent, in both languages) for counted units: نقطة مئوية (1: نقطة مئوية، 2: نقطتان مئويتان، 3-10: نقاط مئوية، 11+: نقطة مئوية), ساعة (ساعة، ساعتان، 3-10 ساعات، 11+ ساعة), دقيقة (دقيقة، دقيقتان، 3-10 دقائق، 11+ دقيقة), كغ. English: proper singular/plural too. Add tests that cover 0, 1, 2, 3, 10, 11, 100, 0.75 and negative values in both languages.
+3. Stray values: remove the extra number appended to KPI card labels (e.g. "التشغيل ب · E-02 · 10"). If it is visually-hidden text for screen readers, make it a proper readable sentence (e.g. "التشغيلة ب، E-02: 10 بالمئة") instead of a dangling number.
+4. Spacing: one consistent space (non-breaking) between every number and its unit in all tables, cards, charts, captions and drawers, both languages.
+5. Signs and direction: signed numbers (+5, -5, +120, -50) must display with the sign next to the number on the correct side in Arabic (use a real minus sign U+2212 and bidi isolation/LRM so "-5" never renders as "5-"), also inside sentences and in the chart labels and data tables. Keep copy/paste values clean.
+6. Review ALL Arabic strings once more for the same issues, simple modern standard Arabic, short sentences, consistent status words, and tell me any term you were unsure about instead of guessing.
+7. Tests: the translation parity check must still pass (both languages same keys); add snapshot tests for the formatting rules above. Run the full suite (fixtures vs expected_results.json, 52 verifier checks, tenancy, accounts, platform, snapshots). Do not write to Ethmar/Najm dev data; show before/after counts.
+8. Screenshots of Comparison, Overview, Snapshots and the reconciliation table in Arabic at 360px and 1280px, light and dark (best effort; list what is missing). State clearly that you cannot judge visual quality.
+
+Report: strings changed (before -> after, grouped by rule), tests, before/after counts.

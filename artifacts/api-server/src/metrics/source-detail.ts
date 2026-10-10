@@ -4,6 +4,8 @@ import type {Context} from "../imports/service";
 import {ImportError} from "../imports/model";
 import {getRuns,compare} from "./service";
 import {definitions,formatted} from "./values";
+import {NBSP,unitWord} from "./number-format";
+const arUnit=(u:string)=>u==="kg"?"كغ":u==="min"?"دقيقة":u==="pp"?"نقطة مئوية":u==="pct"?"%":u;
 
 const text=(en:string,ar:string):SourceText=>({en,ar});
 const na=text("Not available","غير متوفر");
@@ -145,8 +147,8 @@ async function single(ctx:Context,importId:string,orderId:string|null,key:string
   const notes:SourceText[]=[];
   if(issues.some(i=>i.code==="POSSIBLE_OVERLAP")) for(const overlap of run?.overlaps??[]) {
     notes.push(text(
-      `Recorded overlap: stop ${overlap.stop_event_id} and changeover ${overlap.changeover_event_id}: ${overlap.overlap_min??"Not available"} minutes. This does not establish a cause.`,
-      `تداخل مسجّل: التوقف ${overlap.stop_event_id} وتغيير القالب ${overlap.changeover_event_id}: ${overlap.overlap_min??"غير متوفر"} دقيقة. هذا لا يثبت علاقة سببية.`));
+      `Recorded overlap: stop ${overlap.stop_event_id} and changeover ${overlap.changeover_event_id}: ${overlap.overlap_min??"Not available"}${overlap.overlap_min==null?"":NBSP+unitWord(String(overlap.overlap_min),"min","en",{style:"long"})}. This does not establish a cause.`,
+      `تداخل مسجّل: التوقف ${overlap.stop_event_id} وتغيير القالب ${overlap.changeover_event_id}: ${overlap.overlap_min??"غير متوفر"}${overlap.overlap_min==null?"":NBSP+unitWord(String(overlap.overlap_min),"min","ar")}. هذا لا يثبت علاقة سببية.`));
   }
   for(const [unitName,factor] of Object.entries(imp.mapping.unit_factors_to_kg)) {
     if(imp.mapping.capability_level===1) break;
@@ -155,8 +157,8 @@ async function single(ctx:Context,importId:string,orderId:string|null,key:string
       const spec=Object.values(imp.mapping.files).find(s=>s?.file===r.file)!;
       return (spec.fixed_unit||r.cells[spec.columns.unit]||"").trim().toLowerCase()===unitName.toLowerCase();
     });
-    if(used) notes.push(text(`Unit conversion: 1 ${unitName} = ${factor} kg. Original cells remain unchanged.`,
-      `تحويل الوحدة: 1 ${unitName} = ${factor} كغ. تبقى الخلايا الأصلية دون تغيير.`));
+    if(used) notes.push(text(`Unit conversion: 1 ${unitName} = ${factor}${NBSP}kg. Original cells remain unchanged.`,
+      `تحويل الوحدة: 1 ${unitName} = ${factor}${NBSP}كغ. تبقى الخلايا الأصلية دون تغيير.`));
   }
   if(key==="downtime_min"||rows.some(r=>r.event?.type==="UNPLANNED_DOWNTIME"))
     notes.push(text("Recorded separately. Not included in changeover time and not assumed to be a cause of scrap.","مسجّلة بشكل منفصل. لا تُحتسب ضمن زمن تغيير القالب ولا يُفترض أنها سبب الهدر."));
@@ -198,9 +200,9 @@ export async function sourceDetail(ctx:Context,input:{kind:"metric"|"issue";id:s
        if(frozen&&(a.id!==frozen.a.id||b.id!==frozen.b.id))throw new ImportError("NOT_FOUND",404);
        const difference=(frozen??await compare(ctx,a.id,b.id)).differences.find(m=>m.key===key)!;
       result={...result,value:difference.value,display:difference.display,unit:difference.unit,
-        formula:text("Difference = Run B − Run A","الفرق = الدفعة ب − الدفعة أ"),
+        formula:text("Difference = Run B − Run A","الفرق = التشغيلة ب − التشغيلة أ"),
         inputs:[{key:"run_b",value:m.value,unit:m.unit},{key:"run_a",value:metric!.value,unit:metric!.unit}],
-        breakdown:difference.value===null?na:text(`${m.value} − ${metric!.value} = ${difference.value} ${difference.unit}`,`${m.value} − ${metric!.value} = ${difference.value} ${difference.unit}`),
+        breakdown:difference.value===null?na:text(`${m.value} − ${metric!.value} = ${difference.value}${NBSP}${difference.unit}`,`${m.value} − ${metric!.value} = ${difference.value}${NBSP}${arUnit(difference.unit)}`),
         rows:[...result.rows,...right.rows],imports:[...result.imports,...right.imports],issues:[...result.issues,...right.issues],
         duplicatePairs:[...result.duplicatePairs,...right.duplicatePairs],notes:[...result.notes,...right.notes],
         alternatives:[]};

@@ -3,6 +3,7 @@ import { Database } from 'lucide-react';
 import type { ProductionRun, RunIssue, RunMetric } from '@workspace/api-client-react';
 import { Raw } from '@/components/imports/shared';
 import { cn } from '@/lib/utils';
+import { Qty } from '@/components/num-text';
 import '@/lib/runs-i18n';
 
 export const VOLUME_KEYS = ['input_kg', 'good_kg', 'scrap_kg', 'scrap_rate_pct', 'good_rate_pct', 'material_balance_kg'] as const;
@@ -33,10 +34,9 @@ export function MetricValue({ m, className, testId, showHours = true }: { m: Run
   return (
     <span className={cn('inline-flex flex-col items-start gap-0.5', className)} data-testid={testId}>
       <span className="whitespace-nowrap">
-        <span className="num font-semibold">{m.display}</span>
-        <span className="ms-1 text-xs text-muted-foreground">{t(`rc.unit.${m.unit}`)}</span>
+        <Qty value={m.display} unit={m.unit} fallbackUnit={t(`rc.unit.${m.unit}`)} numClassName="font-semibold" unitClassName="text-xs text-muted-foreground" />
       </span>
-      {hours && <span className="num text-xs text-muted-foreground">({t('rc.hoursOf', { h: hours })})</span>}
+      {hours && <span className="text-xs text-muted-foreground">(<Qty value={hours} unit="h" />)</span>}
       {m.noEvents && (
         <span className="rounded border border-dashed px-1.5 text-[11px] font-medium text-muted-foreground" data-testid={testId ? `${testId}-no-events` : undefined}>
           {t('rc.noEvents')}

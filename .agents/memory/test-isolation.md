@@ -26,3 +26,10 @@ rows; for tenant assertions, use the authenticated API instead of owner queries.
 **Why:** An owner UPDATE silently matched zero rows in a test, leaving the token
 valid and producing a misleading expiry failure.
 **How to apply:** Do not relax RLS or modify ordinary data to prepare fixtures.
+
+Serialize isolated database/browser harnesses against this database.
+**Why:** Their schemas are separate, but each fingerprints cluster-wide roles;
+concurrent creation/removal of another harness's temporary roles causes false
+isolation failures even when all ordinary table fingerprints remain unchanged.
+**How to apply:** Wait for one harness to finish cleanup before starting another.
+Keep the failed evidence, then obtain a clean sequential before/after proof.

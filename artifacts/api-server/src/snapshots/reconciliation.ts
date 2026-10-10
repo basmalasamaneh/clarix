@@ -1,6 +1,7 @@
 import {D,fmt} from "@workspace/calculation";
 import type {ReportFigures,RunComparison,ReconciliationResult,ReconciliationFigure,SourceText} from "@workspace/api-zod";
 import {ImportError} from "../imports/model";
+import {NBSP,isUnitKey,unitWord} from "../metrics/number-format";
 const keys=["input_kg","good_kg","scrap_kg","changeover_min","downtime_min"] as const;
 const text=(en:string,ar:string):SourceText=>({en,ar});
 export function reconcile(comparison:RunComparison,input:ReportFigures):ReconciliationResult {
@@ -20,14 +21,14 @@ export function reconcile(comparison:RunComparison,input:ReportFigures):Reconcil
     // User chose group-wide refusal for reconciliation, distinct from tables.
     const reason=blocked?m.status==="red"
       ?text("This metric group is blocked. Review its Data Quality issues.","مجموعة المقاييس هذه محجوبة. راجع مشكلاتها في جودة البيانات.")
-      :text("Clarix has no available value for this figure.","لا تتوفر لدى كلاريكس قيمة لهذا الرقم.")
+      :text("Clarix has no available value for this figure.","لا تتوفر لدى Clarix قيمة لهذا الرقم.")
       :text("","");
-    const arUnit=m.unit==="kg"?"كغ":m.unit==="min"?"دقيقة":m.unit;
+    const q=(v:string|null,lang:"en"|"ar")=>`${v}${NBSP}${isUnitKey(m.unit)?unitWord(v??"",m.unit,lang,lang==="en"?{style:"long"}:{}):m.unit}`;
     const sentence=result==="not_provided"?text("Not provided","لم يُقدَّم"):
       result==="unavailable"?text(`Cannot be reconciled — ${reason.en}`,`لا يمكن المطابقة — ${reason.ar}`):
-      result==="matches"?text("Clarix and your report match on this figure.","تتطابق قيمة كلاريكس مع تقريرك لهذا الرقم."):
-      text(`Your report says ${reported} ${m.unit}; Clarix counts ${m.value} ${m.unit}. Difference (report − Clarix): ${difference} ${m.unit}. See the source rows.`,
-        `يذكر تقريرك ${reported} ${arUnit}؛ ويحتسب كلاريكس ${m.value} ${arUnit}. الفرق (التقرير − كلاريكس): ${difference} ${arUnit}. راجع الصفوف المصدر.`);
+      result==="matches"?text("Clarix and your report match on this figure.","تتطابق قيمة Clarix مع تقريرك لهذا الرقم."):
+      text(`Your report says ${q(reported,"en")}; Clarix counts ${q(m.value,"en")}. Difference (report − Clarix): ${q(difference,"en")}. See the source rows.`,
+        `يذكر تقريرك ${q(reported,"ar")}، ويحتسب Clarix ${q(m.value,"ar")}. الفرق (التقرير − Clarix): ${q(difference,"ar")}. راجع الصفوف المصدر.`);
     figures.push({side,runId:comparison[side].id,key,unit:m.unit,clarix:m.value,reported,difference,result,reason,sentence});
   }
   return {origin:(input.origin??"").trim(),figures};

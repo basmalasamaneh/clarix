@@ -20,6 +20,7 @@ import { UUID_RE } from '@/components/runs/shared';
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { formatDate, issueText } from '@/lib/import-model';
 import { cn } from '@/lib/utils';
+import { NumText, Qty } from '@/components/num-text';
 import type { SourceTarget } from '@/components/source/source-context';
 import '@/lib/runs-i18n';
 import '@/lib/quality-i18n';
@@ -81,8 +82,7 @@ function Val({ value, unit, testId, className }: { value: string | null; unit: s
   if (value == null) return <NA testId={testId} />;
   return (
     <span className={cn('whitespace-nowrap', className)} data-testid={testId}>
-      <span className="num font-semibold">{value}</span>
-      {unit && <span className="ms-1 text-xs text-muted-foreground">{unitText(t, unit)}</span>}
+      <Qty value={value} unit={unit} fallbackUnit={unit ? unitText(t, unit) : ''} numClassName="font-semibold" unitClassName="text-xs text-muted-foreground" />
     </span>
   );
 }
@@ -227,7 +227,7 @@ function Breakdown({ d }: { d: SourceDetail }) {
             className={cn('whitespace-pre-wrap break-words rounded-lg border bg-background px-3 py-2.5 font-mono text-[13px] leading-relaxed [overflow-wrap:anywhere]', long && !expanded && 'line-clamp-4')}
             data-testid="text-source-breakdown"
           >
-            {text}
+            <NumText text={text} />
           </p>
           {long && (
             <Button variant="ghost" className="mt-1 min-h-11 px-2 text-xs text-primary" aria-expanded={expanded} aria-controls="source-breakdown-text" onClick={() => setExpanded((e) => !e)} data-testid="button-toggle-breakdown">
@@ -467,8 +467,7 @@ function Body({ target, session }: { target: SourceTarget; session: Session }) {
           </div>
         ) : (
           <p className="mt-1" data-testid="text-source-value">
-            <span className="num text-3xl font-semibold tracking-tight">{shown}</span>
-            {d.unit && <span className="ms-1.5 text-base text-muted-foreground">{unitText(t, d.unit)}</span>}
+            <Qty value={shown} unit={d.unit ?? ''} fallbackUnit={d.unit ? unitText(t, d.unit) : ''} numClassName="text-3xl font-semibold tracking-tight" unitClassName="text-base text-muted-foreground" />
           </p>
         )}
         {focusCode && (
@@ -481,7 +480,7 @@ function Body({ target, session }: { target: SourceTarget; session: Session }) {
         {formula && (
           <div className="mt-4 rounded-lg border-s-[3px] border-s-[var(--primary)] bg-secondary px-3 py-2.5" data-testid="text-source-formula">
             <p className="text-[11px] font-semibold text-muted-foreground">{t('src.formula')}</p>
-            <p className="mt-0.5 text-sm font-medium leading-relaxed" dir={lang === 'ar' ? 'rtl' : 'ltr'}>{formula}</p>
+            <p className="mt-0.5 text-sm font-medium leading-relaxed" dir={lang === 'ar' ? 'rtl' : 'ltr'}><NumText text={formula} /></p>
           </div>
         )}
       </section>
@@ -507,7 +506,7 @@ function Body({ target, session }: { target: SourceTarget; session: Session }) {
             {d.notes.map((n, i) => (
               <li key={i} className="flex gap-2 text-sm" data-testid={`text-source-note-${i}`}>
                 <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-                <span dir={lang === 'ar' ? 'rtl' : 'ltr'}>{pick(n, lang)}</span>
+                <span dir={lang === 'ar' ? 'rtl' : 'ltr'}><NumText text={pick(n, lang)} /></span>
               </li>
             ))}
           </ul>

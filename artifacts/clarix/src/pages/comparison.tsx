@@ -23,6 +23,7 @@ import { ForbiddenState } from '@/pages/tenant-page';
 import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { issueText } from '@/lib/import-model';
 import { cn } from '@/lib/utils';
+import { NumText, Qty } from '@/components/num-text';
 import { BarsChart, KpiCard } from '@/components/charts/chart-card';
 import { GlossaryTip, GroupTip, MetricTerm, StatusTip } from '@/components/charts/glossary';
 import { ComparisonSnapshotPanel } from '@/components/snapshots/reconcile';
@@ -72,8 +73,7 @@ function Alternatives({ m, side, data }: { m: RunMetric | undefined; side: 'a' |
       {alts.map((a) => (
         <p key={a.key} className="text-xs">
           <Raw className="text-[11px] text-muted-foreground">{a.key}</Raw>{' '}
-          {a.display == null ? <span className="italic text-muted-foreground">{t('rc.na')}</span> : <span className="num font-medium" data-testid={`text-alt-${side}-${m!.key}-${a.key}`}>{a.display}</span>}
-          {' '}<span className="text-[11px] text-muted-foreground">{t(`rc.unit.${m!.unit}`)}</span>
+          {a.display == null ? <span className="italic text-muted-foreground">{t('rc.na')}</span> : <span data-testid={`text-alt-${side}-${m!.key}-${a.key}`}><Qty value={a.display} unit={m!.unit} fallbackUnit={t(`rc.unit.${m!.unit}`)} numClassName="font-medium" unitClassName="text-[11px] text-muted-foreground" /></span>}
         </p>
       ))}
       <SourceLink source={srcFor(data, side, m!.key)} label={`${t('rc.cmp.alternatives')} · ${t(`rc.metric.${m!.key}`)}`} testId={`link-source-alt-${side}-${m!.key}`} showHint={false} className="px-0 text-xs text-primary underline-offset-2 hover:underline">
@@ -289,7 +289,7 @@ export function Result({ data }: { data: RunComparison }) {
             data.groups[g] ? <span key={g} className="inline-flex items-center"><QualityStatusBadge status={data.groups[g]} label={t(`rc.groups.${g}`)} size="sm" testId={`status-comparison-${g}`} /><GroupTip group={g} testId={`button-glossary-group-comparison-${g}`} /><StatusTip status={data.groups[g]} testId={`button-glossary-status-comparison-${g}`} /></span> : null,
           )}
         </div>
-        <p className="mt-3 text-base font-medium leading-relaxed" dir={ar ? 'rtl' : 'ltr'} lang={ar ? 'ar' : 'en'} data-testid="text-summary">{ar ? data.summary.ar : data.summary.en}</p>
+        <p className="mt-3 text-base font-medium leading-relaxed" dir={ar ? 'rtl' : 'ltr'} lang={ar ? 'ar' : 'en'} data-testid="text-summary"><NumText text={ar ? data.summary.ar : data.summary.en} /></p>
         <p className="mt-2 border-s-2 border-[var(--series-stop)] ps-3 text-sm text-muted-foreground" data-testid="text-downtime-separate">{t('rc.cmp.separateLine')}</p>
         <p className="mt-2 text-[11px] text-muted-foreground">{t('rc.cmp.summaryNote')}</p>
       </section>
@@ -322,7 +322,7 @@ export function Result({ data }: { data: RunComparison }) {
             {data.questions.map((qq) => (
               <li key={qq.key} className="flex min-w-0 flex-col rounded-lg border bg-background p-3" data-testid={`card-question-${qq.key}`}>
                 <h3 className="text-xs font-semibold text-muted-foreground">{t(`rc.cmp.q.${qq.key}`, { defaultValue: qq.key })}</h3>
-                <p className="mt-1 flex-1 text-sm leading-relaxed" dir={ar ? 'rtl' : 'ltr'} lang={ar ? 'ar' : 'en'} data-testid={`text-question-${qq.key}`}>{ar ? qq.ar : qq.en}</p>
+                <p className="mt-1 flex-1 text-sm leading-relaxed" dir={ar ? 'rtl' : 'ltr'} lang={ar ? 'ar' : 'en'} data-testid={`text-question-${qq.key}`}><NumText text={ar ? qq.ar : qq.en} /></p>
                 <SourceLink source={srcFor(data, 'd', qq.metricKey)} label={t(`rc.cmp.q.${qq.key}`, { defaultValue: qq.key })} testId={`link-question-source-${qq.key}`} showHint={false} className="mt-1 self-start px-0 text-xs font-medium text-primary underline-offset-2 hover:underline">
                   {t('rc.cmp.showSource')}
                 </SourceLink>

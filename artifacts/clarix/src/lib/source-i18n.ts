@@ -74,7 +74,7 @@ const ar: typeof en = {
   title: 'من أين يأتي هذا الرقم',
   dateTitle: 'تاريخ أول إنتاج',
   issueTitle: 'صفوف مصدر المشكلة',
-  forRun: 'الدفعة المختارة',
+  forRun: 'التشغيلة المختارة',
   forDifference: 'الفرق (ب − أ)',
   close: 'إغلاق تفاصيل المصدر',
   value: 'القيمة',

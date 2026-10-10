@@ -11,6 +11,8 @@ import { SourceLink } from '@/components/runs/refs';
 import { useSource } from '@/components/source/source-context';
 import { GlossaryTip, MetricTerm, StatusTip } from '@/components/charts/glossary';
 import { cn } from '@/lib/utils';
+import { NumText, Qty, useLang } from '@/components/num-text';
+import { formatQuantity, isUnitKey } from '@/lib/number-format';
 import '@/lib/charts-i18n';
 import '@/lib/quality-i18n';
 
@@ -41,17 +43,24 @@ const STATUS_FILL: Record<string, CSSProperties> = {
   red: { backgroundColor: 'var(--status-red)', backgroundImage: 'repeating-linear-gradient(45deg, color-mix(in srgb, var(--card) 45%, transparent) 0 2px, transparent 2px 6px), repeating-linear-gradient(135deg, color-mix(in srgb, var(--card) 45%, transparent) 0 2px, transparent 2px 6px)' },
 };
 
-function UnitText({ unit }: { unit: string }) {
+/** Plain text "value unit" for aria-labels: same words, NBSP, U+2212, no hidden characters. */
+function useQtyText() {
+  const lang = useLang();
   const { t } = useTranslation();
-  return <span className="text-[0.7em] font-medium text-muted-foreground">{' '}{t(`ch.unit.${unit}`, { defaultValue: unit })}</span>;
+  return (value: string, unit: string) => (isUnitKey(unit) ? formatQuantity(value, unit, lang, { style: 'long' }) : `${value}\u00A0${t(`ch.unit.${unit}`, { defaultValue: unit })}`);
+}
+
+function AxisValue({ value, unit }: { value: string; unit: string }) {
+  const { t } = useTranslation();
+  return <Qty value={value} unit={unit} fallbackUnit={t(`ch.unit.${unit}`, { defaultValue: unit })} unitClassName="font-medium" />;
 }
 
 function ValueText({ p, unit, className }: { p: ChartPoint; unit: string; className?: string }) {
   const { t } = useTranslation();
   return (
     <span className={cn('inline-flex flex-wrap items-baseline gap-x-1.5', className)}>
-      <span className="num font-semibold">{p.display}<UnitText unit={unit} /></span>
-      {p.hours && <span className="num text-[0.75em] text-muted-foreground">({t('rc.hoursOf', { h: p.hours })})</span>}
+      <Qty value={p.display ?? ''} unit={unit} fallbackUnit={t(`ch.unit.${unit}`, { defaultValue: unit })} numClassName="font-semibold" unitClassName="text-[0.7em] font-medium text-muted-foreground" />
+      {p.hours && <span className="text-[0.75em] text-muted-foreground">(<Qty value={p.hours} unit="h" />)</span>}
       {p.noEvents && <span className="text-[0.7em] italic text-muted-foreground">{t('ch.noEvents')}</span>}
     </span>
   );
@@ -100,7 +109,10 @@ function DataTable({ spec, visible, testId }: { spec: ChartSpec; visible: boolea
   const { t } = useTranslation();
   const { tx } = useText();
   return (
-    <table className={cn(visible ? 'mt-3 w-full text-sm' : 'sr-only')} data-testid={testId}>
+    // Tables retain their min-content width even with sr-only; clip the wrapper
+    // instead so accessibility-only text cannot widen the visible RTL page.
+    <div className={visible ? undefined : 'sr-only'}>
+    <table className="mt-3 w-full text-sm" data-testid={testId}>
       <caption className={cn(visible ? 'mb-1 text-start text-xs text-muted-foreground' : '')}>{t('ch.tableCaption', { title: tx(spec.title) })}</caption>
       <thead>
         <tr className="border-b text-[11px] uppercase tracking-wide text-muted-foreground">
@@ -126,13 +138,14 @@ function DataTable({ spec, visible, testId }: { spec: ChartSpec; visible: boolea
         {spec.kind !== 'status_stack' && spec.difference && (
           <tr>
             <th scope="row" className="py-1.5 text-start font-medium">{t('ch.difference')}</th>
-            <td className="py-1.5">{spec.difference?.display != null && spec.direction !== 'unavailable' ? <span className="num">{spec.difference?.display} {t(`ch.unit.${spec.difference?.unit}`, { defaultValue: spec.difference?.unit ?? '' })}</span> : <span className="italic text-muted-foreground">{t('ch.na')}</span>}</td>
+            <td className="py-1.5">{spec.difference?.display != null && spec.direction !== 'unavailable' ? <Qty value={spec.difference.display} unit={spec.difference.unit ?? ''} fallbackUnit={t(`ch.unit.${spec.difference.unit}`, { defaultValue: spec.difference.unit ?? '' })} /> : <span className="italic text-muted-foreground">{t('ch.na')}</span>}</td>
             <td className="py-1.5">{t(`ch.dir.${spec.direction}`)}</td>
-            <td className="py-1.5 text-muted-foreground">{tx(spec.changeText)}</td>
+            <td className="py-1.5 text-muted-foreground"><NumText text={tx(spec.changeText)} /></td>
           </tr>
         )}
       </tbody>
     </table>
+    </div>
   );
 }
 
@@ -152,7 +165,7 @@ function Shell({ spec, testId, children, head }: { spec: ChartSpec; testId: stri
       </div>
       {head}
       <div>{children}</div>
-      <figcaption className="mt-3 text-sm leading-relaxed" dir={ar ? 'rtl' : 'ltr'} data-testid={`${testId}-caption`}>{tx(spec.caption)}</figcaption>
+      <figcaption className="mt-3 text-sm leading-relaxed" dir={ar ? 'rtl' : 'ltr'} data-testid={`${testId}-caption`}><NumText text={tx(spec.caption)} /></figcaption>
       <div className="mt-1 flex flex-wrap items-center gap-1">
         <HowToRead text={tx(spec.howToRead)} testId={`${testId}-how-to-read`} />
         <button type="button" onClick={() => setShowTable((v) => !v)} aria-expanded={showTable} className="inline-flex min-h-11 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted-foreground hover-elevate" data-testid={`${testId}-toggle-table`}>
@@ -175,7 +188,7 @@ export function ChangeChip({ spec, testId }: { spec: ChartSpec; testId: string }
   return (
     <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 rounded-md border bg-background px-2 py-1 text-xs" data-testid={testId} data-direction={d}>
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-      <span className="font-medium" data-testid={has ? `${testId}-value` : undefined}>{tx(spec.changeText) || t(`ch.dir.${d}`)}</span>
+      <span className="font-medium" data-testid={has ? `${testId}-value` : undefined}>{tx(spec.changeText) ? <NumText text={tx(spec.changeText)} /> : t(`ch.dir.${d}`)}</span>
     </span>
   );
 }
@@ -223,6 +236,7 @@ const barPct = (w: string | null) => {
 
 export function BarsChart({ spec, testId }: { spec: ChartSpec; testId: string }) {
   const { t } = useTranslation();
+  const qtyText = useQtyText();
   const { ar } = useText();
   const reduce = useReducedMotion();
   const { openSource } = useSource();
@@ -261,7 +275,7 @@ export function BarsChart({ spec, testId }: { spec: ChartSpec; testId: string })
                   onClick={(e) => p.runId && openSource({ kind: 'metric', id: p.runId, metric: spec.key }, e.currentTarget)}
                   disabled={!p.runId}
                   aria-haspopup="dialog"
-                  aria-label={`${side} ${p.label}: ${p.display} ${t(`ch.unit.${spec.unit}`)} · ${t('ch.openSource')}`}
+                  aria-label={`${side}، ${p.label}: ${qtyText(p.display ?? '', spec.unit)} · ${t('ch.openSource')}`}
                   className="group relative block h-11 w-full rounded-md hover-elevate"
                   data-testid={`${testId}-bar-${p.key}`}
                 >
@@ -279,8 +293,8 @@ export function BarsChart({ spec, testId }: { spec: ChartSpec; testId: string })
           );
         })}
         <div className={cn('flex justify-between text-[10px] text-muted-foreground', ar && 'flex-row-reverse')} aria-hidden="true">
-          <span className="num">{axisMin}<UnitText unit={spec.unit} /></span>
-          <span className="num">{spec.axisMax}<UnitText unit={spec.unit} /></span>
+          <AxisValue value={String(axisMin)} unit={spec.unit} />
+          <AxisValue value={String(spec.axisMax)} unit={spec.unit} />
         </div>
       </div>
     </Shell>
@@ -347,7 +361,7 @@ function CountUp({ p, unit }: { p: ChartPoint; unit: string }) {
   if (i < 0) return <ValueText p={p} unit={unit} />;
   return (
     <>
-      <span aria-hidden="true" className="num font-semibold">{frames[i]}<UnitText unit={unit} /></span>
+      <span aria-hidden="true" className="font-semibold"><Qty value={frames[i]} unit={unit} unitClassName="text-[0.7em] font-medium text-muted-foreground" /></span>
       <span className="sr-only"><ValueText p={p} unit={unit} /></span>
     </>
   );
@@ -357,6 +371,7 @@ function CountUp({ p, unit }: { p: ChartPoint; unit: string }) {
 
 export function KpiCard({ spec, testId }: { spec: ChartSpec; testId: string }) {
   const { t } = useTranslation();
+  const qtyText = useQtyText();
   const { tx, ar } = useText();
   const a = spec.series.find((p) => p.key === 'a');
   const b = spec.series.find((p) => p.key === 'b') ?? spec.series[spec.series.length - 1];
@@ -380,7 +395,8 @@ export function KpiCard({ spec, testId }: { spec: ChartSpec; testId: string }) {
             </SourceLink>
           ) : <span className="block text-3xl leading-none" data-testid={`${testId}-value`}><ValueText p={b} unit={spec.unit} /></span>
         ) : <NotAvailable reason={b?.reason} testId={`${testId}-na`} />}
-        {b && <p className="mt-1 text-[11px] text-muted-foreground"><span className="font-semibold">{t('ch.runB')}</span> · <span dir="auto">{b.label}</span>{bOk && <span aria-hidden="true"> · <span className="num" data-testid={`${testId}-final`}>{b.display}</span></span>}</p>}
+        {b && <p className="mt-1 text-[11px] text-muted-foreground"><span className="font-semibold">{t('ch.runB')}</span> · <span dir="auto">{b.label}</span></p>}
+        {b && bOk && <span className="sr-only" data-testid={`${testId}-final`} data-final={b.display ?? ''}>{t('ch.kpiSr', { run: t('ch.runB'), label: b.label, value: qtyText(b.display ?? '', spec.unit) })}</span>}
       </div>
       {a && (
         <p className="mt-2 text-xs text-muted-foreground" data-testid={`${testId}-a`}>

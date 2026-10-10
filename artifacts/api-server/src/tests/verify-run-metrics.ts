@@ -84,8 +84,8 @@ export async function verifyRunMetrics(who:any,other:any,viewer:any,source:strin
     assert.equal(result.differences.find((m:any)=>m.key==="changeover_min").display,"+120");
     assert.equal(result.differences.find((m:any)=>m.key==="changeover_min").hours,"+2");
     assert.equal(result.b.metrics.find((m:any)=>m.key==="downtime_min").display,"45");
-    assert.ok(result.questions[1].en.includes("+120 minutes (+2 hours)"));
-    assert.ok(result.questions[2].en.includes("45 minutes"));
+    assert.ok(result.questions[1].en.includes("+120\u00a0minutes (+2\u00a0hours)"));
+    assert.ok(result.questions[2].en.includes("45\u00a0minutes"));
   }
   return evidence;
 }

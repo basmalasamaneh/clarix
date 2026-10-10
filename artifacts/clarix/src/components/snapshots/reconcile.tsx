@@ -31,6 +31,7 @@ import { SourceLink } from '@/components/runs/refs';
 import { useToast } from '@/hooks/use-toast';
 import { localizeError, useCsrfRequest } from '@/lib/session';
 import { cn } from '@/lib/utils';
+import { NumText, Qty } from '@/components/num-text';
 import '@/lib/phase14-i18n';
 
 export const SNAP_PAGE = 20;
@@ -143,7 +144,7 @@ const RES_ICON = { matches: CheckCircle2, differs: Scale, unavailable: OctagonX,
 function Num({ v, unit, testId, reported = false }: { v: string | null; unit: string; testId: string; reported?: boolean }) {
   const { t } = useTranslation();
   if (v == null) return <span className="text-sm italic text-muted-foreground" data-testid={testId}>{t(reported ? 'snp.rec.res.not_provided' : 'rc.na')}</span>;
-  return <span className="break-all text-sm" data-testid={testId}><span className="num font-medium">{v}</span> <span className="text-[11px] text-muted-foreground">{t(`rc.unit.${unit}`, { defaultValue: unit })}</span></span>;
+  return <span className="break-all text-sm" data-testid={testId}><Qty value={v} unit={unit} fallbackUnit={t(`rc.unit.${unit}`, { defaultValue: unit })} numClassName="font-medium" unitClassName="text-[11px] text-muted-foreground" /></span>;
 }
 
 function ResultCell({ f, tid }: { f: ReconciliationFigure; tid: string }) {
@@ -157,10 +158,10 @@ function ResultCell({ f, tid }: { f: ReconciliationFigure; tid: string }) {
         <Icon className={cn('size-4', f.result === 'matches' ? 'text-status-green' : f.result === 'differs' ? 'text-status-amber' : 'text-status-red')} aria-hidden="true" />
         <QualityStatusBadge status={RES_STATUS[f.result]} label={t(`snp.rec.res.${f.result}`)} size="sm" testId={`status-rec-${tid}`} />
       </span>
-      <p className="text-sm leading-relaxed" dir={dir} data-testid={`text-rec-sentence-${tid}`}>{pick(f.sentence)}</p>
+      <p className="text-sm leading-relaxed" dir={dir} data-testid={`text-rec-sentence-${tid}`}><NumText text={pick(f.sentence)} /></p>
       {f.result === 'unavailable' && (
         <>
-          {pick(f.reason) && <p className="text-xs text-muted-foreground" dir={dir} data-testid={`text-rec-reason-${tid}`}>{pick(f.reason)}</p>}
+          {pick(f.reason) && <p className="text-xs text-muted-foreground" dir={dir} data-testid={`text-rec-reason-${tid}`}><NumText text={pick(f.reason)} /></p>}
           <Link href="/quality" className="inline-flex min-h-11 items-center text-xs font-medium text-primary underline-offset-2 hover:underline" data-testid={`link-rec-quality-${tid}`}>{t('snp.rec.openQuality')}</Link>
         </>
       )}

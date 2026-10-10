@@ -1,6 +1,7 @@
 import {D,displayNumber} from "@workspace/calculation";
 import type {ChartSpec,ChartPoint,ProductionRun,RunMetric,ChartText} from "@workspace/api-zod";
 import {runLabels} from "./i18n";
+import {NBSP,unitWord} from "./number-format";
 
 const text=(en:string,ar:string):ChartText=>({en,ar});
 const titles:Record<string,ChartText>={
@@ -50,19 +51,21 @@ export function comparisonCharts(a:ProductionRun,b:ProductionRun,diffs:RunMetric
     for(const p of series) p.width=p.available?new D(p.value!).abs().div(max.sub(min)).mul(100).toFixed(6):null;
     const delta=difference.display===null?null:new D(difference.display);
     const direction=delta===null?"unavailable":delta.isZero()?"same":delta.gt(0)?"higher":"lower";
-    const u=unit==="pct"?text("pp","نقطة مئوية"):text("min","دقيقة");
+    const uk=unit==="pct"?"pp" as const:"min" as const;
+    const dd=difference.display??"0",absTxt=delta===null?"0":delta.abs().toFixed();
+    const u=text(unitWord(dd,uk,"en"),unitWord(dd,uk,"ar"));
     const changeText=delta===null?text("Not available","غير متاح"):direction==="same"?
-      text(`${difference.display} ${u.en} · same as Run A at the displayed precision`,`${difference.display} ${u.ar} · مثل التشغيل أ وفق دقة العرض`):
-      text(`${difference.display} ${u.en} ${direction} than Run A`,
-        `${difference.display} ${u.ar} ${direction==="higher"?"أعلى":"أقل"} من التشغيل أ`);
+      text(`${difference.display}${NBSP}${u.en} · same as Run A at the displayed precision`,`${difference.display}${NBSP}${u.ar} · مثل التشغيلة أ وفق دقة العرض`):
+      text(`${difference.display}${NBSP}${u.en} ${direction} than Run A`,
+        `${difference.display}${NBSP}${u.ar} ${direction==="higher"?"أعلى":"أقل"} من التشغيلة أ`);
     const caption=delta===null?text("These values cannot be compared; review the unavailable value's reason.","لا يمكن مقارنة القيمتين؛ راجع سبب عدم توفر القيمة."):
       direction==="same"?text(`${labels[0]} and ${labels[1]} have the same displayed ${titles[key].en.toLowerCase()}.`,
         `قيمة ${titles[key].ar} المعروضة متساوية في ${labels[0]} و${labels[1]}.`):
-      text(`${labels[1]} has ${delta.abs().toFixed()} ${unit==="pct"?"percentage points":"minutes"} ${direction==="higher"?"more":"less"} ${titles[key].en.toLowerCase()} than ${labels[0]}.`,
-        `${titles[key].ar} في ${labels[1]} ${direction==="higher"?"أعلى":"أقل"} بمقدار ${delta.abs().toFixed()} ${unit==="pct"?"نقطة مئوية":"دقيقة"} من ${labels[0]}.`);
+      text(`${labels[1]} has ${absTxt}${NBSP}${unitWord(absTxt,uk,"en",{style:"long"})} ${direction==="higher"?"more":"less"} ${titles[key].en.toLowerCase()} than ${labels[0]}.`,
+        `${titles[key].ar} في ${labels[1]} ${direction==="higher"?"أعلى":"أقل"} بمقدار ${absTxt}${NBSP}${unitWord(absTxt,uk,"ar",{case:"gen"})} من ${labels[0]}.`);
     return {key,kind:"indicator",title:titles[key],unit,status:difference.status,series,difference,direction,changeText,caption,
       axisMin:min.toNumber(),axisMax:max.toNumber(),howToRead:text("Bars start at zero. A and B use the same scale. Select a value to see its source rows.",
-        "تبدأ الأعمدة من الصفر وبالمقياس نفسه للتشغيلين أ وب. اختر قيمة لعرض صفوف مصدرها.")};
+        "تبدأ الأعمدة من الصفر وبالمقياس نفسه للتشغيلتين أ وب. اختر قيمة لعرض صفوف مصدرها.")};
   });
   return {indicators,chart_spec:indicators.filter(s=>["scrap_rate_pct","changeover_min"].includes(s.key)).map(s=>({...s,kind:"bars" as const}))};
 }

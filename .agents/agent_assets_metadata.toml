@@ -168,3 +168,17 @@ mtime_ms = 1791641840811
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/db294fed-085a-4036-86e1-e7e05a772b03/db568f65-6c63-420c-b190-9655593960fb"
 storage_version_token = "1791641841313812"
 content_type = "text/html"
+
+[[outputs]]
+id = "DD4kyXwfy6Gn8ih760GXo"
+uri = "file://generated-artifacts/arabic-language/arabic-language-report.html"
+type = "html"
+title = "Arabic language fix — changes and verification"
+description = "Before/after wording ledger, full test results, unchanged factory counts, terminology questions and all 16 final screenshots."
+logical_id = "73f48068-9a03-42b9-84b9-1829a13afc58"
+content_hash = "sha256:71445d506778b182764deb8391fc76983afb7edbe12f795afbc90d26c4a60a17"
+size = 1917086
+mtime_ms = 1791665609448
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/73f48068-9a03-42b9-84b9-1829a13afc58/7480f0a1-aa24-42bc-9b81-b4d5cdd11317"
+storage_version_token = "1791665614573965"
+content_type = "text/html"
