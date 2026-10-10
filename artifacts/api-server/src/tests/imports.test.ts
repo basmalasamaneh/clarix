@@ -9,6 +9,7 @@ import app from "../app";
 import {pool} from "@workspace/db";
 import {withTenant,closeTenantPools} from "../lib/tenancy";
 import {sessionStore} from "../lib/session";
+import {verifyRunMetrics} from "./verify-run-metrics";
 after(async()=>{sessionStore.close();await closeTenantPools();await pool.end();});
 const root=fileURLToPath(new URL("../../../../",import.meta.url));
 async function login(email:string) {
@@ -66,6 +67,9 @@ test("real API import/approval, isolation, originals, replacement history and un
     assert.equal(runs.total,4);assert.ok(runs.items.every((r:any)=>r.ambiguous));
     const left=runs.items.find((r:any)=>r.sourceName===sourceA),right=runs.items.find((r:any)=>r.sourceName===sourceB && r.orderId===left.orderId);
     const pair=(await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(200)).body;
+    const metricsPair=(await viewer.a.get("/api/comparison").query({a:left.id,b:right.id}).expect(200)).body;
+    assert.equal(metricsPair.a.orderId,metricsPair.b.orderId);
+    assert.notEqual(metricsPair.a.sourceName,metricsPair.b.sourceName);
     assert.equal(pair.left.sourceName,sourceA);assert.equal(pair.right.sourceName,sourceB);
     await najm.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(404);
     const archive={sourceName:sourceA,archived:true};
@@ -75,10 +79,14 @@ test("real API import/approval, isolation, originals, replacement history and un
     assert.equal((await viewer.a.get("/api/quality").query({source:sourceA,includeArchived:true}).expect(200)).body.summary.orders.green,2);
     assert.equal((await eth.a.get("/api/source-runs").query({search:sourceA}).expect(200)).body.total,2);
     await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(404);
+    await viewer.a.get("/api/comparison").query({a:left.id,b:right.id}).expect(404);
+    await viewer.a.get(`/api/runs/${left.id}`).expect(404);
+    assert.equal((await viewer.a.get("/api/runs").query({source:sourceA}).expect(200)).body.total,0);
     await eth.a.post("/api/imports").set("X-CSRF-Token",eth.token).send({sourceName:sourceA,files:[{name:"orders.csv",size:1,mime:"text/csv"},{name:"events.csv",size:1,mime:"text/csv"}]}).expect(409);
     await manager.a.patch("/api/data-sources/archive").set("X-CSRF-Token",manager.token).send({...archive,archived:false}).expect(200);
     assert.equal((await eth.a.get("/api/source-runs").query({search:sourceA}).expect(200)).body.total,4);
     await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(200);
+    await viewer.a.get("/api/comparison").query({a:left.id,b:right.id}).expect(200);
   });
   // Only isolated source orders created on this run are used for replacement checks.
   let first:Awaited<ReturnType<typeof upload>>;
@@ -224,6 +232,7 @@ test("real API import/approval, isolation, originals, replacement history and un
   });
   await t.test("every golden folder through the real API pipeline",async()=>{
     const qualityEvidence:any[]=[];
+    const metricEvidence:any[]=[];
     const expected=JSON.parse(readFileSync(root+"expected/expected_results.json","utf8")).datasets;
     const merge=(a:any,b:any):any=>{
       const out=structuredClone(a);
@@ -237,6 +246,7 @@ test("real API import/approval, isolation, originals, replacement history and un
         const u=await upload(who,`${dataset}/${name}`,`${source}-${name}`);
         const r=await check(who,u),exp=resolve(name);
         assert.equal((await who.a.get("/api/quality").query({source:`${source}-${name}`}).expect(200)).body.total,0,"checked imports excluded");
+        assert.equal((await who.a.get("/api/runs").query({source:`${source}-${name}`}).expect(200)).body.total,0);
         for(const key of ["capability_level","runs","comparison","file_issues","formula_like_cells"]) assert.deepEqual(r.result[key],exp[key],`${dataset}/${name}/${key}`);
         if(!r.duplicateOf) {
           const approved=await approve(who,u.id,r.replacementCount);
@@ -271,9 +281,12 @@ test("real API import/approval, isolation, originals, replacement history and un
         assert.equal(errors.total,allItems.filter(i=>i.severity==="error").length);
         assert.ok(errors.items.every((i:any)=>i.severity==="error"));
         qualityEvidence.push({scenario:`${dataset}/${name}`,expected:{issues:expectedIssues,statuses:expectedStatuses},actual:{issues:[...issueSet].sort(),summary:qp.summary,groups:allItems.map(i=>({order:i.orderId,statuses:i.groupStatuses,overall:i.overallStatus}))},status:"PASS"});
+        metricEvidence.push(...await verifyRunMetrics(who,dataset==="najm-packaging"?eth:najm,dataset==="ethmar-plastics"?viewer:null,`${source}-${name}`,exp,`${dataset}/${name}`));
       }
     }
     mkdirSync(root+"generated-artifacts/phase5",{recursive:true});
     writeFileSync(root+"generated-artifacts/phase5/scenarios.json",JSON.stringify(qualityEvidence,null,2));
+    mkdirSync(root+"generated-artifacts/phase6",{recursive:true});
+    writeFileSync(root+"generated-artifacts/phase6/scenario-metrics.json",JSON.stringify(metricEvidence,null,2));
   });
 });

@@ -3,3 +3,4 @@
 - [Approved formula-cell rule](formula-cell-rule.md) — User chose spec over Python's narrower scan; preserve golden expectations and test the deviation synthetically.
 - [Import/source policy](import-history.md) — Source-scoped versions, reversible archives, append-only tenant-safe history and first-line source references.
 - [Test isolation](test-isolation.md) — Automated verification must never write to Ethmar/Najm dev factories; reset is privileged dev-only maintenance.
+- [Comparison policy](comparison-policy.md) — User chose per-group refusal, not whole-comparison blocking; run dates mean earliest included production date.

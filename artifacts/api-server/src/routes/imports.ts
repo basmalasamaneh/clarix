@@ -1,6 +1,6 @@
 import { Router,type Request,type Response,type NextFunction } from "express";
 import { z } from "zod";
-import { CreateImportBody,SaveImportMappingBody,ApproveImportBody,CreateImportTemplateBody,GetQualityResponse,GetQualityIssueResponse } from "@workspace/api-zod";
+import { CreateImportBody,SaveImportMappingBody,ApproveImportBody,CreateImportTemplateBody,GetQualityResponse,GetQualityIssueResponse,ListProductionRunsResponse,GetProductionRunResponse,GetRunComparisonResponse } from "@workspace/api-zod";
 import { CellReadError } from "@workspace/calculation";
 import { withRequestTenant,TenantAccessError } from "../lib/tenancy";
 import { ImportError,limitConfig,validateMapping } from "../imports/model";
@@ -9,6 +9,7 @@ import { approve } from "../imports/approval";
 import {eventCodes,issues} from "../imports/review";
 import * as sources from "../imports/sources";
 import * as quality from "../imports/quality";
+import * as metrics from "../metrics/service";
 const router=Router();
 type Action=(ctx:service.Context,req:Request,res:Response)=>Promise<void>;
 function route(action:Action,allowViewer=false) {
@@ -43,6 +44,17 @@ function route(action:Action,allowViewer=false) {
 }
 const page=(raw:unknown)=>z.coerce.number().int().min(1).max(1000000).parse(raw??1);
 const id=(req:Request)=>String(req.params.id);
+router.get("/runs",route(async(ctx,req,res)=>{
+  const input=z.object({page:z.coerce.number().int().min(1).max(1000000).default(1),
+    search:z.string().max(200).default(""),source:z.string().max(200).optional(),
+    status:z.enum(["green","yellow","red"]).optional(),sort:z.enum(["order","status"]).default("order")}).parse(req.query);
+  res.json(ListProductionRunsResponse.parse(await metrics.listRuns(ctx,input)));
+},true));
+router.get("/runs/:id",route(async(ctx,req,res)=>{res.json(GetProductionRunResponse.parse((await metrics.getRuns(ctx,[id(req)]))[0]));},true));
+router.get("/comparison",route(async(ctx,req,res)=>{
+  const input=z.object({a:z.string().uuid(),b:z.string().uuid()}).parse(req.query);
+  res.json(GetRunComparisonResponse.parse(await metrics.compare(ctx,input.a,input.b)));
+},true));
 router.get("/quality",route(async(ctx,req,res)=>{
   const input=z.object({page:z.coerce.number().int().min(1).max(1000000).default(1),
     severity:z.enum(["info","warning","error"]).optional(),

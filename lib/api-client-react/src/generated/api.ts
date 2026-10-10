@@ -24,6 +24,7 @@ import type {
   Credentials,
   FactorySelection,
   GetQualityParams,
+  GetRunComparisonParams,
   GetSourceComparisonParams,
   HealthStatus,
   ImportDetail,
@@ -35,13 +36,17 @@ import type {
   ListDataSourcesParams,
   ListImportTemplatesParams,
   ListImportsParams,
+  ListProductionRuns200,
+  ListProductionRunsParams,
   ListSourceRunsParams,
   MappingInput,
   MappingTemplate,
   PageState,
   Preferences,
+  ProductionRun,
   QualityIssue,
   QualityPage,
+  RunComparison,
   Session,
   TemplateInput,
   TemplatePage
@@ -73,6 +78,233 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getListProductionRunsUrl = (params?: ListProductionRunsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/runs?${stringifiedParams}` : `/api/runs`
+}
+
+export const listProductionRuns = async (params?: ListProductionRunsParams, options?: Parameters<typeof customFetch>[1]): Promise<ListProductionRuns200> => {
+
+  return customFetch<ListProductionRuns200>(getListProductionRunsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProductionRunsQueryKey = (params?: ListProductionRunsParams,) => {
+    return [
+    `/api/runs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListProductionRunsQueryOptions = <TData = Awaited<ReturnType<typeof listProductionRuns>>, TError = ErrorType<unknown>>(params?: ListProductionRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductionRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProductionRunsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProductionRuns>>> = ({ signal }) => listProductionRuns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProductionRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProductionRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listProductionRuns>>>
+export type ListProductionRunsQueryError = ErrorType<unknown>
+
+
+
+export function useListProductionRuns<TData = Awaited<ReturnType<typeof listProductionRuns>>, TError = ErrorType<unknown>>(
+ params?: ListProductionRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProductionRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProductionRunsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetProductionRunUrl = (id: string,) => {
+
+
+
+
+  return `/api/runs/${id}`
+}
+
+export const getProductionRun = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<ProductionRun> => {
+
+  return customFetch<ProductionRun>(getGetProductionRunUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetProductionRunQueryKey = (id: string,) => {
+    return [
+    `/api/runs/${id}`
+    ] as const;
+    }
+
+
+export const getGetProductionRunQueryOptions = <TData = Awaited<ReturnType<typeof getProductionRun>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductionRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetProductionRunQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getProductionRun>>> = ({ signal }) => getProductionRun(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getProductionRun>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetProductionRunQueryResult = NonNullable<Awaited<ReturnType<typeof getProductionRun>>>
+export type GetProductionRunQueryError = ErrorType<void>
+
+
+
+export function useGetProductionRun<TData = Awaited<ReturnType<typeof getProductionRun>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getProductionRun>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetProductionRunQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetRunComparisonUrl = (params: GetRunComparisonParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/comparison?${stringifiedParams}` : `/api/comparison`
+}
+
+export const getRunComparison = async (params: GetRunComparisonParams, options?: Parameters<typeof customFetch>[1]): Promise<RunComparison> => {
+
+  return customFetch<RunComparison>(getGetRunComparisonUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRunComparisonQueryKey = (params?: GetRunComparisonParams,) => {
+    return [
+    `/api/comparison`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRunComparisonQueryOptions = <TData = Awaited<ReturnType<typeof getRunComparison>>, TError = ErrorType<void>>(params: GetRunComparisonParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRunComparison>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRunComparisonQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRunComparison>>> = ({ signal }) => getRunComparison(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRunComparison>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRunComparisonQueryResult = NonNullable<Awaited<ReturnType<typeof getRunComparison>>>
+export type GetRunComparisonQueryError = ErrorType<void>
+
+
+
+export function useGetRunComparison<TData = Awaited<ReturnType<typeof getRunComparison>>, TError = ErrorType<void>>(
+ params: GetRunComparisonParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRunComparison>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRunComparisonQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetQualityUrl = (params?: GetQualityParams,) => {
   const normalizedParams = new URLSearchParams();

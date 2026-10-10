@@ -74,7 +74,7 @@ function NavList({ session, onNavigate }: { session: Session; onNavigate?: () =>
           aria-current={active ? 'page' : undefined}
           data-testid={`link-nav-${p}`}
           className={cn(
-            'group relative flex items-center gap-3 rounded-md px-3 py-2 text-[0.95rem] transition-colors',
+            'group relative flex min-h-11 items-center gap-3 rounded-md px-3 py-2 text-[0.95rem] transition-colors',
             active ? 'bg-accent font-medium text-foreground' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
         >
@@ -140,7 +140,7 @@ function FactorySelector({ session, csrf }: { session: Session; csrf: string }) 
       }
     >
       <SelectTrigger
-        className="h-10 w-full min-w-0 gap-2 bg-card sm:w-64"
+        className="h-11 w-full min-w-0 gap-2 bg-card sm:w-64"
         aria-label={t('factory.label')}
         data-testid="select-factory"
       >
@@ -189,7 +189,7 @@ function UserMenu({ session, csrf, onReplayTour }: { session: Session; csrf: str
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="h-10 gap-2 px-1.5 sm:px-2" aria-label={t('user.account')} data-testid="button-user-menu">
+        <Button variant="ghost" className="h-11 min-w-11 gap-2 px-1.5 sm:px-2" aria-label={t('user.account')} data-testid="button-user-menu">
           <Avatar className="size-8">
             <AvatarFallback className="bg-secondary text-xs font-semibold text-primary">{initials(user.name)}</AvatarFallback>
           </Avatar>
@@ -250,7 +250,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
     <div className="flex min-h-[100dvh] bg-background">
       <a
         href="#main"
-        className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
+        className="sr-only z-50 rounded-md bg-primary px-3 py-2 text-primary-foreground focus:not-sr-only focus:fixed focus:start-3 focus:top-3 focus:min-h-11 focus:min-w-11"
       >
         {t('common.skipToContent')}
       </a>
@@ -267,7 +267,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="size-11 lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label={t('common.menu')}
             data-testid="button-mobile-menu"

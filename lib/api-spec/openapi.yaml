@@ -11,6 +11,52 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /runs:
+    get:
+      operationId: listProductionRuns
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: search, in: query, schema: { type: string } }
+        - { name: source, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [green, yellow, red] } }
+        - { name: sort, in: query, schema: { type: string, enum: [order, status] } }
+      responses:
+        "200":
+          description: Current approved active runs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, total]
+                properties:
+                  items: { type: array, items: { $ref: "#/components/schemas/ProductionRun" } }
+                  page: { type: integer }
+                  total: { type: integer }
+  /runs/{id}:
+    get:
+      operationId: getProductionRun
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Factory-scoped current run and metric lineage
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProductionRun" }
+        "404": { description: Not found }
+  /comparison:
+    get:
+      operationId: getRunComparison
+      parameters:
+        - { name: a, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: b, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: B minus A, refusing only blocked metric groups
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RunComparison" }
+        "404": { description: Not found }
   /quality:
     get:
       operationId: getQuality
@@ -360,6 +406,102 @@ paths:
               schema: { $ref: "#/components/schemas/PageState" }
 components:
   schemas:
+    MetricReference:
+      type: object
+      required: [runId, importId, sourceName, orderId, file, line, column, kind]
+      properties:
+        runId: { type: string }
+        importId: { type: string }
+        sourceName: { type: string }
+        orderId: { type: string }
+        file: { type: string }
+        line: { type: integer }
+        column: { type: string }
+        kind: { type: string, enum: [included, excluded, quarantined] }
+    RunMetric:
+      type: object
+      required: [key, group, unit, status, value, display, hours, available, noEvents, refs, alternatives]
+      properties:
+        key: { type: string }
+        group: { type: string, enum: [volume, changeover, downtime] }
+        unit: { type: string, enum: [kg, pct, pp, min] }
+        status: { type: string, enum: [green, yellow, red] }
+        value: { type: [string, "null"] }
+        display: { type: [string, "null"] }
+        hours: { type: [string, "null"] }
+        available: { type: boolean }
+        noEvents: { type: boolean }
+        refs:
+          type: array
+          items: { $ref: "#/components/schemas/MetricReference" }
+        alternatives:
+          type: array
+          items:
+            type: object
+            required: [key, display]
+            properties:
+              key: { type: string }
+              display: { type: [string, "null"] }
+    RunIssue:
+      type: object
+      required: [id, code, severity, group, orderId, sourceName]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        severity: { type: string, enum: [info, warning, error] }
+        group: { type: string }
+        orderId: { type: [string, "null"] }
+        sourceName: { type: string }
+    ProductionRun:
+      type: object
+      required: [id, orderId, sourceName, importId, date, dateRefs, capabilityLevel, overall, groups, metrics, issues]
+      properties:
+        id: { type: string }
+        orderId: { type: string }
+        sourceName: { type: string }
+        importId: { type: string }
+        date: { type: [string, "null"] }
+        dateRefs: { type: array, items: { $ref: "#/components/schemas/MetricReference" } }
+        capabilityLevel: { type: integer }
+        overall: { type: string, enum: [green, yellow, red] }
+        groups:
+          type: object
+          additionalProperties: { type: string, enum: [green, yellow, red] }
+        metrics:
+          type: array
+          items: { $ref: "#/components/schemas/RunMetric" }
+        issues:
+          type: array
+          items: { $ref: "#/components/schemas/RunIssue" }
+    RunComparison:
+      type: object
+      required: [a, b, differences, overall, groups, summary, questions, hasWarnings, hasBlockedGroups]
+      properties:
+        a: { $ref: "#/components/schemas/ProductionRun" }
+        b: { $ref: "#/components/schemas/ProductionRun" }
+        differences: { type: array, items: { $ref: "#/components/schemas/RunMetric" } }
+        overall: { type: string, enum: [green, yellow, red] }
+        groups:
+          type: object
+          additionalProperties: { type: string, enum: [green, yellow, red] }
+        hasWarnings: { type: boolean }
+        hasBlockedGroups: { type: boolean }
+        summary:
+          type: object
+          required: [en, ar]
+          properties:
+            en: { type: string }
+            ar: { type: string }
+        questions:
+          type: array
+          items:
+            type: object
+            required: [key, metricKey, en, ar]
+            properties:
+              key: { type: string }
+              metricKey: { type: string }
+              en: { type: string }
+              ar: { type: string }
     QualityIssue:
       type: object
       required: [id, importId, code, severity, severityStatus, sourceName, group, orderId, archived, superseded, refs, blockedReasons]

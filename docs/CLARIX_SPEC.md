@@ -51,7 +51,7 @@ system into simple, checkable comparisons of **waste (scrap)**, **mold-change (c
 | Platform Admin | Create/suspend factories, invite factory managers. **No access to production data** unless a factory manager grants a time-boxed, logged permission. |
 | Factory Manager | Everything inside their factory: team, settings, mappings, approve analyses. |
 | Analyst | Upload files, map columns, review data issues, approve imports, build comparisons. |
-| Viewer | Read comparisons, reports, and the Data Quality Center including its issue source-row details. No writes. |
+| Viewer | Read production runs, comparisons, reports, and the Data Quality Center including its issue source-row details. No writes. |
 
 A user belongs to one or more factories through `memberships(user, factory, role)`. Authorisation is enforced **on the server for every read and write**; hiding buttons is not security.
 
@@ -210,6 +210,13 @@ no import, mapping, approval, settings, resolve or ignore write permissions.
 ---
 
 ## 8. Comparison page (the heart of the product)
+
+Phase 6 clarification: hide only blocked metric groups, not the entire comparison
+when one run is red. Unaffected groups remain visible with the overall red badge
+and reasons linked to Data Quality. This preserves the locked engine rules.
+Viewer access includes the read-only runs list for selecting the comparison.
+Source Drawer is deferred to Phase 7; Phase 6 supplies physical file/line/column
+references and working in-page source-reference anchors.
 
 - Two columns (run A / run B) with: input, good output, scrap, **scrap rate**, **changeover time**; a centre strip with differences (`+5 pp`, `+2 h`).
 - A **separate, clearly titled section** "Unplanned stops (recorded separately)" with the fixed note:

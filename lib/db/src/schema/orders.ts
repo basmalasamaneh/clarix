@@ -2,6 +2,7 @@ import { pgTable, uuid, text, jsonb, unique, index, foreignKey } from "drizzle-o
 import { imports } from "./imports";
 import { createInsertSchema } from "drizzle-zod";
 import { factories } from "./factories";
+import { sql } from "drizzle-orm";
 
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -23,6 +24,8 @@ export const orders = pgTable("orders", {
   index().on(t.factoryId, t.mold),
   index().on(t.factoryId, t.line),
   index("orders_current_import_idx").on(t.factoryId, t.currentImportId),
+  index("orders_factory_order_idx").on(t.factoryId,t.sourceOrderId),
+  index("orders_factory_quality_idx").on(t.factoryId,sql`(${t.metrics}->>'overall')`,t.sourceOrderId),
 ]);
 export const insertOrderSchema = createInsertSchema(orders);
 export type Order = typeof orders.$inferSelect;

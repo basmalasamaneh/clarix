@@ -11,6 +11,7 @@ try {
   const canonical = await readFile(new URL("../../../../lib/db/canonical-rls.sql", import.meta.url), "utf8");
   await pool.query(canonical);
   await pool.query(await readFile(new URL("../../../../lib/db/history-rls.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/run-indexes.sql",import.meta.url),"utf8"));
 } finally {
   await pool.end();
 }

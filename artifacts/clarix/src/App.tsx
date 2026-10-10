@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Redirect, Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
+import { Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import { Building2, CloudOff, RotateCcw, UserRoundX } from 'lucide-react';
 import type { Session } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -15,6 +15,8 @@ import { StateScreen } from '@/components/state-screen';
 import NotFound from '@/pages/not-found';
 import ImportsPage from '@/pages/imports';
 import QualityPageView from '@/pages/quality';
+import RunsPage from '@/pages/runs';
+import ComparisonPage from '@/pages/comparison';
 import LoginPage from '@/pages/login';
 import PlatformPage from '@/pages/platform';
 import TenantPageView, { ForbiddenState } from '@/pages/tenant-page';
@@ -78,8 +80,15 @@ function TenantRoute({ page, session }: { page: TenantPage; session: Session }) 
     );
   }
   if (page === 'imports') return <ImportsPage key={session.activeFactoryId} session={session} />;
+  if (page === 'runs') return <RunsPage key={session.activeFactoryId} session={session} />;
+  if (page === 'comparison') return <ComparisonPage key={session.activeFactoryId} session={session} />;
   if (page === 'quality') return <QualityPageView key={session.activeFactoryId} session={session} />;
   return <TenantPageView key={`${session.activeFactoryId}:${page}`} page={page} session={session} />;
+}
+
+function CompareAlias() {
+  const search = useSearch();
+  return <Redirect to={`/comparison${search ? `?${search}` : ''}`} replace />;
 }
 
 function AuthedRoutes({ session }: { session: Session }) {
@@ -112,6 +121,7 @@ function AuthedRoutes({ session }: { session: Session }) {
               {() => <TenantRoute page={p} session={session} />}
             </Route>
           ))}
+          <Route path="/compare">{() => <CompareAlias />}</Route>
           <Route path="/platform">
             {() =>
               user.platformAdmin && session.allowedPages.includes('platform') ? (

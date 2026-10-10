@@ -23,7 +23,7 @@ export function LanguageSwitch({ compact = false }: { compact?: boolean }) {
       aria-label={`${t('prefs.language')}: ${label}`}
       title={t('prefs.language')}
       data-testid="button-language"
-      className="gap-2"
+      className="min-h-11 min-w-11 gap-2"
     >
       <Languages className="size-4" aria-hidden="true" />
       {!compact && (
@@ -44,7 +44,7 @@ export function ThemeMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={`${t('prefs.theme')}: ${t(`prefs.${theme}`)}`} data-testid="button-theme">
+        <Button variant="ghost" size="icon" className="size-11" aria-label={`${t('prefs.theme')}: ${t(`prefs.${theme}`)}`} data-testid="button-theme">
           <Current className="size-4" aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>

@@ -98,3 +98,59 @@ mtime_ms = 1791634670742
 storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/9c329f41-796d-449a-8198-356f5751f5d5/41c4d89f-ddad-409b-8eff-3a8635c51656"
 storage_version_token = "1791634692678815"
 content_type = "text/html"
+
+[[outputs]]
+id = "y5-_SAMIU2963DwI8tFX4"
+uri = "file://generated-artifacts/phase6/report.html"
+type = "html"
+title = "Phase 6 — implementation and test report"
+description = "Built/not built, 624 expected-versus-actual metric checks, data-preservation counts, verification limits and manual steps."
+logical_id = "e317b644-e281-4a83-9bbe-75a16cbea21d"
+content_hash = "sha256:d86c148968e02c0ce46eb3fb05a67663b4bcd4e3fca22214b296e2894591af9f"
+size = 118809
+mtime_ms = 1791637750861
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/e317b644-e281-4a83-9bbe-75a16cbea21d/368425fc-7dd1-45a2-8667-d5fac1537e7d"
+storage_version_token = "1791637772531660"
+content_type = "text/html"
+
+[[outputs]]
+id = "e4xNt7ENF55Jp3CWKSV13"
+uri = "file://generated-artifacts/phase6/runs-screenshots.html"
+type = "html"
+title = "Phase 6 — runs screenshots"
+description = "12 captures: 360/768/1280px, English/Arabic, light/dark. Captured before the final sidebar touch-size correction."
+logical_id = "67c97c59-5f95-4155-9352-c5a61a763a82"
+content_hash = "sha256:b6072b6bde0f0905b15833adc723500038f2fb6d960ade0fea144300e3cd791a"
+size = 8156045
+mtime_ms = 1791637751151
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/67c97c59-5f95-4155-9352-c5a61a763a82/c9a50818-4da6-4464-943d-0b9dc6f924ba"
+storage_version_token = "1791637773190002"
+content_type = "text/html"
+
+[[outputs]]
+id = "1Diwc-A5DCacyWqqLv8-u"
+uri = "file://generated-artifacts/phase6/comparison-screenshots.html"
+type = "html"
+title = "Phase 6 — comparison screenshots"
+description = "12 captures: 360/768/1280px, English/Arabic, light/dark. Captured before the final sidebar touch-size correction."
+logical_id = "25574b30-f65a-4791-988f-98542162ebab"
+content_hash = "sha256:db26be76a5e04d5b474552f3f4f74de9ac4e4ac0b9b807340d461da0f8f6fcea"
+size = 9084705
+mtime_ms = 1791637751267
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/25574b30-f65a-4791-988f-98542162ebab/43a2b3d0-e67e-403a-abb6-acdbc3b8e5a8"
+storage_version_token = "1791637774096062"
+content_type = "text/html"
+
+[[outputs]]
+id = "BPp0Feu7hNokQwuk3zKLi"
+uri = "file://generated-artifacts/phase6/quality-screenshots.html"
+type = "html"
+title = "Phase 6 — quality screenshots"
+description = "12 captures: 360/768/1280px, English/Arabic, light/dark. Captured before the final sidebar touch-size correction."
+logical_id = "299620ce-7737-43d7-ba22-51f66e97f12e"
+content_hash = "sha256:f1ad0a9bb7b9ace8bf42ca0a8e9557d55d48158296dae50c9e30cbb9235d0370"
+size = 3937419
+mtime_ms = 1791637751323
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/299620ce-7737-43d7-ba22-51f66e97f12e/f5c11c34-ea55-4173-b25d-453da57abc09"
+storage_version_token = "1791637774678723"
+content_type = "text/html"

@@ -11,6 +11,289 @@ import * as zod from 'zod';
 
 
 
+export const ListProductionRunsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "search": zod.coerce.string().optional(),
+  "source": zod.coerce.string().optional(),
+  "status": zod.enum(['green', 'yellow', 'red']).optional(),
+  "sort": zod.enum(['order', 'status']).optional()
+})
+
+export const ListProductionRunsResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+})),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
+export const GetProductionRunParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const GetProductionRunResponse = zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+})
+
+
+export const GetRunComparisonQueryParams = zod.object({
+  "a": zod.coerce.string().uuid(),
+  "b": zod.coerce.string().uuid()
+})
+
+export const GetRunComparisonResponse = zod.object({
+  "a": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}),
+  "b": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}),
+  "differences": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "hasWarnings": zod.boolean(),
+  "hasBlockedGroups": zod.boolean(),
+  "summary": zod.object({
+  "en": zod.string(),
+  "ar": zod.string()
+}),
+  "questions": zod.array(zod.object({
+  "key": zod.string(),
+  "metricKey": zod.string(),
+  "en": zod.string(),
+  "ar": zod.string()
+}))
+})
+
+
+
+
+
 export const GetQualityQueryParams = zod.object({
   "page": zod.coerce.number().int().min(1).optional(),
   "severity": zod.enum(['info', 'warning', 'error']).optional(),

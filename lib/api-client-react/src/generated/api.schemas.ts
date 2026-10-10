@@ -5,6 +5,157 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
+
+
+export const MetricReferenceKind = {
+  included: 'included',
+  excluded: 'excluded',
+  quarantined: 'quarantined',
+} as const;
+
+export interface MetricReference {
+  runId: string;
+  importId: string;
+  sourceName: string;
+  orderId: string;
+  file: string;
+  line: number;
+  column: string;
+  kind: MetricReferenceKind;
+}
+
+export type RunMetricGroup = typeof RunMetricGroup[keyof typeof RunMetricGroup];
+
+
+export const RunMetricGroup = {
+  volume: 'volume',
+  changeover: 'changeover',
+  downtime: 'downtime',
+} as const;
+
+export type RunMetricUnit = typeof RunMetricUnit[keyof typeof RunMetricUnit];
+
+
+export const RunMetricUnit = {
+  kg: 'kg',
+  pct: 'pct',
+  pp: 'pp',
+  min: 'min',
+} as const;
+
+export type RunMetricStatus = typeof RunMetricStatus[keyof typeof RunMetricStatus];
+
+
+export const RunMetricStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunMetricAlternativesItem = {
+  key: string;
+  /** @nullable */
+  display: string | null;
+};
+
+export interface RunMetric {
+  key: string;
+  group: RunMetricGroup;
+  unit: RunMetricUnit;
+  status: RunMetricStatus;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  display: string | null;
+  /** @nullable */
+  hours: string | null;
+  available: boolean;
+  noEvents: boolean;
+  refs: MetricReference[];
+  alternatives: RunMetricAlternativesItem[];
+}
+
+export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
+
+
+export const RunIssueSeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export interface RunIssue {
+  id: string;
+  code: string;
+  severity: RunIssueSeverity;
+  group: string;
+  /** @nullable */
+  orderId: string | null;
+  sourceName: string;
+}
+
+export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
+
+
+export const ProductionRunOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type ProductionRunGroups = {[key: string]: 'green' | 'yellow' | 'red'};
+
+export interface ProductionRun {
+  id: string;
+  orderId: string;
+  sourceName: string;
+  importId: string;
+  /** @nullable */
+  date: string | null;
+  dateRefs: MetricReference[];
+  capabilityLevel: number;
+  overall: ProductionRunOverall;
+  groups: ProductionRunGroups;
+  metrics: RunMetric[];
+  issues: RunIssue[];
+}
+
+export type RunComparisonOverall = typeof RunComparisonOverall[keyof typeof RunComparisonOverall];
+
+
+export const RunComparisonOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunComparisonGroups = {[key: string]: 'green' | 'yellow' | 'red'};
+
+export type RunComparisonSummary = {
+  en: string;
+  ar: string;
+};
+
+export type RunComparisonQuestionsItem = {
+  key: string;
+  metricKey: string;
+  en: string;
+  ar: string;
+};
+
+export interface RunComparison {
+  a: ProductionRun;
+  b: ProductionRun;
+  differences: RunMetric[];
+  overall: RunComparisonOverall;
+  groups: RunComparisonGroups;
+  hasWarnings: boolean;
+  hasBlockedGroups: boolean;
+  summary: RunComparisonSummary;
+  questions: RunComparisonQuestionsItem[];
+}
+
 export type QualityIssueSeverity = typeof QualityIssueSeverity[keyof typeof QualityIssueSeverity];
 
 
@@ -362,6 +513,45 @@ export interface PageState {
 export interface HealthStatus {
   status: string;
 }
+
+export type ListProductionRunsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+search?: string;
+source?: string;
+status?: ListProductionRunsStatus;
+sort?: ListProductionRunsSort;
+};
+
+export type ListProductionRunsStatus = typeof ListProductionRunsStatus[keyof typeof ListProductionRunsStatus];
+
+
+export const ListProductionRunsStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type ListProductionRunsSort = typeof ListProductionRunsSort[keyof typeof ListProductionRunsSort];
+
+
+export const ListProductionRunsSort = {
+  order: 'order',
+  status: 'status',
+} as const;
+
+export type ListProductionRuns200 = {
+  items: ProductionRun[];
+  page: number;
+  total: number;
+};
+
+export type GetRunComparisonParams = {
+a: string;
+b: string;
+};
 
 export type GetQualityParams = {
 /**

@@ -27,6 +27,9 @@ import { errorCode, errorStatus, localizeError } from '@/lib/session';
 import { formatDate, issueText } from '@/lib/import-model';
 import { cn } from '@/lib/utils';
 import '@/lib/quality-i18n';
+import '@/lib/runs-i18n';
+import { useLocation, useSearch } from 'wouter';
+import { UUID_RE } from '@/components/runs/shared';
 
 const SEVERITIES: GetQualitySeverity[] = ['error', 'warning', 'info'];
 const GROUPS: GetQualityGroup[] = ['volume', 'changeover', 'downtime', 'file', 'import', 'all'];
@@ -403,6 +406,52 @@ function IssueItem({ issue, open, onToggle, lang }: { issue: QualityIssue; open:
   );
 }
 
+/* ---------------- Focused (deep-linked) issue ---------------- */
+
+function FocusedIssue({ id, session, lang, onDismiss }: { id: string; session: Session; lang: string; onDismiss: () => void }) {
+  const { t } = useTranslation();
+  const valid = UUID_RE.test(id);
+  const q = useGetQualityIssue(id, { query: {
+    queryKey: [...getGetQualityIssueQueryKey(id), session.activeFactoryId, session.user?.id],
+    enabled: valid,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    retry: false,
+  } });
+  const notFound = !valid || (q.isError && [400, 403, 404].includes(errorStatus(q.error) ?? 0));
+  return (
+    <section className="fade-up rounded-xl border-2 border-primary/40 bg-card shadow-[var(--shadow-md)]" aria-labelledby="focused-issue-title" data-testid="section-focused-issue">
+      <header className="flex items-start gap-3 border-b px-4 py-3">
+        <div className="min-w-0 flex-1">
+          <h2 id="focused-issue-title" className="text-sm font-semibold">{t('rc.focus.title')}</h2>
+          <p className="text-xs text-muted-foreground">{t('rc.focus.lead')}</p>
+        </div>
+        <Button variant="ghost" size="icon" className="size-11 shrink-0" onClick={onDismiss} aria-label={t('rc.focus.dismiss')} data-testid="button-dismiss-focused">
+          <X className="size-4" aria-hidden="true" />
+        </Button>
+      </header>
+      {notFound ? (
+        <StateScreen icon={SearchX} tone="amber" title={t('rc.focus.notFoundTitle')} body={t('rc.focus.notFoundBody')} testId="state-focused-not-found" />
+      ) : q.isLoading ? (
+        <div role="status" aria-busy="true" className="space-y-2 p-4" data-testid="state-focused-loading">
+          <span className="sr-only">{t('rc.focus.loading')}</span>
+          <div className="h-6 w-40 animate-pulse rounded bg-muted" /><div className="h-24 animate-pulse rounded-lg bg-muted" />
+        </div>
+      ) : q.isError ? (
+        <div className="p-4">
+          <ErrorNote error={q.error} testId="state-focused-error" action={
+            <Button variant="outline" className="min-h-11 gap-2" onClick={() => q.refetch()} data-testid="button-retry-focused"><RotateCcw className="size-4" aria-hidden="true" />{t('common.retry')}</Button>
+          } />
+        </div>
+      ) : q.data ? (
+        <ul data-testid="focused-issue">
+          <IssueItem issue={q.data} lang={lang} open onToggle={onDismiss} />
+        </ul>
+      ) : null}
+    </section>
+  );
+}
+
 /* ---------------- Page ---------------- */
 
 function ListSkeleton() {
@@ -428,7 +477,15 @@ function ListSkeleton() {
 
 export default function QualityPageView({ session }: { session: Session }) {
   const { t, i18n: inst } = useTranslation();
-  const [filters, setFilters] = useState<Filters>({ includeArchived: false });
+  const search = useSearch();
+  const [, navigate] = useLocation();
+  const [initial] = useState(() => {
+    const sp = new URLSearchParams(search);
+    return { issue: sp.get('issue') ?? '', source: sp.get('source') || undefined, order: sp.get('order') || undefined };
+  });
+  const [focusId, setFocusId] = useState(initial.issue);
+  const [filters, setFilters] = useState<Filters>({ includeArchived: false, source: initial.source, order: initial.order });
+  const dismissFocus = () => { setFocusId(''); navigate('/quality', { replace: true }); };
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(null);
   const factory = session.memberships.find((m) => m.factoryId === session.activeFactoryId);
@@ -477,6 +534,7 @@ export default function QualityPageView({ session }: { session: Session }) {
     const d = q.data;
     body = (
       <div className="space-y-5">
+        {focusId && <FocusedIssue id={focusId} session={session} lang={inst.language} onDismiss={dismissFocus} />}
         <Summary summary={d.summary} />
         <FilterBar value={filters} onChange={changeFilters} />
         <section aria-labelledby="quality-list-title" aria-busy={q.isFetching} className={cn('transition-opacity', q.isFetching && !q.isLoading && 'opacity-70')}>
