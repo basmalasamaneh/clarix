@@ -57,6 +57,12 @@ async function tokenLookup(c:PoolClient,token:string,lock=false) {
   const row=(await c.query(`SELECT * FROM invitations WHERE token_hash=$1 AND revoked_at IS NULL
     AND accepted_at IS NULL AND expires_at>now() ${lock?"FOR UPDATE":""}`,[tokenHash(token)])).rows[0];
   if(!row) throw unavailable();
+  if(row.created_by===null){
+    // Deployment onboarding may never reopen after any account is present.
+    // Same lock as the deployment initializer; held until acceptance commits.
+    await c.query("SELECT pg_advisory_xact_lock(190011)");
+    if((await c.query("SELECT 1 FROM users LIMIT 1")).rowCount)throw unavailable();
+  }
   return row;
 }
 export async function invitationDetails(token:string) {

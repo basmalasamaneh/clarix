@@ -2,15 +2,20 @@
 name: Production setup boundary
 description: Separate privileged setup from startup; preserve immutable migration baselines
 ---
-Production onboarding is an explicitly invoked privileged operation, never an
-HTTP route or application startup action. For Replit-managed databases, schema
-migrations belong to Publish, not the custom empty-database rehearsal script.
+The user approved automatic security-only pre-API provisioning and a first-manager
+invitation from a user-generated deployment token, not a manager password secret.
+For Replit-managed databases, table migrations still belong to Publish.
 
-**Why:** The user requires invite-only production onboarding with test seeding
-disabled; accidental editor-to-production data copying must not become setup.
+**Why:** The user cannot operate a production Shell and requires UI-only deployment,
+zero users until invitation acceptance, and no logged credentials or invitation links.
 
-**How to apply:** Use a fresh disposable database for local production-mode
-proof only. The previous operations guide incorrectly treated that as a verified
-managed-platform setup procedure; its correction takes precedence. Verify
-migrated roles/policies and production password reset separately. Never assume
-the ordinary editor Shell targets production.
+**How to apply:** Separate privileged provisioning from the HTTP process and
+discard owner/token credentials before API startup. Test fresh role creation in
+a separate PostgreSQL cluster (roles are cluster-wide, not database-local).
+Use a non-superuser table owner with CREATEROLE for realistic local proof.
+PostgreSQL protects initdb's bootstrap superuser from demotion and wholesale
+ownership reassignment: create a separate owning role before creating test tables.
+Keep the first invitation as a durable latch; never extend expiry on restarts.
+Require a production runtime password different from development and removal of
+the bootstrap token after first sign-in. Actual managed-platform privileges still
+need live verification; never represent a disposable test as a successful publish.

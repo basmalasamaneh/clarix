@@ -286,6 +286,20 @@ Wave 3: AI Analyst panel · remaining charts · audit log view · comments · ad
 
 ### Approved Phase 10: MVP polish and publish readiness
 
+Production-gate clarification: replace manual first-manager bootstrap with a
+production-only, pre-API security provisioning process. Replit Publish continues
+to own table migrations. The separate process configures the runtime role and
+tenant/immutability protections transactionally, verifies them, then replaces
+itself with the restricted API process without owner/bootstrap credentials.
+While there are zero users, create only the first factory and a seven-day
+manager invitation from a user-supplied 32-byte base64url deployment token.
+Store its SHA-256 hash, no fake audit user and no logged token/link/password.
+Existing invitation state is a permanent once-only latch: repeated starts never
+renew its expiry or recreate it. Any existing user disables this initializer.
+The existing invitation page handles password choice; no new setup page exists.
+Remove the deployment token after first-manager sign-in. Runtime password must
+differ from development; the deployment must not include SEED_TEST_PASSWORD.
+
 The approved Phase 10 brief replaces the second-factory roadmap entry.
 Scope: reliable persisted language/theme, bilingual copy and missing-key checks,
 non-blocking dismissible onboarding, helpful empty/error states and a short

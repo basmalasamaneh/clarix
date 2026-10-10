@@ -1,82 +1,68 @@
-# Clarix: pre-publish checklist
+# Clarix — UI-only production checklist
 
-**Publishing is paused.** This checklist replaces the earlier custom production
-migration instructions. The local empty-database rehearsal did not verify
-Replit's managed Publish path. Full evidence: `PRE_PUBLISH_CONFIRMATION.md`.
+No publishing was performed. **You** means a Replit-interface action;
+**Automatic** means application/platform behavior. See
+`PRODUCTION_GATE_REPORT.md` for proof and remaining real-platform checks.
 
-1. Keep development and production separate. Do not copy development records or
-   seeded accounts into production.
-2. In Secrets, choose **More → New published app configuration** to set
-   `SEED_TEST_USERS` for production only. Disable seeding there; leave development
-   unchanged. The API artifact already enables production `NODE_ENV` when published.
-3. Review **Publishing → Adjust settings → Production app secrets**.
-   Required names: `CLARIX_RUNTIME_PASSWORD`, `SESSION_SECRET`,
+1. **You:** Open Publishing's production configuration. Leave development
+   settings unchanged. Enable production mode using `NODE_ENV` and disable
+   test seeding using `SEED_TEST_USERS`.
+2. **You:** Review **Publishing → Adjust settings → Production app secrets**.
+   Required secret names: `CLARIX_RUNTIME_PASSWORD`, `SESSION_SECRET`,
    `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`,
-   `PUBLIC_OBJECT_SEARCH_PATHS`. `SEED_TEST_PASSWORD` is not needed in production.
-   Do not display values. Replit supplies the environment-specific `DATABASE_URL`.
-4. When publishing is separately authorized, let Replit create the production
-   database. For legacy setup, enable **Create production database**; leave
-   **Set up your production database with your current development data** off.
-5. Review the Publish schema diff. Publish applies managed production schema
-   changes. **Do not run `prepare-production.ts` against managed production.**
-6. **Stop at this unresolved gate:** verify the production custom roles,
-   grants, ENABLE/FORCE RLS and immutable-row protections. Published role creation
-   has not been rehearsed. Documentation about automatically migrating roles
-   during a Neon-to-Helium upgrade is not proof of Publish behavior.
-7. Establish a private privileged setup environment with a verified production
-   connection. The ordinary editor Shell normally targets development; do not
-   paste these setup commands there without verifying the target. Supply the
-   production `CLARIX_RUNTIME_PASSWORD` privately (at least 32 characters).
-8. **Only after the role exists and the target is verified**, configure its
-   password and privileges:
-   ```
-   NODE_ENV=production SEED_TEST_USERS=false pnpm --filter @workspace/api-server exec tsx src/scripts/configure-runtime.ts --production-setup
-   ```
-   Expected: `Runtime login configured; no credential values printed.`
-   This configures an existing role; it does not create a missing role.
-9. Confirm the app connects as the restricted runtime login. Expected startup
-   log: `Runtime database identity verified`. Verify `/api/healthz` returns only
-   `{"status":"ok"}`. Startup refuses elevated roles or unsafe tenant RLS.
-10. Obtain the actual HTTPS origin from Publishing. In the verified private
-    production setup terminal, create the factory and initial manager invitation:
-    ```
-    NODE_ENV=production SEED_TEST_USERS=false pnpm --filter @workspace/api-server exec tsx src/scripts/bootstrap-production.ts --name "Your factory" --slug your-factory --email manager@example.com --origin https://YOUR-ACTUAL-PUBLISHED-HOST
-    ```
-    Substitute real factory details and the real origin. Expected:
-    `One-time invitation (expires …)` followed by a private URL. The command
-    requires an interactive terminal and refuses redirected output. Share the
-    seven-day, single-use link privately. Existing active managers cause refusal
-    unless the explicit `--allow-existing-manager` override is supplied.
-11. Accept the invitation, choose a password and sign in. Verify factory access,
-    language/theme persistence and actual HTTPS cookie/security headers. The
-    requested browser matrix is still incomplete; do not treat it as passed.
-12. Enable daily backups: **Database → production database → Settings →
-    Advanced → Scheduled backups → Keep backups for**. The first daily backup
-    is scheduled near midnight in the browser's time zone, not immediately.
-13. Rehearse safely in a separate disposable project with its own production
-    database and synthetic data. Enable backups, wait for a listed restore
-    point, change a synthetic record, restore it and compare records. Do not
-    use a legacy remix that shares a database. This rehearses the platform UI,
-    not Clarix's full real-data recovery.
-14. For a real restore, choose **Scheduled backups → View all backups →
-    Restore**, type `restore`, then choose **Continue**. This switches live
-    data to the selected restore point; services may reconnect. Restore matching
-    code separately and republish if needed. PostgreSQL recovery does not by
-    itself establish recovery of uploaded object-storage files.
-15. Resolve the production setup gate, remaining build-tool advisory and browser
-    verification gaps before giving release approval. Publishing remains a
-    separate user action. No actual publish or restore was performed.
+   `PUBLIC_OBJECT_SEARCH_PATHS`, `CLARIX_INITIAL_FACTORY_NAME`,
+   `CLARIX_INITIAL_FACTORY_SLUG`, `CLARIX_INITIAL_MANAGER_EMAIL`,
+   `CLARIX_INITIAL_INVITE_TOKEN`. The factory slug must start with a lowercase
+   letter and contain only lowercase letters, digits and hyphens.
+3. **You:** Set a production `CLARIX_RUNTIME_PASSWORD` of at least 32 characters,
+   **different from development**, and a strong production `SESSION_SECRET`.
+   Verify storage settings privately. **Do not set `SEED_TEST_PASSWORD` for the
+   deployment.** Remove its inherited production entry without deleting the
+   development secret. Never copy the development `DATABASE_URL`.
+4. **You:** Generate a cryptographically random **43-character token** in a
+   trusted local password manager, using only letters, digits, hyphens and
+   underscores. This is at least 256 bits when selected uniformly. Save it
+   privately and paste it into `CLARIX_INITIAL_INVITE_TOKEN`. Do not use an
+   online token generator or send it in chat. No manager password is supplied.
+5. **You:** Confirm that deployment contains only Clarix and its API, not a
+   running mockup sandbox. The sandbox artifact has development service
+   configuration only; neither production build imports its preview plugin.
+6. **You:** Only when separately ready and authorized, use **Publish**. Leave
+   development-data copying disabled. Review schema-change confirmation.
+7. **Automatic:** Replit provides a separate production database and applies
+   schema changes, including allowing the deployment invitation to have no
+   creating user. The application never runs table migrations at startup.
+8. **Automatic:** Before HTTP starts, a separate privileged process creates
+   missing security roles, applies grants/RLS/immutable protections, configures
+   the runtime password, verifies protections and creates the initial invitation
+   in one transaction. Any failure rolls back and prevents API startup.
+9. **Automatic:** With zero users and no previous initial invitation, the
+   initializer creates the first factory and a seven-day invitation. It stores
+   only the token hash, creates no dummy user, and logs no token or link.
+   Repeat starts do not replace invitations or extend expiry.
+10. **Automatic:** The setup process closes its privileged connection and
+    replaces itself with the API process. The API receives only the restricted
+    database connection, never the owner connection or invitation secret.
+11. **You:** In your browser, open the actual published site's
+    `/invite/<your-token>` address, inserting your saved token privately.
+    Choose your name and password on the existing invitation page. Finish
+    within seven days; restarting does not renew an expired invitation.
+12. **You:** Sign out and sign in as the first manager. Then delete only the
+    deployment `CLARIX_INITIAL_INVITE_TOKEN` secret and discard the saved token.
+    Apply the deployment configuration update through Replit if required.
+13. **Automatic:** The accepted token stops working. Once any user exists,
+    initialization does nothing, including when the token secret is absent.
+    The retained invitation prevents accidental recreation if users are removed.
+14. **You:** Verify live HTTPS cookies/headers, factory access and uploaded-file
+    storage; complete outstanding browser checks. The owner must have table
+    ownership and role-management permission. These actual platform permissions
+    still need verification on the first authorized deployment.
+15. **You:** Enable backups in **Database → production → Settings → Advanced →
+    Scheduled backups → Keep backups for**. Rehearse only on a separate disposable
+    project. Restore via **View all backups → Restore → type `restore` → Continue**.
+    A database restore does not restore code or establish object-file recovery.
 
-## Retention
-
-Core: up to seven days. Pro/Enterprise: up to 28 days, initially seven.
-There is no verified instant “Back up now” button in the consulted documentation.
-Point-in-time recovery is also available; it is not a harmless rehearsal against
-the live database.
-
-## Official sources
-
-* https://docs.replit.com/core-concepts/project-editor/app-setup/secrets
-* https://docs.replit.com/features/data-and-storage/development-and-production
-* https://docs.replit.com/features/data-and-storage/connection-details
-* https://docs.replit.com/features/data-and-storage/data-recovery
+No Shell commands, manual manager passwords or invitation-link logging are part
+of this procedure. A failed initial setup leaves the API unavailable rather than
+running with owner privileges. Expired initial invitations require an explicit
+reviewed recovery procedure; automatic reissue is deliberately not implemented.

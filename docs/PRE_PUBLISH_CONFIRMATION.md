@@ -1,5 +1,10 @@
 # Pre-publish confirmation
 
+**Superseded production-setup section:** The later approved deployment-token
+implementation is documented in `PRODUCTION_GATE_REPORT.md` and the revised
+`PHASE10_PUBLISH.md`. It replaces the manual first-manager commands below.
+The local owner-role proof passes; actual platform publishing remains unperformed.
+
 No feature or deployment change was made. Only dependency remediation, rejection
 verification and documentation were updated.
 
