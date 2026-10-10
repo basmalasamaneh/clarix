@@ -24,6 +24,11 @@ export interface ImportDetail {
   duplicateOf?: string | null;
   /** @nullable */
   duplicateReason?: string | null;
+  sourceArchived?: boolean;
+  otherSourceOrders?: JsonObject[];
+  settingsDifferences?: JsonObject[];
+  /** @nullable */
+  comparisonSource?: string | null;
   replacementOrders?: string[];
   replacedOrders?: string[];
   mapping?: JsonObject;

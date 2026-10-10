@@ -2,6 +2,16 @@ import {test} from "node:test";
 import assert from "node:assert/strict";
 import {eventCodes,mappingIdentity} from "../imports/review";
 import type {Context,ImportRow} from "../imports/service";
+import {effectiveMapping,mappingDifferences} from "../imports/mapping-identity";
+test("effective mapping ignores empty options, numeric spelling and unused codes but reports real differences",()=>{
+  const a:any={files:{records:{file:"r.csv",columns:{unit:"unit",machine_id:""},fixed_unit:""}},format:{encoding:"auto",delimiter:"auto",decimal_separator:"."},event_code_map:{CHG:"CHANGEOVER",PMT:"PLANNED_STOP"},unit_factors_to_kg:{kg:"1.0",t:"1000"},tolerances:{imbalance_warn_pct:"1.0"}};
+  const b=structuredClone(a);delete b.files.records.columns.machine_id;delete b.files.records.fixed_unit;
+  b.format.encoding="utf-8";b.format.delimiter=",";delete b.event_code_map.PMT;b.unit_factors_to_kg.kg="1";b.tolerances.imbalance_warn_pct="1";
+  const seen:any={files:[{name:"r.csv",sha256:"same",encoding:"utf-8",delimiter:","}],codes:["CHG"],units:["kg"]};
+  assert.deepEqual(effectiveMapping(a,seen),effectiveMapping(b,seen));
+  b.files.records.columns.machine_id="machine";
+  assert.deepEqual(mappingDifferences(effectiveMapping(a,seen),effectiveMapping(b,seen)),[{path:"files.records.columns.machine_id",here:null,there:"machine"}]);
+});
 test("code inventory covers rows beyond preview, counts repeats and never guesses abbreviations",async()=>{
   const rows=Array.from({length:27},(_,i)=>({file:"events.csv",line:i+2,cells:{code:`X${i}`,reason:"Unknown activity"}}));
   rows.push({file:"events.csv",line:29,cells:{code:"X25",reason:"Unknown activity"}});

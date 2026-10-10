@@ -24,6 +24,8 @@ import i18n from '@/lib/i18n';
 import { FIELDS, PAGE_SIZE, errCodeOf, errData, formatDate, issueText, nextStepText } from '@/lib/import-model';
 import { rowCells, useImportErrors, type ApprovalInputX, type ImportDetailX, type ImportIssueX, type IssueDetails, type SampleRow } from '@/lib/import-api';
 import { ErrorNote, Pager, Raw, Section } from './shared';
+import { PagedOrders, SourceInfo } from '@/components/sources/source-info';
+import type { SourceDetailX } from '@/lib/sources-api';
 
 const SEV_STYLE: Record<string, { icon: typeof Info; cls: string }> = {
   error: { icon: XCircle, cls: 'text-status-red' },
@@ -284,7 +286,7 @@ function OrderChips({ orders, testId }: { orders: string[]; testId: string }) {
 }
 
 export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: ImportDetail; canEdit: boolean; onEditMapping: (focus?: string) => void }) {
-  const detail = d0 as ImportDetailX;
+  const detail = d0 as ImportDetailX & SourceDetailX;
   const { t } = useTranslation();
   const qc = useQueryClient();
   const { toast } = useToast();
@@ -306,6 +308,8 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
   const dupBlocked = detail.duplicateReason === 'CURRENT_SAME_MAPPING' || (detail.duplicateReason === undefined && !!detail.duplicateOf);
   const toReplace = detail.replacementOrders ?? [];
   const replaced = detail.replacedOrders ?? [];
+  const srcArchived = !!detail.sourceArchived;
+  const diffs = detail.settingsDifferences ?? [];
 
   const apply = (d: ImportDetail) => {
     qc.setQueryData(getGetImportQueryKey(d.id), d);
@@ -416,6 +420,18 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
       )}
 
       {checked && (
+        <SourceInfo
+          sourceName={detail.sourceName}
+          archived={srcArchived}
+          replacementOrders={toReplace}
+          otherSourceOrders={detail.otherSourceOrders ?? []}
+          diffs={diffs}
+          comparisonSource={detail.comparisonSource}
+          approved={status === 'approved'}
+        />
+      )}
+
+      {checked && (
         <Section title={t('imp.check.issuesTitle')} testId="section-issues">
           <Issues id={detail.id} mapping={detail.mapping as Record<string, unknown> | undefined} onJump={readOnly ? undefined : (f) => onEditMapping(f)} />
         </Section>
@@ -437,8 +453,8 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
           {checked && (
             <Button
               className="min-h-11 gap-2"
-              disabled={dupBlocked}
-              title={dupBlocked ? t('imp.check.duplicateBlocked') : undefined}
+              disabled={dupBlocked || srcArchived}
+              title={dupBlocked ? t('imp.check.duplicateBlocked') : srcArchived ? t('src.info.archived') : undefined}
               onClick={() => {
                 approve.reset();
                 setConfirmed(false);
@@ -466,7 +482,7 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
           {toReplace.length > 0 && (
             <div>
               <p className="mb-1 text-xs font-medium text-muted-foreground">{t('imp.check.ordersToReplace')}</p>
-              <OrderChips orders={toReplace} testId="list-orders-to-replace" />
+              <PagedOrders orders={toReplace} source={detail.sourceName} testId="list-orders-to-replace" />
             </div>
           )}
           {errCount > 0 && approveOpen && (
@@ -504,7 +520,7 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
             </Button>
             <Button
               className="min-h-11 gap-2"
-              disabled={approve.isPending || (rc > 0 && !confirmed) || (errCount > 0 && !confirmedErrors)}
+              disabled={approve.isPending || srcArchived || dupBlocked || (rc > 0 && !confirmed) || (errCount > 0 && !confirmedErrors)}
               onClick={() =>
                 approve.mutate(
                   {

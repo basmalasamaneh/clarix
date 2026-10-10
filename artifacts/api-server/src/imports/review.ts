@@ -1,12 +1,11 @@
 import type {Mapping} from "@workspace/calculation";
 import {ImportError} from "./model";
 import type {Context,ImportRow} from "./service";
+import {effectiveMapping,mappingDifferences} from "./mapping-identity";
 export type ReviewMapping=Mapping & {ignored_event_codes?:string[]};
 type Decision={code:string;choice:string|null;chosenBy:string;chosenAt:string};
 export function mappingIdentity(mapping:ReviewMapping|null) {
-  if(!mapping) return null;
-  const {source_name,schema_version,capability_level,...settings}=mapping;
-  return {...settings,ignored_event_codes:[...new Set(mapping.ignored_event_codes??[])].sort()};
+  return effectiveMapping(mapping);
 }
 export async function eventCodes(ctx:Context,row:ImportRow,mapping:ReviewMapping) {
   const spec=mapping.files?.events;
@@ -48,16 +47,29 @@ export async function replacementOrders(ctx:Context,row:ImportRow) {
   return (await ctx.db.query("SELECT source_order_id FROM orders WHERE factory_id=$1 AND source_name=$2 AND source_order_id=ANY($3::text[]) AND current_import_id IS NOT NULL ORDER BY source_order_id",[ctx.factory,row.source_name,Object.keys(row.result?.runs??{})])).rows.map(r=>r.source_order_id as string);
 }
 export async function duplicateState(ctx:Context,row:ImportRow) {
-  if(!row.mapping || !row.finalized) return {duplicateOf:null,duplicateReason:null};
-  const matches=(await ctx.db.query(`SELECT i.id,
+  if(!row.mapping || !row.finalized) return {duplicateOf:null,duplicateReason:null,settingsDifferences:[],comparisonSource:null};
+  const matches=(await ctx.db.query(`SELECT i.id,i.source_name,i.files,
     EXISTS(SELECT 1 FROM orders o WHERE o.factory_id=i.factory_id AND o.current_import_id=i.id) AS current,
-    i.mapping FROM imports i WHERE i.factory_id=$1 AND i.content_hash=$2 AND i.status='approved' AND i.id<>$3
-    ORDER BY approved_at DESC`,[ctx.factory,row.content_hash,row.id])).rows;
-  for(const m of matches.filter(m=>m.current)) {
-    const same=(await ctx.db.query("SELECT $1::jsonb=$2::jsonb AS same",[JSON.stringify(mappingIdentity(row.mapping)),JSON.stringify(mappingIdentity(m.mapping))])).rows[0].same;
-    if(same) return {duplicateOf:m.id,duplicateReason:"CURRENT_SAME_MAPPING"};
+    i.mapping FROM imports i WHERE i.factory_id=$1 AND i.content_hash=$2 AND i.status='approved' AND i.id<>$3 AND i.source_name=$4
+    ORDER BY approved_at DESC`,[ctx.factory,row.content_hash,row.id,row.source_name])).rows;
+  async function identity(r:ImportRow) {
+    const raw=(await ctx.db.query("SELECT file,cells FROM raw_rows WHERE factory_id=$1 AND import_id=$2",[ctx.factory,r.id])).rows;
+    const codes=new Set<string>(),units=new Set<string>();
+    for(const cell of raw) {
+      const events=r.mapping?.files.events;
+      if(events && cell.file===events.file) codes.add(String(cell.cells[events.columns.event_code]??"").trim());
+      for(const spec of [r.mapping?.files.records,r.mapping?.files.totals]) if(spec && cell.file===spec.file) units.add(String(spec.columns.unit?cell.cells[spec.columns.unit]??"":spec.fixed_unit??"").trim().toLowerCase());
+    }
+    return effectiveMapping(r.mapping,{files:r.files,codes:[...codes],units:[...units]});
   }
-  return {duplicateOf:null,duplicateReason:matches.some(m=>m.current)?"MAPPING_DIFFERS":matches.length?"FULLY_SUPERSEDED":null};
+  const here=await identity(row);
+  let differences:ReturnType<typeof mappingDifferences>=[],comparisonSource:string|null=null;
+  for(const m of matches.filter(m=>m.current)) {
+    const diff=mappingDifferences(here,await identity(m));
+    if(!diff.length) return {duplicateOf:m.id,duplicateReason:"CURRENT_SAME_MAPPING",settingsDifferences:[],comparisonSource:m.source_name};
+    if(!comparisonSource) {differences=diff;comparisonSource=m.source_name;}
+  }
+  return {duplicateOf:null,duplicateReason:matches.some(m=>m.current)?"MAPPING_DIFFERS":matches.length?"FULLY_SUPERSEDED":null,settingsDifferences:differences,comparisonSource};
 }
 export async function issues(ctx:Context,row:ImportRow,p=1,errorsOnly=false) {
   const filter=errorsOnly?" AND severity='error'":"";

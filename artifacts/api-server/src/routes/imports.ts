@@ -7,9 +7,10 @@ import { ImportError,limitConfig,validateMapping } from "../imports/model";
 import * as service from "../imports/service";
 import { approve } from "../imports/approval";
 import {eventCodes,issues} from "../imports/review";
+import * as sources from "../imports/sources";
 const router=Router();
 type Action=(ctx:service.Context,req:Request,res:Response)=>Promise<void>;
-function route(action:Action) {
+function route(action:Action,allowViewer=false) {
   return async(req:Request,res:Response,next:NextFunction)=>{
     try {
       if(!req.session.userId) throw new ImportError("UNAUTHENTICATED",401);
@@ -21,7 +22,7 @@ function route(action:Action) {
       const output={status(n:number){code=n;return this;},json(value:unknown){payload=value;return this;}} as Response;
       await withRequestTenant(req,async db=>{
         const {rows}=await db.query("SELECT m.role,f.settings FROM memberships m JOIN factories f ON m.factory_id=f.id WHERE m.user_id=$1 AND m.factory_id=$2",[req.session.userId,req.session.activeFactoryId]);
-        if(!["factory_manager","analyst"].includes(rows[0]?.role)) throw new ImportError("FORBIDDEN",403);
+        if(!(allowViewer?["factory_manager","analyst","viewer"]:["factory_manager","analyst"]).includes(rows[0]?.role)) throw new ImportError("FORBIDDEN",403);
         await action({db,factory:req.session.activeFactoryId!,user:req.session.userId!,userName:res.locals.identity?.user?.name,settings:rows[0].settings??{}},req,output);
       });
       res.status(code).json(payload);
@@ -41,6 +42,20 @@ function route(action:Action) {
 }
 const page=(raw:unknown)=>z.coerce.number().int().min(1).max(1000000).parse(raw??1);
 const id=(req:Request)=>String(req.params.id);
+router.get("/data-sources",route(async(ctx,req,res)=>{res.json(await sources.listSources(ctx,page(req.query.page),String(req.query.search??"")));}));
+router.post("/data-sources/recommend",route(async(ctx,req,res)=>{
+  const input=z.object({files:z.array(z.object({name:z.string(),headers:z.array(z.string()).max(1000)})).max(4)}).parse(req.body);
+  res.json(await sources.recommendSource(ctx,input.files));
+}));
+router.patch("/data-sources/archive",route(async(ctx,req,res)=>{
+  const input=z.object({sourceName:z.string().trim().min(1).max(200),archived:z.boolean()}).parse(req.body);
+  res.json(await sources.archiveSource(ctx,input.sourceName,input.archived));
+}));
+router.get("/source-runs",route(async(ctx,req,res)=>{res.json(await sources.sourceRuns(ctx,page(req.query.page),String(req.query.search??"")));},true));
+router.get("/source-comparison",route(async(ctx,req,res)=>{
+  const input=z.object({left:z.string().uuid(),right:z.string().uuid()}).parse(req.query);
+  res.json(await sources.sourcePair(ctx,input.left,input.right));
+},true));
 router.get("/imports/config",route(async(ctx,_req,res)=>{res.json(limitConfig(ctx.settings));}));
 router.get("/imports",route(async(ctx,req,res)=>{
   const p=page(req.query.page);

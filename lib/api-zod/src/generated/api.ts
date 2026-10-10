@@ -49,6 +49,10 @@ export const ListImportsResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -124,6 +128,10 @@ export const CreateImportResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -188,6 +196,10 @@ export const GetImportResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -245,6 +257,10 @@ export const FinalizeImportResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -306,6 +322,10 @@ export const SaveImportMappingResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -363,6 +383,10 @@ export const CheckImportResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -430,6 +454,10 @@ export const ApproveImportResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -487,6 +515,10 @@ export const RejectImportResponse = zod.object({
   "replacementCount": zod.number().int(),
   "duplicateOf": zod.string().nullish(),
   "duplicateReason": zod.string().nullish(),
+  "sourceArchived": zod.boolean().optional(),
+  "otherSourceOrders": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "settingsDifferences": zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+  "comparisonSource": zod.string().nullish(),
   "replacementOrders": zod.array(zod.string()).optional(),
   "replacedOrders": zod.array(zod.string()).optional(),
   "mapping": zod.record(zod.string(), zod.unknown()).optional(),
@@ -610,6 +642,46 @@ export const GetImportErrorsResponse = zod.object({
   "page": zod.number().int(),
   "total": zod.number().int()
 })
+
+
+
+
+
+export const ListDataSourcesQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "search": zod.coerce.string().optional()
+})
+
+export const ListDataSourcesResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const RecommendDataSourceBody = zod.record(zod.string(), zod.unknown())
+
+export const RecommendDataSourceResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const ArchiveDataSourceBody = zod.record(zod.string(), zod.unknown())
+
+export const ArchiveDataSourceResponse = zod.record(zod.string(), zod.unknown())
+
+
+
+
+
+export const ListSourceRunsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional(),
+  "search": zod.coerce.string().optional()
+})
+
+export const ListSourceRunsResponse = zod.record(zod.string(), zod.unknown())
+
+
+export const GetSourceComparisonQueryParams = zod.object({
+  "left": zod.coerce.string().uuid(),
+  "right": zod.coerce.string().uuid()
+})
+
+export const GetSourceComparisonResponse = zod.record(zod.string(), zod.unknown())
 
 
 /**

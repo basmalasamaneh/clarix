@@ -89,6 +89,11 @@ export interface ImportDetail {
   duplicateOf?: string | null;
   /** @nullable */
   duplicateReason?: string | null;
+  sourceArchived?: boolean;
+  otherSourceOrders?: JsonObject[];
+  settingsDifferences?: JsonObject[];
+  /** @nullable */
+  comparisonSource?: string | null;
   replacementOrders?: string[];
   replacedOrders?: string[];
   mapping?: JsonObject;
@@ -278,5 +283,26 @@ export type ListImportTemplatesParams = {
  */
 page?: number;
 source?: string;
+};
+
+export type ListDataSourcesParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+search?: string;
+};
+
+export type ListSourceRunsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+search?: string;
+};
+
+export type GetSourceComparisonParams = {
+left: string;
+right: string;
 };
 

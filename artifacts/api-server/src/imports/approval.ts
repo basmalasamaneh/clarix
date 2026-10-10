@@ -1,6 +1,7 @@
 import { fmt } from "@workspace/calculation";
 import { ImportError } from "./model";
 import {replacementOrders,assertChoices,issues} from "./review";
+import {assertActiveSource} from "./sources";
 import { duplicate,replacementCount,runEngine,loadRaw,getRow,view,type Context,type ImportRow } from "./service";
 
 export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacement:boolean;replacementCount:number;confirmErrors?:boolean}) {
@@ -8,6 +9,7 @@ export async function approve(ctx:Context,row:ImportRow,input:{confirmReplacemen
   // Serializes approvals in a factory, including different sources, to close
   // duplicate-hash and replacement-confirmation races. RLS remains in force.
   await ctx.db.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))",[ctx.factory]);
+  await assertActiveSource(ctx,row.source_name);
   await assertChoices(ctx,row);
   if((row.counts?.error??0)>0 && !input.confirmErrors) throw new ImportError("ERROR_CONFIRMATION_REQUIRED",409,{errors:(await issues(ctx,row,1,true)).items});
   const existing=await duplicate(ctx,row);

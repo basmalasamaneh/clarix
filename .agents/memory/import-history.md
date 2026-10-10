@@ -14,9 +14,16 @@ without weakening the Phase 2 uniqueness constraints.
 immutability. Raw source references use FIRST physical line; retain both ends.
 
 Duplicate detection requires the same files AND mapping, and a prior import
-still current for at least one order. Different mapping or fully superseded
+still current for at least one order in the SAME source. Different mapping or fully superseded
 imports must remain approvable through replacement confirmation.
 **Why:** The user corrected the earlier hash-only policy to support reprocessing.
+
+Keep sources separate. Explicitly choose an existing source or create a named
+source; never merge equal order IDs across sources. Archive reversibly rather
+than deleting source data, using existing factory settings rather than changing
+the data model. Source-qualified identities must be visible in runs/comparison.
+**Why:** The user chose source isolation and requested archive/restore without
+data-model or fixture changes.
 
 Explicitly ignored event codes retain the engine's exclusion warning. Display
 the code, count, excluded rows, acting user and time. Do not change the engine

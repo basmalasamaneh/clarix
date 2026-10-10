@@ -116,10 +116,18 @@ triggers blocking UPDATE, DELETE and TRUNCATE. No user deletion operation exists
 
 Import states are `draft`, `checked`, `approved`, `rejected`. Rechecking an editable
 draft replaces its derived validation report, never its raw rows or original
-files. Duplicate detection requires identical file-set contents AND mapping
+files. Duplicate detection within the same source requires identical file-set contents AND effective mapping
 settings, and the earlier import must still be current for at least one order
 in the same factory. Different mappings or fully superseded imports can be
 approved through normal replacement confirmation listing the affected orders.
+Source selection is explicit: existing source or a new source name. A matching
+approved mapping recommends its most recently approved active source. Source
+names are namespaces, not upload labels. Order IDs across sources remain separate;
+run and comparison identities include source and internal run ID.
+Factory Managers can reversibly archive sources using existing factory settings.
+Archived sources retain every stored row but are excluded from current run lists,
+comparison selection/pairs and active counts. They cannot receive new imports or
+approvals until restored. Import history remains accessible.
 File-set hashes use sorted SHA-256 file hashes, independent of filename/order.
 Raw rows store both `start_line` and `end_line`; all displayed references use
 the first physical line. Existing `line_number` is the first-line alias.

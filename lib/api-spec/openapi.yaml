@@ -184,6 +184,70 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/IssuePage" }
+  /data-sources:
+    get:
+      operationId: listDataSources
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Factory sources
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JsonObject" }
+  /data-sources/recommend:
+    post:
+      operationId: recommendDataSource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JsonObject" }
+      responses:
+        "200":
+          description: Most recent matching active approved source
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JsonObject" }
+  /data-sources/archive:
+    patch:
+      operationId: archiveDataSource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/JsonObject" }
+      responses:
+        "200":
+          description: Manager-only archive status
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JsonObject" }
+  /source-runs:
+    get:
+      operationId: listSourceRuns
+      parameters:
+        - { name: page, in: query, schema: { type: integer, minimum: 1 } }
+        - { name: search, in: query, schema: { type: string } }
+      responses:
+        "200":
+          description: Active source-qualified runs
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JsonObject" }
+  /source-comparison:
+    get:
+      operationId: getSourceComparison
+      parameters:
+        - { name: left, in: query, required: true, schema: { type: string, format: uuid } }
+        - { name: right, in: query, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200":
+          description: Source-qualified pair identities
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/JsonObject" }
   /healthz:
     get:
       operationId: healthCheck
@@ -324,6 +388,10 @@ components:
         replacementCount: { type: integer }
         duplicateOf: { type: [string, "null"] }
         duplicateReason: { type: [string, "null"] }
+        sourceArchived: { type: boolean }
+        otherSourceOrders: { type: array, items: { $ref: "#/components/schemas/JsonObject" } }
+        settingsDifferences: { type: array, items: { $ref: "#/components/schemas/JsonObject" } }
+        comparisonSource: { type: [string, "null"] }
         replacementOrders: { type: array, items: { type: string } }
         replacedOrders: { type: array, items: { type: string } }
         mapping: { $ref: "#/components/schemas/JsonObject" }

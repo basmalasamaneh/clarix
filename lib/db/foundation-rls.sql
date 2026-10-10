@@ -12,6 +12,15 @@ GRANT clarix_runtime TO CURRENT_USER;
 GRANT clarix_identity TO CURRENT_USER;
 GRANT USAGE ON SCHEMA public TO clarix_runtime, clarix_identity;
 GRANT SELECT ON factories, memberships TO clarix_runtime, clarix_identity;
+GRANT UPDATE(settings) ON factories TO clarix_runtime;
+DROP POLICY IF EXISTS factory_manager_settings ON factories;
+CREATE POLICY factory_manager_settings ON factories FOR UPDATE TO clarix_runtime
+USING (id=nullif(current_setting('app.factory_id',true),'') AND EXISTS(
+  SELECT 1 FROM memberships m WHERE m.factory_id=factories.id
+  AND m.user_id=nullif(current_setting('app.user_id',true),'') AND m.role='factory_manager'))
+WITH CHECK (id=nullif(current_setting('app.factory_id',true),'') AND EXISTS(
+  SELECT 1 FROM memberships m WHERE m.factory_id=factories.id
+  AND m.user_id=nullif(current_setting('app.user_id',true),'') AND m.role='factory_manager'));
 ALTER TABLE factories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE factories FORCE ROW LEVEL SECURITY;
 ALTER TABLE memberships ENABLE ROW LEVEL SECURITY;

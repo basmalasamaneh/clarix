@@ -1,0 +1,16 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "yn3_h7pFRc1zX4eX5y61y"
+uri = "file://generated-artifacts/sources/source-inventory.csv"
+type = "table"
+title = "Ethmar source inventory"
+description = "All 263 source names, archive status, current visible orders, stored orders and last approval time."
+logical_id = "d3850856-e83d-4db6-8b08-ecfea60bc857"
+content_hash = "sha256:3442219e770c58db26163b651cb565544cea100dcc0232b3c101e2420ce408eb"
+size = 28234
+mtime_ms = 1791624838766
+storage_uri = "gcs://replit-rams-assets-reed/rams/assets/repl:e816b547-88cc-4595-b445-0f1df8df7ad5/d3850856-e83d-4db6-8b08-ecfea60bc857/6f98b06a-bc2d-44b0-99d5-82138f3741a8"
+storage_version_token = "1791625038906474"
+content_type = "text/csv"

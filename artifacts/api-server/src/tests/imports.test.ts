@@ -41,6 +41,42 @@ test("real API import/approval, isolation, originals, replacement history and un
     return (await who.a.post(`/api/imports/${id}/approve`).set("X-CSRF-Token",who.token).send({confirmReplacement:true,replacementCount:count,confirmErrors:true}).expect(200)).body;
   }
   // The same approved fixture may already exist from a previous test execution.
+  await t.test("sources isolate versions, disambiguate pairs and archive reversibly",async()=>{
+    const manager=await login("ethmar.manager@clarix.test");
+    const sourceA="source-test-"+randomUUID(),sourceB=sourceA+"-B";
+    const mutate=(files:{name:string;bytes:Buffer}[])=>files.forEach(f=>{f.bytes=Buffer.from(f.bytes.toString().replaceAll("E-01",sourceA+"-1").replaceAll("E-02",sourceA+"-2"));});
+    const a=await upload(eth,"ethmar-plastics/00_baseline",sourceA,mutate);
+    await check(eth,a);await approve(eth,a.id,0);
+    const b=await upload(eth,"ethmar-plastics/00_baseline",sourceB,mutate);
+    const bc=await check(eth,b);
+    assert.equal(bc.duplicateOf,null);assert.equal(bc.replacementCount,0);
+    assert.equal(bc.otherSourceOrders.length,2);
+    await approve(eth,b.id,0);
+    const again=await upload(eth,"ethmar-plastics/00_baseline",sourceA,mutate);
+    delete again.mapping.event_code_map.PMT; // unused API-only setting is not a difference
+    assert.equal((await check(eth,again)).duplicateReason,"CURRENT_SAME_MAPPING");
+    again.mapping.event_code_map.UDT="PLANNED_STOP";
+    const changed=await check(eth,again);
+    assert.equal(changed.duplicateReason,"MAPPING_DIFFERS");
+    assert.ok(changed.settingsDifferences.some((d:any)=>d.path==="event_code_map.UDT"));
+    assert.deepEqual(changed.replacementOrders,[sourceA+"-1",sourceA+"-2"]);
+    await approve(eth,again.id,2);
+    const runs=(await eth.a.get("/api/source-runs").query({search:sourceA}).expect(200)).body;
+    assert.equal(runs.total,4);assert.ok(runs.items.every((r:any)=>r.ambiguous));
+    const left=runs.items.find((r:any)=>r.sourceName===sourceA),right=runs.items.find((r:any)=>r.sourceName===sourceB && r.orderId===left.orderId);
+    const pair=(await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(200)).body;
+    assert.equal(pair.left.sourceName,sourceA);assert.equal(pair.right.sourceName,sourceB);
+    await najm.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(404);
+    const archive={sourceName:sourceA,archived:true};
+    await eth.a.patch("/api/data-sources/archive").set("X-CSRF-Token",eth.token).send(archive).expect(403);
+    await manager.a.patch("/api/data-sources/archive").set("X-CSRF-Token",manager.token).send(archive).expect(200);
+    assert.equal((await eth.a.get("/api/source-runs").query({search:sourceA}).expect(200)).body.total,2);
+    await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(404);
+    await eth.a.post("/api/imports").set("X-CSRF-Token",eth.token).send({sourceName:sourceA,files:[{name:"orders.csv",size:1,mime:"text/csv"},{name:"events.csv",size:1,mime:"text/csv"}]}).expect(409);
+    await manager.a.patch("/api/data-sources/archive").set("X-CSRF-Token",manager.token).send({...archive,archived:false}).expect(200);
+    assert.equal((await eth.a.get("/api/source-runs").query({search:sourceA}).expect(200)).body.total,4);
+    await viewer.a.get("/api/source-comparison").query({left:left.id,right:right.id}).expect(200);
+  });
   // Only isolated source orders created on this run are used for replacement checks.
   let first:Awaited<ReturnType<typeof upload>>;
   await t.test("wizard gates, ignored decisions, current mapping duplicates and reversible versions",async()=>{

@@ -23,6 +23,7 @@ import type {
   ApprovalInput,
   Credentials,
   FactorySelection,
+  GetSourceComparisonParams,
   HealthStatus,
   ImportDetail,
   ImportInput,
@@ -30,8 +31,10 @@ import type {
   ImportPage,
   IssuePage,
   JsonObject,
+  ListDataSourcesParams,
   ListImportTemplatesParams,
   ListImportsParams,
+  ListSourceRunsParams,
   MappingInput,
   MappingTemplate,
   PageState,
@@ -1118,6 +1121,404 @@ export function useGetImportErrors<TData = Awaited<ReturnType<typeof getImportEr
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetImportErrorsQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListDataSourcesUrl = (params?: ListDataSourcesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/data-sources?${stringifiedParams}` : `/api/data-sources`
+}
+
+export const listDataSources = async (params?: ListDataSourcesParams, options?: Parameters<typeof customFetch>[1]): Promise<JsonObject> => {
+
+  return customFetch<JsonObject>(getListDataSourcesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDataSourcesQueryKey = (params?: ListDataSourcesParams,) => {
+    return [
+    `/api/data-sources`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDataSourcesQueryOptions = <TData = Awaited<ReturnType<typeof listDataSources>>, TError = ErrorType<unknown>>(params?: ListDataSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDataSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDataSourcesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDataSources>>> = ({ signal }) => listDataSources(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDataSources>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDataSourcesQueryResult = NonNullable<Awaited<ReturnType<typeof listDataSources>>>
+export type ListDataSourcesQueryError = ErrorType<unknown>
+
+
+
+export function useListDataSources<TData = Awaited<ReturnType<typeof listDataSources>>, TError = ErrorType<unknown>>(
+ params?: ListDataSourcesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDataSources>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDataSourcesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecommendDataSourceUrl = () => {
+
+
+
+
+  return `/api/data-sources/recommend`
+}
+
+export const recommendDataSource = async (jsonObject: JsonObject, options?: Parameters<typeof customFetch>[1]): Promise<JsonObject> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<JsonObject>(getRecommendDataSourceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(jsonObject)
+  }
+);}
+
+
+
+
+
+export const getRecommendDataSourceMutationKey = () => ['recommendDataSource'] as const;
+
+export const getRecommendDataSourceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recommendDataSource>>, TError,RecommendDataSourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recommendDataSource>>, TError,RecommendDataSourceMutationVariables, TContext> => {
+
+const mutationKey = getRecommendDataSourceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recommendDataSource>>, RecommendDataSourceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  recommendDataSource(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecommendDataSourceMutationResult = NonNullable<Awaited<ReturnType<typeof recommendDataSource>>>
+    export type RecommendDataSourceMutationBody = BodyType<JsonObject>
+    export type RecommendDataSourceMutationError = ErrorType<unknown>
+    export type RecommendDataSourceMutationVariables = {data: BodyType<JsonObject>}
+
+    export const useRecommendDataSource = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recommendDataSource>>, TError,RecommendDataSourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recommendDataSource>>,
+        TError,
+        RecommendDataSourceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecommendDataSourceMutationOptions(options));
+    }
+
+export const getArchiveDataSourceUrl = () => {
+
+
+
+
+  return `/api/data-sources/archive`
+}
+
+export const archiveDataSource = async (jsonObject: JsonObject, options?: Parameters<typeof customFetch>[1]): Promise<JsonObject> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<JsonObject>(getArchiveDataSourceUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(jsonObject)
+  }
+);}
+
+
+
+
+
+export const getArchiveDataSourceMutationKey = () => ['archiveDataSource'] as const;
+
+export const getArchiveDataSourceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveDataSource>>, TError,ArchiveDataSourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof archiveDataSource>>, TError,ArchiveDataSourceMutationVariables, TContext> => {
+
+const mutationKey = getArchiveDataSourceMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof archiveDataSource>>, ArchiveDataSourceMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  archiveDataSource(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ArchiveDataSourceMutationResult = NonNullable<Awaited<ReturnType<typeof archiveDataSource>>>
+    export type ArchiveDataSourceMutationBody = BodyType<JsonObject>
+    export type ArchiveDataSourceMutationError = ErrorType<unknown>
+    export type ArchiveDataSourceMutationVariables = {data: BodyType<JsonObject>}
+
+    export const useArchiveDataSource = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof archiveDataSource>>, TError,ArchiveDataSourceMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof archiveDataSource>>,
+        TError,
+        ArchiveDataSourceMutationVariables,
+        TContext
+      > => {
+      return useMutation(getArchiveDataSourceMutationOptions(options));
+    }
+
+export const getListSourceRunsUrl = (params?: ListSourceRunsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/source-runs?${stringifiedParams}` : `/api/source-runs`
+}
+
+export const listSourceRuns = async (params?: ListSourceRunsParams, options?: Parameters<typeof customFetch>[1]): Promise<JsonObject> => {
+
+  return customFetch<JsonObject>(getListSourceRunsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSourceRunsQueryKey = (params?: ListSourceRunsParams,) => {
+    return [
+    `/api/source-runs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSourceRunsQueryOptions = <TData = Awaited<ReturnType<typeof listSourceRuns>>, TError = ErrorType<unknown>>(params?: ListSourceRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSourceRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSourceRunsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSourceRuns>>> = ({ signal }) => listSourceRuns(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSourceRuns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSourceRunsQueryResult = NonNullable<Awaited<ReturnType<typeof listSourceRuns>>>
+export type ListSourceRunsQueryError = ErrorType<unknown>
+
+
+
+export function useListSourceRuns<TData = Awaited<ReturnType<typeof listSourceRuns>>, TError = ErrorType<unknown>>(
+ params?: ListSourceRunsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSourceRuns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSourceRunsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSourceComparisonUrl = (params: GetSourceComparisonParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/source-comparison?${stringifiedParams}` : `/api/source-comparison`
+}
+
+export const getSourceComparison = async (params: GetSourceComparisonParams, options?: Parameters<typeof customFetch>[1]): Promise<JsonObject> => {
+
+  return customFetch<JsonObject>(getGetSourceComparisonUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSourceComparisonQueryKey = (params?: GetSourceComparisonParams,) => {
+    return [
+    `/api/source-comparison`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetSourceComparisonQueryOptions = <TData = Awaited<ReturnType<typeof getSourceComparison>>, TError = ErrorType<unknown>>(params: GetSourceComparisonParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSourceComparison>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSourceComparisonQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSourceComparison>>> = ({ signal }) => getSourceComparison(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSourceComparison>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSourceComparisonQueryResult = NonNullable<Awaited<ReturnType<typeof getSourceComparison>>>
+export type GetSourceComparisonQueryError = ErrorType<unknown>
+
+
+
+export function useGetSourceComparison<TData = Awaited<ReturnType<typeof getSourceComparison>>, TError = ErrorType<unknown>>(
+ params: GetSourceComparisonParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSourceComparison>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSourceComparisonQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

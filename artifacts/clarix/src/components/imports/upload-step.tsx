@@ -1,4 +1,4 @@
-import { useRef, useState, type DragEvent } from 'react';
+import { useEffect, useRef, useState, type DragEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
@@ -13,12 +13,12 @@ import {
   type ImportDetail,
 } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useCsrfRequest } from '@/lib/session';
 import { formatBytes } from '@/lib/import-model';
 import { ErrorNote, Raw, Section } from './shared';
+import { SourcePicker, chosenName, type SourceChoice } from '@/components/sources/source-picker';
+import { readCsvHeaders, useRecommendSource } from '@/lib/sources-api';
 
 type Phase = { kind: 'idle' } | { kind: 'creating' } | { kind: 'sending'; name: string; done: number; total: number } | { kind: 'reading' };
 
@@ -36,7 +36,12 @@ export function NewImport({ onCreated }: { onCreated: (d: ImportDetail) => void 
   const create = useCreateImport({ request: req });
   const finalize = useFinalizeImport({ request: req });
   const inputRef = useRef<HTMLInputElement>(null);
-  const [sourceName, setSourceName] = useState('');
+  const [choice, setChoice] = useState<SourceChoice>({ mode: 'existing', existing: null, newName: '' });
+  const sourceName = chosenName(choice);
+  const recommend = useRecommendSource();
+  const recMutate = useRef(recommend.mutate);
+  recMutate.current = recommend.mutate;
+  const [rec, setRec] = useState<{ name: string | null; checked: boolean }>({ name: null, checked: false });
   const [files, setFiles] = useState<File[]>([]);
   const [problems, setProblems] = useState<string[]>([]);
   const [touched, setTouched] = useState(false);
@@ -72,7 +77,32 @@ export function NewImport({ onCreated }: { onCreated: (d: ImportDetail) => void 
   const blocking: string[] = [];
   if (files.length < 2) blocking.push(t('imp.upload.tooFew'));
   if (maxTotal && total > maxTotal) blocking.push(t('imp.upload.totalTooBig', { limit: formatBytes(maxTotal) }));
-  const sourceMissing = !sourceName.trim();
+  const sourceMissing = !sourceName;
+  const fileKey = files.map((f) => `${f.name}:${f.size}`).join('|');
+
+  useEffect(() => {
+    if (files.length === 0) {
+      setRec({ name: null, checked: false });
+      return;
+    }
+    let live = true;
+    Promise.all(files.map(async (f) => ({ name: f.name, headers: await readCsvHeaders(f).catch(() => [] as string[]) })))
+      .then((payload) => {
+        if (!live) return;
+        recMutate.current(payload, {
+          onSuccess: (r) => {
+            if(!live) return;
+            setRec({ name: r.sourceName, checked: true });
+            if(r.sourceName) setChoice(previous => chosenName(previous) ? previous : {...previous,mode:'existing',existing:r.sourceName});
+          },
+          onError: () => live && setRec({ name: null, checked: false }),
+        });
+      });
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fileKey]);
 
   async function sendAll(d: ImportDetail) {
     const targets = d.files.filter((f) => f.uploadUrl);
@@ -101,7 +131,7 @@ export function NewImport({ onCreated }: { onCreated: (d: ImportDetail) => void 
       if (!d) {
         setPhase({ kind: 'creating' });
         d = await create.mutateAsync({
-          data: { sourceName: sourceName.trim(), files: files.map((f) => ({ name: f.name, size: f.size, mime: f.type || 'text/csv' })) },
+          data: { sourceName, files: files.map((f) => ({ name: f.name, size: f.size, mime: f.type || 'text/csv' })) },
         });
         setDraft(d);
       }
@@ -127,23 +157,18 @@ export function NewImport({ onCreated }: { onCreated: (d: ImportDetail) => void 
   return (
     <Section title={t('imp.upload.title')} body={t('imp.upload.body', { max: maxFiles })} testId="section-upload">
       <div className="space-y-5">
-        <div className="max-w-md space-y-1.5">
-          <Label htmlFor="source-name">{t('imp.upload.sourceName')}</Label>
-          <Input
-            id="source-name"
-            value={sourceName}
-            onChange={(e) => setSourceName(e.target.value)}
-            maxLength={120}
-            disabled={busy}
-            className="h-11"
-            aria-invalid={touched && sourceMissing ? true : undefined}
-            aria-describedby="source-hint"
-            data-testid="input-source-name"
-          />
-          <p id="source-hint" className={cn('text-xs', touched && sourceMissing ? 'text-status-red' : 'text-muted-foreground')}>
-            {touched && sourceMissing ? t('imp.upload.sourceRequired') : t('imp.upload.sourceHint')}
-          </p>
-        </div>
+        <SourcePicker
+          value={choice}
+          onChange={(c) => {
+            setChoice(c);
+            setDraft(null);
+          }}
+          disabled={busy}
+          invalid={touched && sourceMissing}
+          recommendation={rec.name}
+          recommending={recommend.isPending}
+          recommendChecked={rec.checked}
+        />
 
         <div
           onDragOver={(e) => {

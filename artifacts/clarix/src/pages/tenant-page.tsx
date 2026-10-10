@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { EmptyPanel, PageHeader, PageSkeleton } from '@/components/empty-page';
 import { StateScreen } from '@/components/state-screen';
 import { PAGE_ICONS } from '@/components/app-shell';
+import { RunsSelect, ComparisonSelect } from '@/components/sources/run-select';
+import { SourceAdmin } from '@/components/sources/source-admin';
 import { errorCode, errorStatus, firstAllowedPath, localizeError, type TenantPage } from '@/lib/session';
 
 export function ForbiddenState({ session }: { session: Session }) {
@@ -66,12 +68,19 @@ export default function TenantPageView({ page, session }: { page: TenantPage; se
         lead={t(`pages.${page}.lead`)}
         meta={factory ? `${factory.factoryName} · ${t('factory.isolated')}` : undefined}
       />
+      {page === 'runs' ? (
+        <RunsSelect />
+      ) : page === 'comparison' ? (
+        <ComparisonSelect />
+      ) : (
       <EmptyPanel
         pageKey={page}
         title={t(`pages.${page}.emptyTitle`)}
         body={t(`pages.${page}.emptyBody`)}
         items={[t(`pages.${page}.i1`), t(`pages.${page}.i2`), t(`pages.${page}.i3`)]}
       />
+      )}
+      {page === 'settings' && factory?.role === 'factory_manager' && <SourceAdmin />}
     </div>
   );
 }

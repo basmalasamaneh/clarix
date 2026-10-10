@@ -5,6 +5,7 @@ import { fileStorage } from "./storage";
 import { importJobs } from "./jobs";
 import {duplicateState,replacementOrders,eventCodes,recordDecisions,assertChoices,type ReviewMapping} from "./review";
 import { ImportError,inspect,limitConfig,suggestMapping,validateMapping,type StoredFile } from "./model";
+import {sourceInfo,assertActiveSource} from "./sources";
 export interface Context { db:PoolClient; factory:string; user:string; userName?:string; settings:Record<string,unknown> }
 export interface ImportRow {
   id:string;source_name:string;status:string;created_at:string;files:StoredFile[];
@@ -32,6 +33,7 @@ export async function duplicate(ctx:Context,row:ImportRow) {
 export async function view(ctx:Context,row:ImportRow,uploads=false) {
   const files=await Promise.all(row.files.map(async({stage,original,...f})=>({...f,...(uploads && !row.finalized ? {uploadUrl:await fileStorage.uploadUrl(stage)}:{})})));
   return {id:row.id,sourceName:row.source_name,status:row.status,createdAt:row.created_at,files,
+    ...await sourceInfo(ctx,row),
     finalized:row.finalized,progress:importJobs.progress(row.id)??row.progress,
     replacementCount:row.status==="approved"?(row.replaced_orders??[]).length:await replacementCount(ctx,row),
     replacementOrders:row.status==="approved"?[]:await replacementOrders(ctx,row),replacedOrders:row.replaced_orders??[],
@@ -41,6 +43,7 @@ export async function view(ctx:Context,row:ImportRow,uploads=false) {
   };
 }
 export async function create(ctx:Context,input:{sourceName:string;files:{name:string;size:number;mime:string}[]}) {
+  await assertActiveSource(ctx,input.sourceName);
   const limits=limitConfig(ctx.settings);
   if(input.files.length<2 || input.files.length>limits.maxFiles || new Set(input.files.map(f=>f.name)).size!==input.files.length) throw new ImportError("INVALID_FILES");
   if(input.files.some(f=>f.size>limits.maxFileBytes) || input.files.reduce((a,f)=>a+f.size,0)>limits.maxTotalBytes) throw new ImportError("FILE_TOO_LARGE",413);
