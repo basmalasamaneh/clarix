@@ -294,6 +294,52 @@ Wave 3: AI Analyst panel · remaining charts · audit log view · comments · ad
 
 ## 11. Multi-factory (multi-tenant) and security
 
+### Approved Phase 18 — account recovery and stronger sign-in
+
+This scope supersedes earlier exclusions of password recovery. It is approved
+for implementation; this section is not a claim that implementation has passed.
+Keep email/password, Argon2id, invite-only onboarding and all tenant boundaries.
+No external email service, public signup, social sign-in, magic links, passkeys,
+SMS or remembered-device bypass is included.
+
+- Managers may issue/revoke hashed, single-use, 24-hour reset links for active
+  members of their own factory, never themselves. New issuance invalidates the
+  old link. Completion changes the password, ends all sessions, preserves MFA,
+  and audits actors/actions without secrets. Platform Admin cannot use this flow.
+- Approved sole-manager recovery: a separate high-entropy, single-use private
+  account recovery key, shown once and stored hashed, may reset the password.
+  It does not disable MFA: an enrolled account still needs its authenticator or
+  an unused MFA recovery code. Recommend adding a second manager. Losing all
+  credentials and recovery material has no in-app administrator override.
+  Delayed recovery was rejected because in-app notices without email may go unseen.
+- TOTP enrollment shows a QR/manual key once, confirms a valid code, and supplies
+  ten hashed, single-use recovery codes. Encrypt TOTP secrets at rest using
+  `CLARIX_TOTP_ENCRYPTION_KEY`; document backup and safe key rotation. Disabling
+  or re-enrolling requires the current password and a valid second factor.
+  Add persistent rate limits, replay protection, generic failures and audited
+  factory-wide MFA requirements with a visible grace period.
+- Platform Admin MFA requirement is a deployment setting, default ON in
+  production and OFF in development. Per the final clarification, guide setup
+  at sign-in but enforce only AFTER completed enrollment and acknowledgement
+  that recovery codes were saved. Before that, password-only access remains a
+  disclosed risk. Turning the deployment requirement OFF temporarily bypasses
+  the Platform Admin second-factor challenge without deleting enrollment or
+  granting tenant membership. Deployment configuration is a privileged boundary.
+  Seeded development accounts receive no MFA prompt unless explicitly enrolled;
+  the existing seed guard and production rejection remain unchanged.
+- Add active-session listing/revocation, last-sign-in information, configurable
+  idle/absolute expiry and recent sign-in confirmation for sensitive actions.
+  Preserve production Secure/HttpOnly/SameSite cookies. Retain 12–256-character
+  passwords, provide bilingual strength guidance and reject a small common list.
+  Enforce per-account and per-IP limits without exposing account existence.
+- NotificationProvider is an interface with a non-sensitive no-op implementation,
+  not email delivery. Document later email requirements.
+- Build bilingual responsive enrollment/reset/recovery/session UI and Help.
+  Verify lifecycle, concurrency, tenant denial, production bootstrap, seeded
+  sign-in and secret handling in isolated targets only. Run the complete suite
+  in one green invocation; report actual browser coverage and dev before/after
+  counts/fingerprints, remaining risks, secret names and manual steps honestly.
+
 ### Approved Phase 13: factory management
 
 Platform Admin has a metadata-only `/platform` console to create factories,
