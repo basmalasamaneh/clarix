@@ -1,5 +1,57 @@
 # Phase 16 — Gemini foundation
 
+## Closure verification — 2026-10-11
+
+The two requested closure items now **PASS**. This supersedes the earlier
+single-run and disable-confirmation limitations below; it does not claim the
+unrequested full responsive AI state screenshot matrix was completed.
+
+One invocation, one isolated target, sequential checks:
+
+```
+pnpm --filter @workspace/api-server exec tsx src/scripts/test-isolated.ts --complete
+```
+
+API + AI 120/120; engine 55/55; formatting 11/11; PDF 10/10;
+translation parity 1,506 EN/AR keys; TypeScript libraries/API/frontend;
+Python verifier 52/52. All passed in this run, including cleanup and unchanged
+development fingerprints. No application fix was needed. The only changes
+were a complete-suite runner option, the focused browser driver and this report.
+
+Log: `generated-artifacts/phase16-close/complete-suite.log`, ending
+`COMPLETE SUITE: GREEN (all checks and isolation cleanup passed)`.
+
+Real browser UI proof, in a subsequent isolated run:
+- Manager signed in through the UI; enabled AI through disclosure confirmation;
+  comparison Explain button was present.
+- Manager opened OFF confirmation. Consent remained ON until confirmation.
+  Confirming produced HTTP 200, enabled:false and visible Off status.
+  Reloading Comparison showed AI-off state and no Explain button.
+- Analyst and Viewer each signed in through the UI. Settings denied access,
+  consent controls were absent, both attempted enable and disable returned 403,
+  consent stayed OFF and the comparison Explain button was absent.
+- No AI explanation was generated; no live provider calls. No response mocks.
+  Six screenshots plus live DOM assertions are recorded in
+  `generated-artifacts/phase16-close/browser/evidence.json`.
+
+Both `suite-isolation.json` and `browser-isolation.json` under the same evidence
+directory report unchanged counts/content fingerprints for all 25 protected/
+import table entries, both ordinary factories, and database role fingerprints.
+Before and after counts in both runs:
+
+| Factory | Imports | Orders | Raw rows | Snapshots | AI state | AI usage |
+|---|---:|---:|---:|---:|---:|---:|
+| Ethmar | 4 → 4 | 6 → 6 | 41 → 41 | 1 → 1 | 1 → 1 | 2 → 2 |
+| Najm | 1 → 1 | 2 → 2 | 8 → 8 | 0 → 0 | 0 → 0 | 0 → 0 |
+
+Combined SHA-256 of each factory's sorted, compact JSON table-count/hash map,
+identical before and after:
+- Ethmar: `83182d4a41a572fc396430fa34dc89f2f3ab392d894641ea4680ee0791704c6c`
+- Najm: `a926bd9b7fe55c14e1e6166b719a3d6b88dd293bdb318d522408458a980c31fc`
+
+The pre-existing Ethmar AI rows above were preserved, not created by this
+verification. Calculation code, test-data/, expected/ and tools/ are unchanged.
+
 ## Provider and current Google documentation
 
 Official research and links: [PHASE16_GEMINI_RESEARCH.md](PHASE16_GEMINI_RESEARCH.md).

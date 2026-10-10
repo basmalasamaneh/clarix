@@ -68,7 +68,26 @@ try {
   await c.query("RESET search_path");
   await run("pnpm",["--filter","@workspace/api-server","exec","tsx","src/scripts/seed.ts"]);
   const args=process.argv.slice(2);
-  if(args[0]==="--browser") {
+  if(args[0]==="--complete") {
+    const checks:[string,string[]][]=[
+      ["API + AI",["--filter","@workspace/api-server","exec","tsx","--test","--test-concurrency=1","src/tests/*.test.ts"]],
+      ["Engine",["test:engine"]],
+      ["Formatting",["--filter","@workspace/clarix","run","test:format"]],
+      ["PDF",["--filter","@workspace/clarix","run","test:report"]],
+      ["Translation parity",["--filter","@workspace/clarix","run","check:i18n"]],
+      ["TypeScript libraries",["run","typecheck:libs"]],
+      ["TypeScript API",["--filter","@workspace/api-server","run","typecheck"]],
+      ["TypeScript frontend",["--filter","@workspace/clarix","exec","tsc","--noEmit"]],
+    ];
+    for(const [name,command] of checks){
+      console.log(`COMPLETE SUITE: START ${name}`);
+      await run("pnpm",command);
+      console.log(`COMPLETE SUITE: PASS ${name}`);
+    }
+    console.log("COMPLETE SUITE: START Python verifier");
+    await run("python3",["tools/verify.py"]);
+    console.log("COMPLETE SUITE: PASS Python verifier");
+  } else if(args[0]==="--browser") {
     if(!/^scripts\/[\w-]+\.cjs$/.test(args[1]??"")) throw new Error("Specify an existing scripts/<name>.cjs browser check");
     const preparation=args[2]??"src/tests/imports.test.ts";
     if(!/^src\/tests\/[\w-]+\.test\.ts$/.test(preparation))throw new Error("Specify an isolated preparation test");
@@ -79,7 +98,7 @@ try {
     const printProduction=args[1]==="scripts/phase15-browser.cjs";
     if(printProduction)await run("pnpm",["--filter","@workspace/clarix","run","build"],{PORT:String(webPort),BASE_PATH:"/"});
     for(const [filter,command,extras] of [
-      ["@workspace/api-server",["exec","tsx","src/index.ts"],{PORT:String(apiPort),...(args[1]==="scripts/phase16-browser.cjs"?{CLARIX_AI_TEST_FAKE:"true"}:{})}],
+      ["@workspace/api-server",["exec","tsx","src/index.ts"],{PORT:String(apiPort),...(["scripts/phase16-browser.cjs","scripts/phase16-close-browser.cjs"].includes(args[1])?{CLARIX_AI_TEST_FAKE:"true"}:{})}],
       ["@workspace/clarix",printProduction?["exec","vite","preview"]:["exec","vite"],{PORT:String(webPort),BASE_PATH:"/",CLARIX_TEST_API_PORT:String(apiPort)}],
     ] as const) children.push(spawn("pnpm",["--filter",filter,...command],{cwd:root,env:{...env,...extras},stdio:"ignore",detached:true}));
     for(const target of [apiPort,webPort]) {
