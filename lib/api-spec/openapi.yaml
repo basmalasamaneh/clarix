@@ -11,6 +11,20 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /ai/assist:
+    post:
+      operationId: assistAi
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AiAssistInput" }
+      responses:
+        "200":
+          description: Code-authored answer or safe unavailable state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AiAssistResult" }
   /ai/consent:
     get:
       operationId: getAiConsent
@@ -836,16 +850,68 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    AiAssistInput:
+      type: object
+      required: [task, language]
+      properties:
+        task: { type: string, enum: [ask, quality, next] }
+        language: { type: string, enum: [en, ar] }
+        question: { type: string, maxLength: 500 }
+        intent: { type: string, enum: [compare, metric, extreme, runs, issues, status, counts, snapshot_changes, causal] }
+        a: { type: string, format: uuid }
+        b: { type: string, format: uuid }
+        runId: { type: string, format: uuid }
+        snapshotId: { type: string, format: uuid }
+        importId: { type: string, format: uuid }
+        issueId: { type: string, format: uuid }
+        source: { type: string, maxLength: 200 }
+        order: { type: string, maxLength: 200 }
+        severity: { type: string, enum: [error, warning, info] }
+        group: { type: string, enum: [volume, changeover, downtime, file, import, all] }
+        includeArchived: { type: boolean }
+        metric: { type: string, enum: [scrap_rate_pct, scrap_kg, changeover_min, downtime_min] }
+        direction: { type: string, enum: [highest, lowest] }
+        status: { type: string, enum: [red, yellow] }
+        page: { type: integer, minimum: 1, maximum: 10000 }
+        useAi: { type: boolean }
+    AiAssistBlock:
+      type: object
+      required: [id, type, title, text, facts]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [FACT, HYPOTHESIS, SUGGESTION] }
+        title: { type: string }
+        text: { type: string }
+        href: { type: string }
+        facts:
+          type: array
+          items: { $ref: "#/components/schemas/AiFact" }
+    AiAssistResult:
+      type: object
+      required: [status, intent, blocks, message, retryAfter, page, total]
+      properties:
+        status: { type: string, enum: [code, verified, off, consent_needed, unsupported, quota, unavailable, error] }
+        intent: { type: string }
+        blocks:
+          type: array
+          items: { $ref: "#/components/schemas/AiAssistBlock" }
+        message: { type: string }
+        retryAfter: { type: integer }
+        page: { type: integer }
+        total: { type: integer }
     AiConsent:
       type: object
       required: [enabled, configured]
       properties:
+        version: { type: integer }
+        requiredVersion: { type: integer }
         enabled: { type: boolean }
         configured: { type: boolean }
     AiConsentInput:
       type: object
       required: [enabled, confirmed]
       properties:
+        version: { type: integer, enum: [1, 2] }
         enabled: { type: boolean }
         confirmed: { type: boolean }
     AiExplanationInput:

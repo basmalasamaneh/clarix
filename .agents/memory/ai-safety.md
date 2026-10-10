@@ -18,7 +18,17 @@ to send confidential factory information under Google's unpaid-service terms.
 SELECT FOR SHARE on factories for Viewer/Analyst requests, because PostgreSQL
 also applies that table's manager-only UPDATE policy to locking reads.
 
-Use FakeProvider in isolated verification; the approved live proof is at most
-one synthetic-baseline request, never ordinary development factory data.
+Use FakeProvider in isolated verification. Phase 17 permits at most three
+synthetic live calls (explanation, issue ranking, Arabic question), never
+ordinary development factory data.
 **Why:** The user explicitly limits real calls and prohibits test writes to the
 ordinary Ethmar/Najm factories.
+
+Typed questions need version-2 consent; old consent authorizes only the old
+explanation. Natural-language preflight is deliberately conservative rather
+than promising arbitrary conversational understanding.
+**Why:** The user requires both useful intent routing and no personal/file
+content sent or unvalidated model facts. Unrecognised/ambiguous questions must
+fail closed; code chips still work without disclosure of question text.
+**How to apply:** Expand verified vocabulary/candidates with tests, not the
+model's authority to invent parameters or text.

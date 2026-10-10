@@ -16,6 +16,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { localizeError, useCsrfRequest } from '@/lib/session';
 import { GEMINI_TERMS_URL } from '@/lib/phase16-i18n';
+import { CONSENT_VERSION, consentStateOf } from '@/components/ai/assist-common';
 
 /** Manager-only AI consent section. Render only for factory managers. */
 export function AiConsentSection({ factoryId }: { factoryId: string }) {
@@ -28,9 +29,10 @@ export function AiConsentSection({ factoryId }: { factoryId: string }) {
   const [open, setOpen] = useState<null | 'on' | 'off'>(null);
   const [agree, setAgree] = useState(false);
 
+  const needsReconfirm = q.data ? consentStateOf(q.data) === 'reconfirm' : false;
   const close = () => { setOpen(null); setAgree(false); save.reset(); };
   const submit = (enabled: boolean) => {
-    save.mutate({ data: { enabled, confirmed: enabled ? agree : true } }, {
+    save.mutate({ data: enabled ? { version: CONSENT_VERSION, enabled: true, confirmed: agree } : { enabled: false, confirmed: true } }, {
       onSuccess: () => {
         qc.invalidateQueries({ queryKey: getGetAiConsentQueryKey() });
         qc.invalidateQueries({ queryKey: getGetFactorySettingsAuditQueryKey() });
@@ -56,9 +58,10 @@ export function AiConsentSection({ factoryId }: { factoryId: string }) {
           <p className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground" data-testid="state-ai-consent-unconfigured">{t('ai.consent.unconfigured')}</p>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
-            <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${q.data.enabled ? 'border-primary/40 bg-accent text-primary' : 'text-muted-foreground'}`} data-testid="status-ai-consent">
-              {q.data.enabled ? t('ai.consent.stateOn') : t('ai.consent.stateOff')}
+            <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${needsReconfirm ? 'border-[var(--status-amber)] text-status-amber' : q.data.enabled ? 'border-primary/40 bg-accent text-primary' : 'text-muted-foreground'}`} data-testid="status-ai-consent">
+              {needsReconfirm ? t('aiConsent2.stateReconfirm') : q.data.enabled ? t('ai.consent.stateOn') : t('ai.consent.stateOff')}
             </span>
+            {needsReconfirm && <Button onClick={() => setOpen('on')} className="min-h-11" data-testid="button-ai-consent-reconfirm">{t('aiConsent2.reconfirmButton')}</Button>}
             {q.data.enabled
               ? <Button variant="outline" onClick={() => setOpen('off')} className="min-h-11" data-testid="button-ai-consent-disable">{t('ai.consent.disable')}</Button>
               : <Button onClick={() => setOpen('on')} className="min-h-11" data-testid="button-ai-consent-enable">{t('ai.consent.enable')}</Button>}
@@ -74,8 +77,11 @@ export function AiConsentSection({ factoryId }: { factoryId: string }) {
           </AlertDialogHeader>
           {open === 'on' && (
             <div className="space-y-3 text-sm" data-testid="text-ai-consent-disclosure">
+              {needsReconfirm && <div className="rounded-lg border border-[var(--status-amber)] p-3" data-testid="text-ai-consent-reconfirm"><p className="font-semibold">{t('aiConsent2.reconfirmTitle')}</p><p className="text-muted-foreground">{t('aiConsent2.reconfirm')}</p></div>}
               <div><p className="font-semibold">{t('ai.consent.sendsTitle')}</p><p className="text-muted-foreground">{t('ai.consent.sends')}</p></div>
               <div><p className="font-semibold">{t('ai.consent.neverTitle')}</p><p className="text-muted-foreground">{t('ai.consent.never')}</p></div>
+              <div data-testid="text-ai-consent-typed"><p className="font-semibold">{t('aiConsent2.typedTitle')}</p><p className="text-muted-foreground">{t('aiConsent2.typed')}</p></div>
+              <div className="rounded-lg border border-[color-mix(in_srgb,var(--status-amber)_40%,var(--border))] p-3" data-testid="text-ai-consent-free"><p className="font-semibold">{t('aiConsent2.freeTitle')}</p><p className="text-muted-foreground">{t('aiConsent2.free')}</p></div>
               <div className="rounded-lg border border-[color-mix(in_srgb,var(--status-amber,orange)_40%,var(--border))] p-3">
                 <p className="font-semibold">{t('ai.consent.googleTitle')}</p>
                 <p className="text-muted-foreground">{t('ai.consent.google')}</p>

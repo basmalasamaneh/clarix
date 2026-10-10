@@ -1,8 +1,11 @@
 import { AIPanel } from '@/components/ai/ai-panel';
+import { AskBox, type AskChip } from '@/components/ai/assist-panels';
+import { AiAssistInputMetric } from '@workspace/api-client-react';
+import '@/lib/phase17-i18n';
 import { useEffect, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation, useSearch } from 'wouter';
-import { AlertTriangle, ArrowLeft, Calendar, Layers, Link2Off, OctagonX, RotateCcw, Scale, SearchX, Timer, TriangleAlert } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Calendar, ChevronDown, Layers, Link2Off, OctagonX, RotateCcw, Scale, SearchX, Timer, TriangleAlert } from 'lucide-react';
 import {
   getGetRunComparisonQueryKey,
   useGetRunComparison,
@@ -264,7 +267,7 @@ function RunCard({ run, side }: { run: ProductionRun; side: 'a' | 'b' }) {
 
 /* ---------------- result ---------------- */
 
-export function Result({ data }: { data: RunComparison }) {
+export function Result({ data, aiSlot }: { data: RunComparison; aiSlot?: ReactNode }) {
   const { t, i18n } = useTranslation();
   const blocked = (g: Group) => data.groups[g] === 'red';
   const ar = i18n.language.startsWith('ar');
@@ -315,24 +318,14 @@ export function Result({ data }: { data: RunComparison }) {
         </section>
       )}
 
-      {data.questions.length > 0 && (
-        <section className="rounded-xl border bg-card p-4 sm:p-5" aria-labelledby="cmp-questions" data-testid="section-questions">
-          <h2 id="cmp-questions" className="text-sm font-semibold">{t('rc.cmp.questionsTitle')}</h2>
-          <p className="text-[11px] text-muted-foreground">{t('rc.cmp.questionsNote')}</p>
-          <ul className="mt-3 grid gap-3 lg:grid-cols-3">
-            {data.questions.map((qq) => (
-              <li key={qq.key} className="flex min-w-0 flex-col rounded-lg border bg-background p-3" data-testid={`card-question-${qq.key}`}>
-                <h3 className="text-xs font-semibold text-muted-foreground">{t(`rc.cmp.q.${qq.key}`, { defaultValue: qq.key })}</h3>
-                <p className="mt-1 flex-1 text-sm leading-relaxed" dir={ar ? 'rtl' : 'ltr'} lang={ar ? 'ar' : 'en'} data-testid={`text-question-${qq.key}`}><NumText text={ar ? qq.ar : qq.en} /></p>
-                <SourceLink source={srcFor(data, 'd', qq.metricKey)} label={t(`rc.cmp.q.${qq.key}`, { defaultValue: qq.key })} testId={`link-question-source-${qq.key}`} showHint={false} className="mt-1 self-start px-0 text-xs font-medium text-primary underline-offset-2 hover:underline">
-                  {t('rc.cmp.showSource')}
-                </SourceLink>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {aiSlot}
 
+      <details className="group rounded-xl border bg-card" data-testid="details-comparison-tables">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold hover-elevate [&::-webkit-details-marker]:hidden" data-testid="button-toggle-comparison-tables">
+          <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />{t('as.cmp.details')}
+          <span className="text-[11px] font-normal text-muted-foreground">{t('as.cmp.detailsLead')}</span>
+        </summary>
+        <div className="space-y-5 border-t p-3 sm:p-4">
       {data.hasWarnings && warnings.length > 0 && (
         <section role="alert" className="rounded-xl border border-[color-mix(in_srgb,var(--status-amber)_40%,transparent)] bg-[color-mix(in_srgb,var(--status-amber)_7%,var(--card))] p-4" data-testid="banner-warnings">
           <p className="flex items-center gap-2 text-sm font-semibold text-status-amber"><TriangleAlert className="size-4" aria-hidden="true" />{t('rc.cmp.warnTitle')}</p>
@@ -375,6 +368,8 @@ export function Result({ data }: { data: RunComparison }) {
         {blocked('downtime') ? <div className="p-3"><BlockedGroup group="downtime" data={data}  /></div> : <MetricRows keys={['downtime_min']} data={data}  />}
       </section>
 
+        </div>
+      </details>
     </div>
   );
 }
@@ -448,7 +443,31 @@ export default function ComparisonPage({ session }: { session: Session }) {
         </>} /></div>;
     }
   } else if (q.data) {
-    body = <div className="space-y-5"><Result key={`${a}:${b}`} data={q.data} /><AIPanel session={session} a={a} b={b} /><ComparisonSnapshotPanel key={`snap-${a}:${b}`} session={session} a={a} b={b} expectedImportA={q.data.a.importId} expectedImportB={q.data.b.importId} /></div>;
+    const metrics = Object.values(AiAssistInputMetric) as string[];
+    const chips: AskChip[] = [
+      { key: 'compare', label: t('as.ask.chip.compare'), params: { intent: 'compare', a, b } },
+      ...q.data.questions.map((qq): AskChip => ({
+        key: `q-${qq.key}`,
+        label: t(`rc.cmp.q.${qq.key}`, { defaultValue: qq.key }),
+        params: { intent: 'compare', a, b, ...(metrics.includes(qq.metricKey) ? { metric: qq.metricKey as AiAssistInputMetric } : {}) },
+      })),
+      { key: 'issues-a', label: t('as.ask.chip.issuesA'), params: { intent: 'issues', runId: a } },
+      { key: 'issues-b', label: t('as.ask.chip.issuesB'), params: { intent: 'issues', runId: b } },
+      { key: 'causal', label: t('as.ask.chip.causal'), params: { intent: 'causal', a, b } },
+    ];
+    body = (
+      <div className="space-y-5">
+        <Result key={`${a}:${b}`} data={q.data} aiSlot={<div className="grid gap-4 xl:grid-cols-2"><AIPanel session={session} a={a} b={b} /><AskBox scope={`cmp:${a}:${b}`} chips={chips} context={{ a, b }} /></div>} />
+        <details className="group rounded-xl border bg-card" data-testid="details-comparison-reconcile">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 px-4 py-3 text-sm font-semibold hover-elevate [&::-webkit-details-marker]:hidden" data-testid="button-toggle-comparison-reconcile">
+            <ChevronDown className="size-4 transition-transform group-open:rotate-180" aria-hidden="true" />{t('as.cmp.reconcile')}
+          </summary>
+          <div className="border-t p-3 sm:p-4">
+            <ComparisonSnapshotPanel key={`snap-${a}:${b}`} session={session} a={a} b={b} expectedImportA={q.data.a.importId} expectedImportB={q.data.b.importId} />
+          </div>
+        </details>
+      </div>
+    );
   }
 
   return (

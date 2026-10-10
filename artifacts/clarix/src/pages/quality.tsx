@@ -33,6 +33,7 @@ import { UUID_RE } from '@/components/runs/shared';
 import { useSource } from '@/components/source/source-context';
 import { GroupTip, StatusTip } from '@/components/charts/glossary';
 import '@/lib/source-i18n';
+import { AskBox, QualityAssistant, useBaseChips } from '@/components/ai/assist-panels';
 
 const SEVERITIES: GetQualitySeverity[] = ['error', 'warning', 'info'];
 const GROUPS: GetQualityGroup[] = ['volume', 'changeover', 'downtime', 'file', 'import', 'all'];
@@ -369,6 +370,7 @@ function IssueItem({ issue, open, onToggle, lang }: { issue: QualityIssue; open:
       </div>
       <div id={panelId} role="region" aria-label={t('q.list.details')} hidden={!open}>
         {open && <IssueDetail issue={issue} lang={lang} />}
+        {open && <div className="border-t p-3 sm:p-4"><QualityAssistant issueId={issue.id} testId={`panel-quality-assistant-${issue.id}`} /></div>}
       </div>
     </li>
   );
@@ -451,6 +453,7 @@ export default function QualityPageView({ session }: { session: Session }) {
     const sp = new URLSearchParams(search);
     return { issue: sp.get('issue') ?? '', source: sp.get('source') || undefined, order: sp.get('order') || undefined };
   });
+  const baseChips = useBaseChips();
   const [focusId, setFocusId] = useState(initial.issue);
   const [filters, setFilters] = useState<Filters>({ includeArchived: false, source: initial.source, order: initial.order });
   const dismissFocus = () => { setFocusId(''); navigate('/quality', { replace: true }); };
@@ -504,6 +507,10 @@ export default function QualityPageView({ session }: { session: Session }) {
       <div className="space-y-5">
         {focusId && <FocusedIssue id={focusId} session={session} lang={inst.language} onDismiss={dismissFocus} />}
         <Summary summary={d.summary} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <QualityAssistant filters={filters} />
+          <AskBox scope="quality" chips={baseChips} />
+        </div>
         <FilterBar value={filters} onChange={changeFilters} />
         <section aria-labelledby="quality-list-title" aria-busy={q.isFetching} className={cn('transition-opacity', q.isFetching && !q.isLoading && 'opacity-70')}>
           <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 px-1">

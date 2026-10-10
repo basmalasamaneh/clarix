@@ -5,8 +5,10 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AiConsentInputVersion } from './aiConsentInputVersion';
 
 export interface AiConsentInput {
+  version?: AiConsentInputVersion;
   enabled: boolean;
   confirmed: boolean;
 }

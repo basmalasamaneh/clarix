@@ -1,3 +1,4 @@
+import { AskBox, NextActions, useBaseChips } from '@/components/ai/assist-panels';
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'wouter';
@@ -274,6 +275,7 @@ export default function OverviewPage({ session }: { session: Session }) {
   const canRuns = can('runs');
   const canQuality = can('quality');
   const canComparison = can('comparison');
+  const baseChips = useBaseChips();
   const q = useGetOverview({ query: {
     queryKey: [...getGetOverviewQueryKey(), session.activeFactoryId, session.user?.id],
     staleTime: 30_000,
@@ -293,11 +295,16 @@ export default function OverviewPage({ session }: { session: Session }) {
     );
   } else if (q.data) {
     const d = q.data;
+    const chips = baseChips;
     const noApproved = d.approvedImports === 0;
     body = (
       <div className="space-y-4">
         {noApproved && <Guide canImports={canImports} canRuns={canRuns} canQuality={canQuality} />}
         <Summary d={d} canQuality={canQuality} />
+        <div className="grid gap-4 lg:grid-cols-2">
+          <NextActions />
+          <AskBox scope="overview" chips={chips} />
+        </div>
         {!noApproved && <Visuals d={d} />}
         <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
           {!noApproved ? (

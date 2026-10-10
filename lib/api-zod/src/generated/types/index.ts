@@ -7,8 +7,22 @@
  */
 
 export * from './accountAudit';
+export * from './aiAssistBlock';
+export * from './aiAssistBlockType';
+export * from './aiAssistInput';
+export * from './aiAssistInputDirection';
+export * from './aiAssistInputGroup';
+export * from './aiAssistInputIntent';
+export * from './aiAssistInputLanguage';
+export * from './aiAssistInputMetric';
+export * from './aiAssistInputSeverity';
+export * from './aiAssistInputStatus';
+export * from './aiAssistInputTask';
+export * from './aiAssistResult';
+export * from './aiAssistResultStatus';
 export * from './aiConsent';
 export * from './aiConsentInput';
+export * from './aiConsentInputVersion';
 export * from './aiExplanation';
 export * from './aiExplanationInput';
 export * from './aiExplanationInputLanguage';

@@ -59,7 +59,7 @@ const en = {
   },
   help: {
     aiTitle: 'AI explanation',
-    aiBody: 'If a factory manager turns it on, comparisons and snapshots can show a short explanation. Each sentence is checked against Clarix numbers and links to its source. You cannot ask free questions. If a check fails, Clarix shows a plain reading instead. Only summary numbers, labels, codes, statuses and order IDs are sent to Google.',
+    aiBody: 'If a factory manager turns it on, comparisons and snapshots can show a short explanation. Each sentence is checked against Clarix numbers and links to its source. Typed questions are only used to pick one of the fixed Clarix answers; the answer is always calculated by Clarix. If a check fails, Clarix shows a plain reading instead. Only summary numbers, labels, codes, statuses and order IDs are sent to Google.',
     aiTerms: 'Gemini API terms',
   },
 };
@@ -127,7 +127,7 @@ const ar = {
   },
   help: {
     aiTitle: 'الشرح بالذكاء الاصطناعي',
-    aiBody: 'إذا شغّله مدير المصنع، تعرض المقارنات واللقطات شرحًا قصيرًا. تُطابَق كل جملة مع أرقام Clarix وترتبط بمصدرها. لا يمكن طرح أسئلة حرة. إذا فشلت المطابقة يعرض Clarix قراءة مباشرة بدلًا منه. لا يُرسَل إلى Google إلا الأرقام الملخّصة والتسميات والرموز والحالات وأرقام الطلبات.',
+    aiBody: 'إذا شغّله مدير المصنع، تعرض المقارنات واللقطات شرحًا قصيرًا. تُطابَق كل جملة مع أرقام Clarix وترتبط بمصدرها. تُستخدم الأسئلة المكتوبة فقط لاختيار إحدى إجابات Clarix الثابتة، ويحسب Clarix الإجابة دائمًا. إذا فشلت المطابقة يعرض Clarix قراءة مباشرة بدلًا منه. لا يُرسَل إلى Google إلا الأرقام الملخّصة والتسميات والرموز والحالات وأرقام الطلبات.',
     aiTerms: 'شروط Gemini API',
   },
 };

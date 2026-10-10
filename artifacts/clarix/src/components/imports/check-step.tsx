@@ -19,6 +19,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useCsrfRequest } from '@/lib/session';
+import { QualityAssistant } from '@/components/ai/assist-panels';
 import { cn } from '@/lib/utils';
 import i18n from '@/lib/i18n';
 import { FIELDS, PAGE_SIZE, errCodeOf, errData, formatDate, issueText, nextStepText } from '@/lib/import-model';
@@ -469,6 +470,7 @@ export function CheckStep({ detail: d0, canEdit, onEditMapping }: { detail: Impo
       {checked && (
         <Section title={t('imp.check.issuesTitle')} testId="section-issues">
           <Issues id={detail.id} mapping={detail.mapping as Record<string, unknown> | undefined} onJump={readOnly ? undefined : (f) => onEditMapping(f)} />
+          <div className="mt-4"><QualityAssistant importId={detail.id} testId="panel-import-assistant" /></div>
         </Section>
       )}
 

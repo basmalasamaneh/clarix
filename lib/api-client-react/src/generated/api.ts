@@ -21,6 +21,8 @@ import type {
 
 import type {
   AccountAudit,
+  AiAssistInput,
+  AiAssistResult,
   AiConsent,
   AiConsentInput,
   AiExplanation,
@@ -124,6 +126,88 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getAssistAiUrl = () => {
+
+
+
+
+  return `/api/ai/assist`
+}
+
+export const assistAi = async (aiAssistInput: AiAssistInput, options?: Parameters<typeof customFetch>[1]): Promise<AiAssistResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<AiAssistResult>(getAssistAiUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(aiAssistInput)
+  }
+);}
+
+
+
+
+
+export const getAssistAiMutationKey = () => ['assistAi'] as const;
+
+export const getAssistAiMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assistAi>>, TError,AssistAiMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assistAi>>, TError,AssistAiMutationVariables, TContext> => {
+
+const mutationKey = getAssistAiMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assistAi>>, AssistAiMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  assistAi(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssistAiMutationResult = NonNullable<Awaited<ReturnType<typeof assistAi>>>
+    export type AssistAiMutationBody = BodyType<AiAssistInput>
+    export type AssistAiMutationError = ErrorType<unknown>
+    export type AssistAiMutationVariables = {data: BodyType<AiAssistInput>}
+
+    export const useAssistAi = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assistAi>>, TError,AssistAiMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assistAi>>,
+        TError,
+        AssistAiMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAssistAiMutationOptions(options));
+    }
 
 export const getGetAiConsentUrl = () => {
 

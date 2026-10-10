@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import '@/lib/phase17-i18n';
 import { ClipboardCheck, Columns2, FileDown, FileUp, CircleHelp, Ban, Info, Archive, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GlossaryTip } from '@/components/charts/glossary';
@@ -86,6 +87,17 @@ export default function HelpPage() {
         <h2 id="help-ai" className="font-semibold">{t('help.aiTitle')}</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-ai">{t('help.aiBody')}</p>
         <a href={GEMINI_TERMS_URL} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex min-h-11 items-center text-sm font-medium text-primary underline" data-testid="link-help-ai-terms">{t('help.aiTerms')}</a>
+      </section>
+
+      <section className="mt-4 rounded-xl border bg-card p-5" aria-labelledby="help-ask" data-testid="card-help-ask">
+        <h2 id="help-ask" className="font-semibold">{t('help17.askTitle')}</h2>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-ask">{t('help17.askBody')}</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <li key={i} className="rounded-lg border bg-background px-3 py-2 text-sm" dir="auto" data-testid={`text-help-ask-example-${i}`}>{t(`help17.examples.${i}`)}</li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground" data-testid="text-help-ask-causal">{t('help17.causal')}</p>
       </section>
 
       <div className="mt-10" data-testid="section-help-reports">

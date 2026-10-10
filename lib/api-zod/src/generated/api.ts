@@ -8,18 +8,85 @@
 import * as zod from 'zod';
 
 
+export const assistAiBodyQuestionMax = 500;
+
+export const assistAiBodySourceMax = 200;
+
+export const assistAiBodyOrderMax = 200;
+
+export const assistAiBodyPageMax = 10000;
+
+
+
+export const AssistAiBody = zod.object({
+  "task": zod.enum(['ask', 'quality', 'next']),
+  "language": zod.enum(['en', 'ar']),
+  "question": zod.string().max(assistAiBodyQuestionMax).optional(),
+  "intent": zod.enum(['compare', 'metric', 'extreme', 'runs', 'issues', 'status', 'counts', 'snapshot_changes', 'causal']).optional(),
+  "a": zod.string().uuid().optional(),
+  "b": zod.string().uuid().optional(),
+  "runId": zod.string().uuid().optional(),
+  "snapshotId": zod.string().uuid().optional(),
+  "importId": zod.string().uuid().optional(),
+  "issueId": zod.string().uuid().optional(),
+  "source": zod.string().max(assistAiBodySourceMax).optional(),
+  "order": zod.string().max(assistAiBodyOrderMax).optional(),
+  "severity": zod.enum(['error', 'warning', 'info']).optional(),
+  "group": zod.enum(['volume', 'changeover', 'downtime', 'file', 'import', 'all']).optional(),
+  "includeArchived": zod.boolean().optional(),
+  "metric": zod.enum(['scrap_rate_pct', 'scrap_kg', 'changeover_min', 'downtime_min']).optional(),
+  "direction": zod.enum(['highest', 'lowest']).optional(),
+  "status": zod.enum(['red', 'yellow']).optional(),
+  "page": zod.number().int().min(1).max(assistAiBodyPageMax).optional(),
+  "useAi": zod.boolean().optional()
+})
+
+export const AssistAiResponse = zod.object({
+  "status": zod.enum(['code', 'verified', 'off', 'consent_needed', 'unsupported', 'quota', 'unavailable', 'error']),
+  "intent": zod.string(),
+  "blocks": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['FACT', 'HYPOTHESIS', 'SUGGESTION']),
+  "title": zod.string(),
+  "text": zod.string(),
+  "href": zod.string().optional(),
+  "facts": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "value": zod.string().nullable(),
+  "unit": zod.string(),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "source": zod.object({
+  "runId": zod.string(),
+  "metric": zod.string(),
+  "snapshotId": zod.string().optional()
+})
+}))
+})),
+  "message": zod.string(),
+  "retryAfter": zod.number().int(),
+  "page": zod.number().int(),
+  "total": zod.number().int()
+})
+
+
 export const GetAiConsentResponse = zod.object({
+  "version": zod.number().int().optional(),
+  "requiredVersion": zod.number().int().optional(),
   "enabled": zod.boolean(),
   "configured": zod.boolean()
 })
 
 
 export const SaveAiConsentBody = zod.object({
+  "version": zod.union([zod.literal(1),zod.literal(2)]).optional(),
   "enabled": zod.boolean(),
   "confirmed": zod.boolean()
 })
 
 export const SaveAiConsentResponse = zod.object({
+  "version": zod.number().int().optional(),
+  "requiredVersion": zod.number().int().optional(),
   "enabled": zod.boolean(),
   "configured": zod.boolean()
 })

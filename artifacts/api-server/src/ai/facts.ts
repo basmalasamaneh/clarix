@@ -1,4 +1,5 @@
 import {z} from "zod";
+import {relationStatements} from "./relations";
 import type {AiFact,AiStatement,RunComparison,ReconciliationResult} from "@workspace/api-zod";
 export type Lang="en"|"ar";
 export type FactsPackage={language:Lang;facts:Omit<AiFact,"source">[];orderIds:string[];issueCodes:string[];allowedStatements:AiStatement[]};
@@ -42,10 +43,10 @@ export function buildFacts(d:RunComparison,language:Lang,snapshotId?:string){
     const selected=facts.filter(f=>[`${"a"}.${key}`,`${"b"}.${key}`,`difference.${key}`].includes(f.id));
     if(!selected.length)continue;
     let text=selected.map(f=>`${f.label}: ${show(f)}`).join(ar?"؛ ": "; ")+".";
-    if(key==="downtime_min")text+=ar?" يُسجّل التوقف بشكل منفصل ولا يُفترض أنه يفسّر الفرق.":" Downtime is recorded separately and is not assumed to explain the difference.";
     allowedStatements.push({type:"FACT",text,refs:selected.map(f=>f.id)});
   }
   const usable=facts.find(f=>f.value!==null);
+  allowedStatements.push(...relationStatements(facts,language));
   if(usable){
     allowedStatements.push({type:"HYPOTHESIS",text:ar?
       "تفسير محتمل للتحقق: قد تختلف ظروف التشغيل. افحص الصفوف المصدر للتشغيلتين؛ البيانات لا تثبت سبب الفرق.":

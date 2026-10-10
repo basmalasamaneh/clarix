@@ -1,7 +1,8 @@
 import {Router,type Request,type Response,type NextFunction} from "express";
 import {randomUUID} from "node:crypto";
 import {z} from "zod";
-import {SaveAiConsentBody,ExplainAiBody} from "@workspace/api-zod";
+import {SaveAiConsentBody,ExplainAiBody,AssistAiBody} from "@workspace/api-zod";
+import {assist} from "../ai/assist";
 import {sessionView} from "../lib/identity";
 import {withRequestTenant,TenantAccessError} from "../lib/tenancy";
 import {managerTransaction} from "../accounts/context";
@@ -23,21 +24,31 @@ const wrap=(fn:(req:Request,res:Response)=>Promise<unknown>)=>async(req:Request,
  }
 };
 router.get("/ai/consent",wrap(async(req,res)=>{
- const enabled=await withRequestTenant(req,async c=>(await c.query("SELECT settings->'aiEnabled' AS enabled FROM factories WHERE id=$1",[req.session.activeFactoryId])).rows[0]?.enabled===true);
- res.json({enabled,configured:provider().configured});
+ const settings=await withRequestTenant(req,async c=>(await c.query("SELECT settings FROM factories WHERE id=$1",[req.session.activeFactoryId])).rows[0]?.settings);
+ res.json({enabled:settings?.aiEnabled===true,version:settings?.aiConsentVersion??1,requiredVersion:2,configured:provider().configured});
 }));
 router.put("/ai/consent",wrap(async(req,res)=>{
  const input=SaveAiConsentBody.strict().parse(req.body);
  if(input.enabled&&!input.confirmed)throw new ImportError("AI_CONFIRMATION_REQUIRED");
  await managerTransaction(req,async(c,f,u)=>{
   await c.query("SELECT pg_advisory_xact_lock(hashtext($1))",[`ai:${f}`]);
-  const old=(await c.query("SELECT settings->'aiEnabled' AS enabled FROM factories WHERE id=$1",[f])).rows[0]?.enabled===true;
-  if(old===input.enabled)return;
-  await c.query("UPDATE factories SET settings=settings||$2::jsonb WHERE id=$1",[f,JSON.stringify({aiEnabled:input.enabled})]);
+  const settings=(await c.query("SELECT settings FROM factories WHERE id=$1",[f])).rows[0]?.settings;
+  const old=settings?.aiEnabled===true,oldVersion=settings?.aiConsentVersion??1,version=input.version??oldVersion;
+  if(old===input.enabled&&oldVersion===version)return;
+  await c.query("UPDATE factories SET settings=settings||$2::jsonb WHERE id=$1",[f,JSON.stringify({aiEnabled:input.enabled,aiConsentVersion:version})]);
   await c.query("INSERT INTO factory_settings_audit(id,factory_id,actor_id,action,old_value,new_value) VALUES($1,$2,$3,'ai_consent_changed',$4,$5)",
-   [randomUUID(),f,u,JSON.stringify({enabled:old}),JSON.stringify({enabled:input.enabled,disclosure:"gemini-unpaid-2026-03-23"})]);
+   [randomUUID(),f,u,JSON.stringify({enabled:old,version:oldVersion}),JSON.stringify({enabled:input.enabled,version,disclosure:version===2?"phase17-questions-v2":"gemini-unpaid-2026-03-23"})]);
  });
- res.json({enabled:input.enabled,configured:provider().configured});
+ res.json({enabled:input.enabled,version:input.version??1,requiredVersion:2,configured:provider().configured});
+}));
+router.post("/ai/assist",wrap(async(req,res)=>{
+ const input=AssistAiBody.strict().parse(req.body);
+ const controller=new AbortController();const close=()=>{if(!res.writableEnded)controller.abort();};res.on("close",close);
+ try{
+  const result=await withRequestTenant(req,async db=>assist({db,factory:req.session.activeFactoryId!,user:req.session.userId!,settings:{}},input,controller.signal));
+  if(result.retryAfter)res.setHeader("Retry-After",result.retryAfter);
+  res.json(result);
+ }finally{res.removeListener("close",close);}
 }));
 router.post("/ai/explain",wrap(async(req,res)=>{
  const input=ExplainAiBody.strict().parse(req.body);

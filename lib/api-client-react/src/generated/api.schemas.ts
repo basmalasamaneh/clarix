@@ -5,30 +5,123 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface AiConsent {
-  enabled: boolean;
-  configured: boolean;
-}
-
-export interface AiConsentInput {
-  enabled: boolean;
-  confirmed: boolean;
-}
-
-export type AiExplanationInputLanguage = typeof AiExplanationInputLanguage[keyof typeof AiExplanationInputLanguage];
+export type AiAssistInputTask = typeof AiAssistInputTask[keyof typeof AiAssistInputTask];
 
 
-export const AiExplanationInputLanguage = {
+export const AiAssistInputTask = {
+  ask: 'ask',
+  quality: 'quality',
+  next: 'next',
+} as const;
+
+export type AiAssistInputLanguage = typeof AiAssistInputLanguage[keyof typeof AiAssistInputLanguage];
+
+
+export const AiAssistInputLanguage = {
   en: 'en',
   ar: 'ar',
 } as const;
 
-export interface AiExplanationInput {
-  language: AiExplanationInputLanguage;
-  snapshotId?: string;
+export type AiAssistInputIntent = typeof AiAssistInputIntent[keyof typeof AiAssistInputIntent];
+
+
+export const AiAssistInputIntent = {
+  compare: 'compare',
+  metric: 'metric',
+  extreme: 'extreme',
+  runs: 'runs',
+  issues: 'issues',
+  status: 'status',
+  counts: 'counts',
+  snapshot_changes: 'snapshot_changes',
+  causal: 'causal',
+} as const;
+
+export type AiAssistInputSeverity = typeof AiAssistInputSeverity[keyof typeof AiAssistInputSeverity];
+
+
+export const AiAssistInputSeverity = {
+  error: 'error',
+  warning: 'warning',
+  info: 'info',
+} as const;
+
+export type AiAssistInputGroup = typeof AiAssistInputGroup[keyof typeof AiAssistInputGroup];
+
+
+export const AiAssistInputGroup = {
+  volume: 'volume',
+  changeover: 'changeover',
+  downtime: 'downtime',
+  file: 'file',
+  import: 'import',
+  all: 'all',
+} as const;
+
+export type AiAssistInputMetric = typeof AiAssistInputMetric[keyof typeof AiAssistInputMetric];
+
+
+export const AiAssistInputMetric = {
+  scrap_rate_pct: 'scrap_rate_pct',
+  scrap_kg: 'scrap_kg',
+  changeover_min: 'changeover_min',
+  downtime_min: 'downtime_min',
+} as const;
+
+export type AiAssistInputDirection = typeof AiAssistInputDirection[keyof typeof AiAssistInputDirection];
+
+
+export const AiAssistInputDirection = {
+  highest: 'highest',
+  lowest: 'lowest',
+} as const;
+
+export type AiAssistInputStatus = typeof AiAssistInputStatus[keyof typeof AiAssistInputStatus];
+
+
+export const AiAssistInputStatus = {
+  red: 'red',
+  yellow: 'yellow',
+} as const;
+
+export interface AiAssistInput {
+  task: AiAssistInputTask;
+  language: AiAssistInputLanguage;
+  /** @maxLength 500 */
+  question?: string;
+  intent?: AiAssistInputIntent;
   a?: string;
   b?: string;
+  runId?: string;
+  snapshotId?: string;
+  importId?: string;
+  issueId?: string;
+  /** @maxLength 200 */
+  source?: string;
+  /** @maxLength 200 */
+  order?: string;
+  severity?: AiAssistInputSeverity;
+  group?: AiAssistInputGroup;
+  includeArchived?: boolean;
+  metric?: AiAssistInputMetric;
+  direction?: AiAssistInputDirection;
+  status?: AiAssistInputStatus;
+  /**
+     * @minimum 1
+     * @maximum 10000
+     */
+  page?: number;
+  useAi?: boolean;
 }
+
+export type AiAssistBlockType = typeof AiAssistBlockType[keyof typeof AiAssistBlockType];
+
+
+export const AiAssistBlockType = {
+  FACT: 'FACT',
+  HYPOTHESIS: 'HYPOTHESIS',
+  SUGGESTION: 'SUGGESTION',
+} as const;
 
 export type AiFactStatus = typeof AiFactStatus[keyof typeof AiFactStatus];
 
@@ -53,6 +146,75 @@ export interface AiFact {
   unit: string;
   status: AiFactStatus;
   source: AiFactSource;
+}
+
+export interface AiAssistBlock {
+  id: string;
+  type: AiAssistBlockType;
+  title: string;
+  text: string;
+  href?: string;
+  facts: AiFact[];
+}
+
+export type AiAssistResultStatus = typeof AiAssistResultStatus[keyof typeof AiAssistResultStatus];
+
+
+export const AiAssistResultStatus = {
+  code: 'code',
+  verified: 'verified',
+  off: 'off',
+  consent_needed: 'consent_needed',
+  unsupported: 'unsupported',
+  quota: 'quota',
+  unavailable: 'unavailable',
+  error: 'error',
+} as const;
+
+export interface AiAssistResult {
+  status: AiAssistResultStatus;
+  intent: string;
+  blocks: AiAssistBlock[];
+  message: string;
+  retryAfter: number;
+  page: number;
+  total: number;
+}
+
+export interface AiConsent {
+  version?: number;
+  requiredVersion?: number;
+  enabled: boolean;
+  configured: boolean;
+}
+
+export type AiConsentInputVersion = typeof AiConsentInputVersion[keyof typeof AiConsentInputVersion];
+
+
+export const AiConsentInputVersion = {
+  NUMBER_1: 1,
+  NUMBER_2: 2,
+} as const;
+
+export interface AiConsentInput {
+  version?: AiConsentInputVersion;
+  enabled: boolean;
+  confirmed: boolean;
+}
+
+export type AiExplanationInputLanguage = typeof AiExplanationInputLanguage[keyof typeof AiExplanationInputLanguage];
+
+
+export const AiExplanationInputLanguage = {
+  en: 'en',
+  ar: 'ar',
+} as const;
+
+export interface AiExplanationInput {
+  language: AiExplanationInputLanguage;
+  snapshotId?: string;
+  a?: string;
+  b?: string;
 }
 
 export type AiStatementType = typeof AiStatementType[keyof typeof AiStatementType];

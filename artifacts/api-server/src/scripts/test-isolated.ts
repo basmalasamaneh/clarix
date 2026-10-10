@@ -98,7 +98,8 @@ try {
     const printProduction=args[1]==="scripts/phase15-browser.cjs";
     if(printProduction)await run("pnpm",["--filter","@workspace/clarix","run","build"],{PORT:String(webPort),BASE_PATH:"/"});
     for(const [filter,command,extras] of [
-      ["@workspace/api-server",["exec","tsx","src/index.ts"],{PORT:String(apiPort),...(["scripts/phase16-browser.cjs","scripts/phase16-close-browser.cjs"].includes(args[1])?{CLARIX_AI_TEST_FAKE:"true"}:{})}],
+      ["@workspace/api-server",["exec","tsx","src/index.ts"],{PORT:String(apiPort),...(["scripts/phase16-browser.cjs","scripts/phase16-close-browser.cjs","scripts/phase17-browser.cjs"].includes(args[1])?{CLARIX_AI_TEST_FAKE:"true"}:{}),
+        ...(args[1]==="scripts/phase17-browser.cjs"?{AI_USER_PER_MINUTE:"60",AI_DAILY_CAP:"10000"}:{})}],
       ["@workspace/clarix",printProduction?["exec","vite","preview"]:["exec","vite"],{PORT:String(webPort),BASE_PATH:"/",CLARIX_TEST_API_PORT:String(apiPort)}],
     ] as const) children.push(spawn("pnpm",["--filter",filter,...command],{cwd:root,env:{...env,...extras},stdio:"ignore",detached:true}));
     for(const target of [apiPort,webPort]) {

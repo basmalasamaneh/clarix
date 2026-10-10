@@ -13,6 +13,7 @@ import {verifyRunMetrics} from "./verify-run-metrics";
 import {verifySourceDetail} from "./verify-source-detail";
 import {verifyOverview} from "./verify-overview";
 import {verifyOverviewCharts} from "./verify-charts";
+import {verifyAiIntents} from "./verify-ai-intents";
 after(async()=>{sessionStore.close();await closeTenantPools();await pool.end();});
 const root=fileURLToPath(new URL("../../../../",import.meta.url));
 async function login(email:string) {
@@ -295,6 +296,7 @@ test("real API import/approval, isolation, originals, replacement history and un
         assert.ok(errors.items.every((i:any)=>i.severity==="error"));
         qualityEvidence.push({scenario:`${dataset}/${name}`,expected:{issues:expectedIssues,statuses:expectedStatuses},actual:{issues:[...issueSet].sort(),summary:qp.summary,groups:allItems.map(i=>({order:i.orderId,statuses:i.groupStatuses,overall:i.overallStatus}))},status:"PASS"});
         metricEvidence.push(...await verifyRunMetrics(who,dataset==="najm-packaging"?eth:najm,dataset==="ethmar-plastics"?viewer:null,`${source}-${name}`,exp,`${dataset}/${name}`));
+        await verifyAiIntents(who,dataset==="najm-packaging"?eth:najm,`${source}-${name}`,exp);
         sourceEvidence.push(...await verifySourceDetail(who,dataset==="najm-packaging"?eth:najm,dataset==="ethmar-plastics"?viewer:null,`${source}-${name}`,`${dataset}/${name}`));
       }
     }

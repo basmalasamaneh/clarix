@@ -7,6 +7,8 @@
  */
 
 export interface AiConsent {
+  version?: number;
+  requiredVersion?: number;
   enabled: boolean;
   configured: boolean;
 }

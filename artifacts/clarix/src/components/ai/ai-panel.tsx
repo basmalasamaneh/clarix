@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, ListChecks, RotateCcw, ShieldCheck, Sparkles, FileSearch } from 'lucide-react';
+import { AlertTriangle, ListChecks, RotateCcw, ShieldCheck, Sparkles } from 'lucide-react';
 import {
   getGetAiConsentQueryKey,
   useExplainAi,
@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { NumText, Qty, useLang } from '@/components/num-text';
 import { QualityStatusBadge } from '@/components/quality/status-badge';
-import { useSource } from '@/components/source/source-context';
+import { SourcesMenu } from '@/components/ai/assist-common';
 import { localizeError, useCsrfRequest } from '@/lib/session';
 import '@/lib/phase16-i18n';
 
@@ -35,7 +35,6 @@ function Shell({ children, state }: { children: React.ReactNode; state: string }
       <h2 id="ai-title" className="flex items-center gap-2 text-sm font-semibold"><Sparkles className="size-4 text-primary" aria-hidden="true" />{t('ai.title')}</h2>
       <p className="text-[11px] text-muted-foreground">{t('ai.lead')}</p>
       <div className="mt-3 space-y-3">{children}</div>
-      <p className="mt-3 border-s-2 border-[var(--series-stop)] ps-3 text-xs text-muted-foreground" data-testid="text-ai-downtime-note">{t('ai.downtime')}</p>
     </section>
   );
 }
@@ -139,8 +138,8 @@ function ResultView({ res, onAgain }: { res: AiExplanation; onAgain: () => void 
             <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground" data-testid={`text-ai-type-${i}`}>{t(`ai.type.${s.type}`)}</span>
             <p className="mt-1 text-sm leading-relaxed" data-testid={`text-ai-statement-${i}`}><NumText text={s.text} /></p>
             {s.refs.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {s.refs.map((r) => { const f = factById.get(r); return f ? <SourceBtn key={r} fact={f} testId={`button-ai-source-${i}-${r}`} /> : null; })}
+              <div className="mt-2">
+                <SourcesMenu facts={s.refs.map((r) => factById.get(r)).filter((f): f is AiFact => !!f)} title={`${t(`ai.type.${s.type}`)} ${i + 1}`} testId={`button-ai-sources-${i}`} />
               </div>
             )}
           </li>
@@ -163,24 +162,11 @@ function ResultView({ res, onAgain }: { res: AiExplanation; onAgain: () => void 
                 <span className="flex-1 min-w-40" dir="auto">{f.label}</span>
                 <span data-testid={`text-ai-fact-value-${f.id}`}>{f.value === null ? <span className="text-muted-foreground">{t('ai.na')}</span> : <Qty value={f.value} unit={f.unit} fallbackUnit={f.unit} />}</span>
                 <QualityStatusBadge status={f.status} size="sm" testId={`status-ai-fact-${f.id}`} />
-                <SourceBtn fact={f} testId={`button-ai-fact-source-${f.id}`} />
               </li>
             ))}
           </ul>
         </div>
       )}
     </div>
-  );
-}
-
-function SourceBtn({ fact, testId }: { fact: AiFact; testId: string }) {
-  const { t } = useTranslation();
-  const { openSource } = useSource();
-  return (
-    <Button variant="outline" size="sm" className="min-h-11 gap-1.5"
-      onClick={(e) => openSource({ kind: 'metric', id: fact.source.runId, metric: fact.source.metric, snapshot: fact.source.snapshotId }, e.currentTarget)}
-      aria-label={`${t('ai.showSource')}: ${fact.label}`} data-testid={testId}>
-      <FileSearch className="size-4" aria-hidden="true" />{t('ai.showSource')}
-    </Button>
   );
 }

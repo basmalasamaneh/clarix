@@ -30,8 +30,11 @@ export async function loadFacts(ctx:Context,input:AiExplanationInput){
  }
  return result;
 }
-export async function explain(ctx:Context,input:AiExplanationInput,signal?:AbortSignal,internalQuestion?:string){
- const data=await loadFacts(ctx,input),p=provider(),cfg=config(),started=Date.now();
+export type AdvancedRequest={data:ReturnType<typeof buildFacts>;task:string;mode:"intent"|"rank";payload:unknown;
+ validate:(raw:unknown)=>import("@workspace/api-zod").AiStatement[]|null};
+export async function explain(ctx:Context,input:AiExplanationInput,signal?:AbortSignal,internalQuestion?:string,advanced?:AdvancedRequest){
+ const data=advanced?.data??await loadFacts(ctx,input),p=provider(),cfg=config(),started=Date.now();
+ const validate=advanced?.validate??((raw:unknown)=>validateAnswer(raw,data.packed));
  const result=(status:AiExplanation["status"],retryAfter=0):AiExplanation=>({
   status,statements:[],facts:data.facts,fallback:data.fallback,retryAfter,cached:false,
  });
@@ -41,6 +44,7 @@ export async function explain(ctx:Context,input:AiExplanationInput,signal?:Abort
  if(!(await ctx.db.query("SELECT pg_try_advisory_xact_lock(hashtext($1)) ok",[`ai:${ctx.factory}`])).rows[0].ok)return result("quota",2);
  const f=(await ctx.db.query("SELECT settings FROM factories WHERE id=$1",[ctx.factory])).rows[0];
  if(f?.settings?.aiEnabled!==true)return result("off");
+ if(advanced&&f.settings.aiConsentVersion!==2)return result("off");
  if(!p.configured)return result("unavailable");
  const counts=(await ctx.db.query(`SELECT count(*) FILTER(WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')::int daily,
  count(*) FILTER(WHERE actor_id=$2 AND created_at>now()-interval '1 minute')::int AS "minute" FROM ai_usage WHERE factory_id=$1 AND created_at>now()-interval '1 day'`,
@@ -51,28 +55,30 @@ export async function explain(ctx:Context,input:AiExplanationInput,signal?:Abort
  const now=Date.now();
  if(state.openUntil>now)return result("unavailable",Math.ceil((state.openUntil-now)/1000));
  const question=(internalQuestion??"").slice(0,1000); // Internal tests only, never selects any record.
- const key=createHash("sha256").update(JSON.stringify([ctx.factory,input.snapshotId?"snapshot":"comparison",p.model,data.packed,question])).digest("hex");
+ const task=advanced?.task??(input.snapshotId?"snapshot":"comparison");
+ const key=createHash("sha256").update(JSON.stringify([ctx.factory,task,p.model,advanced?.payload??data.packed,input.language,question])).digest("hex");
  const audit=async(status:string,tokens?:number)=>ctx.db.query(
   "INSERT INTO ai_usage(id,factory_id,actor_id,task,status,model,latency,tokens) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
-  [randomUUID(),ctx.factory,ctx.user,input.snapshotId?"snapshot":"comparison",status,p.model,Date.now()-started,tokens??null]);
+  [randomUUID(),ctx.factory,ctx.user,task,status,p.model,Date.now()-started,tokens??null]);
  if(state.cache?.key===key&&state.cache.expires>now){
-  const valid=validateAnswer({statements:state.cache.statements},data.packed);
+  const valid=advanced?validate(state.cache.selection):validate({statements:state.cache.statements});
   if(valid){await audit("cached");return {...result("verified"),statements:valid,cached:true};}
  }
  const controller=new AbortController(),abort=()=>controller.abort();
  signal?.addEventListener("abort",abort,{once:true});if(signal?.aborted)abort();
  const timer=setTimeout(abort,cfg.timeout);
  let tokens:number|undefined;
+ let selection:unknown;
  try{
   let valid=null;
   for(let attempt=0;attempt<2;attempt++){
-   const r=await abortable(p,{facts:data.packed,language:input.language,question,corrective:attempt>0},controller.signal);
+   const r=await abortable(p,{facts:advanced?.payload??data.packed,language:input.language,question,corrective:attempt>0,mode:advanced?.mode},controller.signal);
    if(r.tokens!==undefined)tokens=(tokens??0)+r.tokens;
-   valid=validateAnswer(r.output,data.packed);if(valid)break;
+   valid=validate(r.output);if(valid){selection=r.output;break;}
   }
   if(!valid)throw new ProviderError("unavailable");
   await ctx.db.query("UPDATE ai_state SET state=$2 WHERE factory_id=$1",[ctx.factory,JSON.stringify({
-    failures:0,cache:{key,expires:Date.now()+cfg.cache*1000,statements:valid}})]);
+    failures:0,cache:{key,expires:Date.now()+cfg.cache*1000,statements:valid,...(advanced?{selection}:{})}})]);
   await audit("verified",tokens);
   return {...result("verified"),statements:valid};
  }catch(e){

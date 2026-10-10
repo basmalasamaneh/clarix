@@ -493,6 +493,35 @@ AI, report uploads, targets, trends or email is included.
 
 ## 14. AI (wave 3 only)
 
+### Approved Phase 17 — constrained AI features and explanation UX
+
+The approved Phase 17 brief extends Phase 16: typed AR/EN questions route only
+to a fixed read-only intent catalogue; code validates factory-owned parameters,
+executes existing data paths and authors every answer. No model-authored facts,
+SQL, calculations, chat history or saved AI text. Add exact-decimal explanatory
+ratios/shares without changing engine definitions; compact labelled sources;
+catalogue-based quality assistance in issue details/import review; and at most
+three code-prioritised Overview next actions. Model output only selects,
+orders or ranks allowed items. Chips and quality guidance work without AI.
+
+Consent version 2 explicitly discloses sending typed questions and repeats the
+free-tier warning. Prior consent does not authorize these new provider calls;
+the old explanation may continue under version 1. Manager reconfirmation is
+audited. No raw rows, files, filenames, cell text, personal names/emails, notes
+or snapshot titles may be sent. Source identities may be represented by opaque
+aliases; local display/source links retain their real labels. Questions are
+untrusted, bounded and never persisted or logged; only intent/status/hashes/
+metadata may be recorded. Unknown, ambiguous, cross-factory and rule-changing
+requests fail closed. Causal questions receive non-causal code explanations.
+
+Replace separate Quick questions with chips. Comparison order is summary,
+key figures, charts, AI explanation, collapsed detail tables/reconciliation.
+Downtime disclaimer appears only in page summary and downtime section, not AI.
+Preserve factory-scoped caps/cache/breaker, role checks and source traceability.
+Use isolated tests and a single complete-suite run. At most three optional
+synthetic live calls; report skipped/failed checks and partial browser coverage.
+No mapping suggestions, trends, other providers, voice/images or fixture edits.
+
 ### Approved Phase 16 — Gemini foundation
 
 The Phase 16 brief supersedes the older logging and statement-schema rules
