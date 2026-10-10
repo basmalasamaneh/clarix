@@ -11,6 +11,7 @@ import {withTenant,closeTenantPools} from "../lib/tenancy";
 import {sessionStore} from "../lib/session";
 import {verifyRunMetrics} from "./verify-run-metrics";
 import {verifySourceDetail} from "./verify-source-detail";
+import {verifyOverview} from "./verify-overview";
 after(async()=>{sessionStore.close();await closeTenantPools();await pool.end();});
 const root=fileURLToPath(new URL("../../../../",import.meta.url));
 async function login(email:string) {
@@ -21,6 +22,14 @@ async function login(email:string) {
 test("real API import/approval, isolation, originals, replacement history and unsafe input",async(t)=>{
   const eth=await login("ethmar.analyst@clarix.test"),najm=await login("najm.manager@clarix.test"),viewer=await login("ethmar.viewer@clarix.test");
   const source=`API verification ${randomUUID()}`;
+  await t.test("Overview empty factory returns real zero counts; anonymous and platform access denied",async()=>{
+    const empty=(await viewer.a.get("/api/overview").expect(200)).body;
+    assert.equal(empty.approvedImports,0);assert.equal(empty.currentOrders,0);
+    assert.deepEqual(empty.latestImports,[]);assert.deepEqual(empty.comparisonRuns,[]);
+    await request(app).get("/api/overview").expect(401);
+    const admin=await login("platform.admin@clarix.test");
+    await admin.a.get("/api/overview").expect(403);
+  });
   async function upload(who:typeof eth,folder:string,sourceName=source,mutate?:(files:{name:string;bytes:Buffer}[])=>void) {
     const dir=root+"test-data/"+folder;
     const files=readdirSync(dir).filter(n=>n.endsWith(".csv")).map(name=>({name,bytes:readFileSync(dir+"/"+name)}));
@@ -294,4 +303,5 @@ test("real API import/approval, isolation, originals, replacement history and un
     mkdirSync(root+"generated-artifacts/phase7",{recursive:true});
     writeFileSync(root+"generated-artifacts/phase7/source-metrics.json",JSON.stringify(sourceEvidence,null,2));
   });
+  await verifyOverview(t,viewer,najm,await login("ethmar.manager@clarix.test"));
 });

@@ -5,6 +5,163 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+export type OverviewStatuses = {
+  /** @nullable */
+  green: number | null;
+  /** @nullable */
+  yellow: number | null;
+  /** @nullable */
+  red: number | null;
+};
+
+export type OverviewImportStatus = typeof OverviewImportStatus[keyof typeof OverviewImportStatus];
+
+
+export const OverviewImportStatus = {
+  draft: 'draft',
+  checked: 'checked',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
+export interface OverviewImport {
+  id: string;
+  sourceName: string;
+  /** @nullable */
+  date: string | null;
+  status: OverviewImportStatus;
+}
+
+export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
+
+
+export const MetricReferenceKind = {
+  included: 'included',
+  excluded: 'excluded',
+  quarantined: 'quarantined',
+} as const;
+
+export interface MetricReference {
+  runId: string;
+  importId: string;
+  sourceName: string;
+  orderId: string;
+  file: string;
+  line: number;
+  column: string;
+  kind: MetricReferenceKind;
+}
+
+export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
+
+
+export const ProductionRunOverall = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunMetricGroup = typeof RunMetricGroup[keyof typeof RunMetricGroup];
+
+
+export const RunMetricGroup = {
+  volume: 'volume',
+  changeover: 'changeover',
+  downtime: 'downtime',
+} as const;
+
+export type RunMetricUnit = typeof RunMetricUnit[keyof typeof RunMetricUnit];
+
+
+export const RunMetricUnit = {
+  kg: 'kg',
+  pct: 'pct',
+  pp: 'pp',
+  min: 'min',
+} as const;
+
+export type RunMetricStatus = typeof RunMetricStatus[keyof typeof RunMetricStatus];
+
+
+export const RunMetricStatus = {
+  green: 'green',
+  yellow: 'yellow',
+  red: 'red',
+} as const;
+
+export type RunMetricAlternativesItem = {
+  key: string;
+  /** @nullable */
+  display: string | null;
+};
+
+export interface RunMetric {
+  key: string;
+  group: RunMetricGroup;
+  unit: RunMetricUnit;
+  status: RunMetricStatus;
+  /** @nullable */
+  value: string | null;
+  /** @nullable */
+  display: string | null;
+  /** @nullable */
+  hours: string | null;
+  available: boolean;
+  noEvents: boolean;
+  refs: MetricReference[];
+  alternatives: RunMetricAlternativesItem[];
+}
+
+export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
+
+
+export const RunIssueSeverity = {
+  info: 'info',
+  warning: 'warning',
+  error: 'error',
+} as const;
+
+export interface RunIssue {
+  id: string;
+  code: string;
+  severity: RunIssueSeverity;
+  group: string;
+  /** @nullable */
+  orderId: string | null;
+  sourceName: string;
+}
+
+export type ProductionRunGroups = {[key: string]: 'green' | 'yellow' | 'red'};
+
+export interface ProductionRun {
+  id: string;
+  orderId: string;
+  sourceName: string;
+  importId: string;
+  /** @nullable */
+  date: string | null;
+  dateRefs: MetricReference[];
+  capabilityLevel: number;
+  overall: ProductionRunOverall;
+  groups: ProductionRunGroups;
+  metrics: RunMetric[];
+  issues: RunIssue[];
+}
+
+export interface Overview {
+  /** @nullable */
+  approvedImports: number | null;
+  /** @nullable */
+  currentOrders: number | null;
+  /** @nullable */
+  errors: number | null;
+  /** @nullable */
+  warnings: number | null;
+  statuses: OverviewStatuses;
+  latestImports: OverviewImport[];
+  comparisonRuns: ProductionRun[];
+}
+
 export type ImportReviewSelectionKind = typeof ImportReviewSelectionKind[keyof typeof ImportReviewSelectionKind];
 
 
@@ -227,25 +384,6 @@ export type SourceDetailDuplicatePairsItem = {
   suspected: SourceRow;
 };
 
-export type RunIssueSeverity = typeof RunIssueSeverity[keyof typeof RunIssueSeverity];
-
-
-export const RunIssueSeverity = {
-  info: 'info',
-  warning: 'warning',
-  error: 'error',
-} as const;
-
-export interface RunIssue {
-  id: string;
-  code: string;
-  severity: RunIssueSeverity;
-  group: string;
-  /** @nullable */
-  orderId: string | null;
-  sourceName: string;
-}
-
 export interface SourceDetail {
   key: string;
   /** @nullable */
@@ -264,103 +402,6 @@ export interface SourceDetail {
   issues: RunIssue[];
   alternatives: SourceDetailAlternativesItem[];
   duplicatePairs: SourceDetailDuplicatePairsItem[];
-}
-
-export type MetricReferenceKind = typeof MetricReferenceKind[keyof typeof MetricReferenceKind];
-
-
-export const MetricReferenceKind = {
-  included: 'included',
-  excluded: 'excluded',
-  quarantined: 'quarantined',
-} as const;
-
-export interface MetricReference {
-  runId: string;
-  importId: string;
-  sourceName: string;
-  orderId: string;
-  file: string;
-  line: number;
-  column: string;
-  kind: MetricReferenceKind;
-}
-
-export type RunMetricGroup = typeof RunMetricGroup[keyof typeof RunMetricGroup];
-
-
-export const RunMetricGroup = {
-  volume: 'volume',
-  changeover: 'changeover',
-  downtime: 'downtime',
-} as const;
-
-export type RunMetricUnit = typeof RunMetricUnit[keyof typeof RunMetricUnit];
-
-
-export const RunMetricUnit = {
-  kg: 'kg',
-  pct: 'pct',
-  pp: 'pp',
-  min: 'min',
-} as const;
-
-export type RunMetricStatus = typeof RunMetricStatus[keyof typeof RunMetricStatus];
-
-
-export const RunMetricStatus = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type RunMetricAlternativesItem = {
-  key: string;
-  /** @nullable */
-  display: string | null;
-};
-
-export interface RunMetric {
-  key: string;
-  group: RunMetricGroup;
-  unit: RunMetricUnit;
-  status: RunMetricStatus;
-  /** @nullable */
-  value: string | null;
-  /** @nullable */
-  display: string | null;
-  /** @nullable */
-  hours: string | null;
-  available: boolean;
-  noEvents: boolean;
-  refs: MetricReference[];
-  alternatives: RunMetricAlternativesItem[];
-}
-
-export type ProductionRunOverall = typeof ProductionRunOverall[keyof typeof ProductionRunOverall];
-
-
-export const ProductionRunOverall = {
-  green: 'green',
-  yellow: 'yellow',
-  red: 'red',
-} as const;
-
-export type ProductionRunGroups = {[key: string]: 'green' | 'yellow' | 'red'};
-
-export interface ProductionRun {
-  id: string;
-  orderId: string;
-  sourceName: string;
-  importId: string;
-  /** @nullable */
-  date: string | null;
-  dateRefs: MetricReference[];
-  capabilityLevel: number;
-  overall: ProductionRunOverall;
-  groups: ProductionRunGroups;
-  metrics: RunMetric[];
-  issues: RunIssue[];
 }
 
 export type RunComparisonOverall = typeof RunComparisonOverall[keyof typeof RunComparisonOverall];

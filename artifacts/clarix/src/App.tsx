@@ -23,6 +23,7 @@ import NotFound from '@/pages/not-found';
 import ImportsPage from '@/pages/imports';
 import QualityPageView from '@/pages/quality';
 import RunsPage from '@/pages/runs';
+import OverviewPage from '@/pages/overview';
 import ComparisonPage from '@/pages/comparison';
 import LoginPage from '@/pages/login';
 import PlatformPage from '@/pages/platform';
@@ -86,6 +87,7 @@ function TenantRoute({ page, session }: { page: TenantPage; session: Session }) 
       <StateScreen icon={Building2} title={t('states.noFactoryTitle')} body={t('states.noFactoryBody')} testId="state-no-factory" />
     );
   }
+  if (page === 'overview') return <OverviewPage key={session.activeFactoryId} session={session} />;
   if (page === 'imports') return <ImportsPage key={session.activeFactoryId} session={session} />;
   if (page === 'runs') return <RunsPage key={session.activeFactoryId} session={session} />;
   if (page === 'comparison') return <ComparisonPage key={session.activeFactoryId} session={session} />;

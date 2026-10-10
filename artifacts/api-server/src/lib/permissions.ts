@@ -1,7 +1,7 @@
 export const pagesByRole = {
   factory_manager: ["overview", "imports", "runs", "comparison", "quality", "settings", "members"],
   analyst: ["overview", "imports", "runs", "comparison", "quality"],
-  viewer: ["runs", "comparison", "quality"],
+  viewer: ["overview", "runs", "comparison", "quality"],
 } as const;
 export type FactoryRole = keyof typeof pagesByRole;
 export function allowedPages(role: string | undefined): string[] {

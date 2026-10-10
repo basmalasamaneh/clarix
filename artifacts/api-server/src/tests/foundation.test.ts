@@ -20,7 +20,7 @@ const accounts = [
   ["platform.admin@clarix.test", null, ["platform"]],
   ["ethmar.manager@clarix.test", "ethmar", ["overview", "imports", "runs", "comparison", "quality", "settings", "members"]],
   ["ethmar.analyst@clarix.test", "ethmar", ["overview", "imports", "runs", "comparison", "quality"]],
-  ["ethmar.viewer@clarix.test", "ethmar", ["runs","comparison","quality"]],
+  ["ethmar.viewer@clarix.test", "ethmar", ["overview","runs","comparison","quality"]],
   ["najm.manager@clarix.test", "najm", ["overview", "imports", "runs", "comparison", "quality", "settings", "members"]],
 ] as const;
 

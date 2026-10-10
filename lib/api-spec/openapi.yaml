@@ -11,6 +11,20 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /overview:
+    get:
+      operationId: getOverview
+      responses:
+        "200":
+          description: Active-factory overview using approved server results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Overview"
+        "401":
+          description: Sign in required
+        "403":
+          description: Factory membership required
   /members:
     get:
       operationId: getMembers
@@ -582,6 +596,37 @@ paths:
               schema: { $ref: "#/components/schemas/SourceDetail" }
 components:
   schemas:
+    Overview:
+      type: object
+      required: [approvedImports, currentOrders, statuses, errors, warnings, latestImports, comparisonRuns]
+      properties:
+        approvedImports: { type: [integer, "null"] }
+        currentOrders: { type: [integer, "null"] }
+        errors: { type: [integer, "null"] }
+        warnings: { type: [integer, "null"] }
+        statuses:
+          type: object
+          required: [green, yellow, red]
+          properties:
+            green: { type: [integer, "null"] }
+            yellow: { type: [integer, "null"] }
+            red: { type: [integer, "null"] }
+        latestImports:
+          type: array
+          items:
+            $ref: "#/components/schemas/OverviewImport"
+        comparisonRuns:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductionRun"
+    OverviewImport:
+      type: object
+      required: [id, sourceName, date, status]
+      properties:
+        id: { type: string }
+        sourceName: { type: string }
+        date: { type: [string, "null"] }
+        status: { type: string, enum: [draft, checked, approved, rejected] }
     ImportReviewSelection:
       type: object
       required: [kind]

@@ -70,7 +70,9 @@ try {
   const args=process.argv.slice(2);
   if(args[0]==="--browser") {
     if(!/^scripts\/[\w-]+\.cjs$/.test(args[1]??"")) throw new Error("Specify an existing scripts/<name>.cjs browser check");
-    await run("pnpm",["--filter","@workspace/api-server","exec","tsx","--test","src/tests/imports.test.ts"]);
+    const preparation=args[2]??"src/tests/imports.test.ts";
+    if(!/^src\/tests\/[\w-]+\.test\.ts$/.test(preparation))throw new Error("Specify an isolated preparation test");
+    await run("pnpm",["--filter","@workspace/api-server","exec","tsx","--test",preparation]);
     const {createServer}=await import("node:net");
     const port=()=>new Promise<number>(resolve=>{const s=createServer();s.listen(0,"127.0.0.1",()=>{const p=(s.address() as {port:number}).port;s.close(()=>resolve(p));});});
     const apiPort=await port(),webPort=await port();

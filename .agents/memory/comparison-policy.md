@@ -17,3 +17,11 @@ the import/approval date. If none exists, show Not available.
 time, and the specification supplied no separate canonical run-date field.
 **How to apply:** Keep this meaning explicit in UI copy and reports; use the
 original production dates for lineage, without inferring dates from events.
+
+For automatic Overview suggestions, retain the existing Data Quality designation
+of comparable (overall OK/Check), without banning manual partial comparisons of
+Blocked runs. Exclude undated runs from “most recently produced” suggestions.
+**Why:** The small Overview was scoped to reuse existing server results, not
+introduce a second metric eligibility definition or infer dates from uploads.
+**How to apply:** Keep automatic-shortcut eligibility separate from what the
+Comparison page permits; explain the narrower suggestion scope in both languages.

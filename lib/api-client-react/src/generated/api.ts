@@ -57,6 +57,7 @@ import type {
   MappingTemplate,
   Member,
   MemberUpdate,
+  Overview,
   PageState,
   PasswordChange,
   Preferences,
@@ -96,6 +97,77 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getGetOverviewUrl = () => {
+
+
+
+
+  return `/api/overview`
+}
+
+export const getOverview = async ( options?: Parameters<typeof customFetch>[1]): Promise<Overview> => {
+
+  return customFetch<Overview>(getGetOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetOverviewQueryKey = () => {
+    return [
+    `/api/overview`
+    ] as const;
+    }
+
+
+export const getGetOverviewQueryOptions = <TData = Awaited<ReturnType<typeof getOverview>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetOverviewQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getOverview>>> = ({ signal }) => getOverview({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getOverview>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetOverviewQueryResult = NonNullable<Awaited<ReturnType<typeof getOverview>>>
+export type GetOverviewQueryError = ErrorType<void>
+
+
+
+export function useGetOverview<TData = Awaited<ReturnType<typeof getOverview>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getOverview>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetOverviewQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetMembersUrl = (params?: GetMembersParams,) => {
   const normalizedParams = new URLSearchParams();

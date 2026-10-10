@@ -276,6 +276,16 @@ Explicitly ignored event codes could become an info-level note instead of a warn
 
 ## 10. Pages
 
+### Approved Phase 10b: small Overview
+
+Overview presents server-computed approved-import counts, current-order statuses,
+existing Data Quality error/warning totals, the five latest imports, and a
+shortcut to the two most recently produced comparable runs. It excludes archived
+sources, supports read-only Viewer access, and provides a three-step empty guide.
+It adds no charts, metric definitions, browser calculations, export, AI,
+snapshots or reconciliation. Existing page permissions remain unchanged except
+that Viewers may also read Overview; Data Imports remains restricted.
+
 Wave 1: Login · Overview · Data Imports (wizard) · Production Runs (search/filter, pick 2 runs) · **Comparison** · Source Drawer · Data Quality Center · Factory Settings (basic) .
 Wave 2: Reconciliation (enter figures from the factory's own report → "Matches ✓" or difference) · Saved analyses (snapshots) · Reports (PDF with source files, hashes, definitions, warnings — warnings are never stripped).
 Wave 3: AI Analyst panel · remaining charts · audit log view · comments · advanced settings.

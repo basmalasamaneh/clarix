@@ -8,6 +8,78 @@
 import * as zod from 'zod';
 
 
+export const GetOverviewResponse = zod.object({
+  "approvedImports": zod.number().int().nullable(),
+  "currentOrders": zod.number().int().nullable(),
+  "errors": zod.number().int().nullable(),
+  "warnings": zod.number().int().nullable(),
+  "statuses": zod.object({
+  "green": zod.number().int().nullable(),
+  "yellow": zod.number().int().nullable(),
+  "red": zod.number().int().nullable()
+}),
+  "latestImports": zod.array(zod.object({
+  "id": zod.string(),
+  "sourceName": zod.string(),
+  "date": zod.string().nullable(),
+  "status": zod.enum(['draft', 'checked', 'approved', 'rejected'])
+})),
+  "comparisonRuns": zod.array(zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "sourceName": zod.string(),
+  "importId": zod.string(),
+  "date": zod.string().nullable(),
+  "dateRefs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "capabilityLevel": zod.number().int(),
+  "overall": zod.enum(['green', 'yellow', 'red']),
+  "groups": zod.record(zod.string(), zod.enum(['green', 'yellow', 'red'])),
+  "metrics": zod.array(zod.object({
+  "key": zod.string(),
+  "group": zod.enum(['volume', 'changeover', 'downtime']),
+  "unit": zod.enum(['kg', 'pct', 'pp', 'min']),
+  "status": zod.enum(['green', 'yellow', 'red']),
+  "value": zod.string().nullable(),
+  "display": zod.string().nullable(),
+  "hours": zod.string().nullable(),
+  "available": zod.boolean(),
+  "noEvents": zod.boolean(),
+  "refs": zod.array(zod.object({
+  "runId": zod.string(),
+  "importId": zod.string(),
+  "sourceName": zod.string(),
+  "orderId": zod.string(),
+  "file": zod.string(),
+  "line": zod.number().int(),
+  "column": zod.string(),
+  "kind": zod.enum(['included', 'excluded', 'quarantined'])
+})),
+  "alternatives": zod.array(zod.object({
+  "key": zod.string(),
+  "display": zod.string().nullable()
+}))
+})),
+  "issues": zod.array(zod.object({
+  "id": zod.string(),
+  "code": zod.string(),
+  "severity": zod.enum(['info', 'warning', 'error']),
+  "group": zod.string(),
+  "orderId": zod.string().nullable(),
+  "sourceName": zod.string()
+}))
+}))
+})
+
+
 
 
 

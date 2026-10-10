@@ -15,6 +15,8 @@ import * as quality from "../imports/quality";
 import * as metrics from "../metrics/service";
 import {GetSourceDetailResponse} from "@workspace/api-zod";
 import {sourceDetail} from "../metrics/source-detail";
+import {GetOverviewResponse} from "@workspace/api-zod";
+import {overview} from "../imports/overview";
 const router=Router();
 const uploadLimit=rateLimit({windowMs:15*60*1000,limit:60,standardHeaders:"draft-8",legacyHeaders:false,
   keyGenerator:req=>req.session.userId!,skip:req=>!req.session.userId,message:{error:"TOO_MANY_ATTEMPTS"}});
@@ -51,6 +53,9 @@ function route(action:Action,allowViewer=false) {
 }
 const page=(raw:unknown)=>z.coerce.number().int().min(1).max(1000000).parse(raw??1);
 const id=(req:Request)=>String(req.params.id);
+router.get("/overview",route(async(ctx,_req,res)=>{
+  res.json(GetOverviewResponse.parse(await overview(ctx)));
+},true));
 router.get("/source-detail",route(async(ctx,req,res)=>{
   const parsed=z.object({kind:z.enum(["metric","issue"]),id:z.string().uuid(),metric:z.string().max(100).optional(),
     other:z.string().uuid().optional(),page:z.coerce.number().int().min(1).max(1000000).default(1)}).safeParse(req.query);
