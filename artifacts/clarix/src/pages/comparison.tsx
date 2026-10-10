@@ -37,9 +37,16 @@ const linkBtn = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-
 
 /* ---------------- source references ---------------- */
 
-function ValueLink({ side, m, panels, testId }: { side: Side; m: RunMetric | undefined; panels: RefPanels; testId: string }) {
+function ValueLink({ side, m, panels, testId, data }: { side: Side; m: RunMetric | undefined; panels: RefPanels; testId: string; data?: RunComparison }) {
   const { t } = useTranslation();
   if (!m) return <MetricValue m={undefined} testId={testId} />;
+  if (!m.available && m.group === 'volume' && data) {
+    const reasons=issuesOf(data,i=>i.severity==='error' && inGroup(i,'volume'))
+      .filter(item=>side==='d'||item.side===side);
+    return <div><MetricValue m={m} testId={testId} />
+      <IssueLinks items={reasons} testId={`${testId}-reasons`} />
+    </div>;
+  }
   return (
     <SourceLink target={anchorId(side, m.key)} panels={panels} label={t(`rc.metric.${m.key}`)} testId={`link-source-${side}-${m.key}`}>
       <MetricValue m={m} testId={testId} />
@@ -90,9 +97,9 @@ function MetricRows({ keys, data, panels }: { keys: readonly string[]; data: Run
             return (
               <tr key={k} className="border-b align-top last:border-0" data-testid={`row-metric-${k}`}>
                 <th scope="row" className="px-4 py-3 text-start font-medium">{t(`rc.metric.${k}`)}</th>
-                <td className="px-2 py-1.5"><ValueLink side="a" m={ma} panels={panels} testId={`text-a-${k}`} /><Alternatives m={ma} side="a" panels={panels} /></td>
-                <td className="px-2 py-1.5"><ValueLink side="b" m={mb} panels={panels} testId={`text-b-${k}`} /><Alternatives m={mb} side="b" panels={panels} /></td>
-                <td className="bg-[color-mix(in_srgb,var(--accent)_60%,transparent)] px-2 py-1.5"><ValueLink side="d" m={md} panels={panels} testId={`text-diff-${k}`} /></td>
+                <td className="px-2 py-1.5"><ValueLink data={data} side="a" m={ma} panels={panels} testId={`text-a-${k}`} /><Alternatives m={ma} side="a" panels={panels} /></td>
+                <td className="px-2 py-1.5"><ValueLink data={data} side="b" m={mb} panels={panels} testId={`text-b-${k}`} /><Alternatives m={mb} side="b" panels={panels} /></td>
+                <td className="bg-[color-mix(in_srgb,var(--accent)_60%,transparent)] px-2 py-1.5"><ValueLink data={data} side="d" m={md} panels={panels} testId={`text-diff-${k}`} /></td>
               </tr>
             );
           })}
@@ -110,15 +117,15 @@ function MetricRows({ keys, data, panels }: { keys: readonly string[]; data: Run
               <dl className="mt-2 grid grid-cols-2 gap-2">
                 <div className="min-w-0 rounded-md border p-1.5">
                   <dt className="px-1.5 text-[11px] text-muted-foreground">{t('rc.cmp.runA')}</dt>
-                  <dd><ValueLink side="a" m={ma} panels={panels} testId={`text-card-a-${k}`} /><Alternatives m={ma} side="a" panels={panels} /></dd>
+                  <dd><ValueLink data={data} side="a" m={ma} panels={panels} testId={`text-card-a-${k}`} /><Alternatives m={ma} side="a" panels={panels} /></dd>
                 </div>
                 <div className="min-w-0 rounded-md border p-1.5">
                   <dt className="px-1.5 text-[11px] text-muted-foreground">{t('rc.cmp.runB')}</dt>
-                  <dd><ValueLink side="b" m={mb} panels={panels} testId={`text-card-b-${k}`} /><Alternatives m={mb} side="b" panels={panels} /></dd>
+                  <dd><ValueLink data={data} side="b" m={mb} panels={panels} testId={`text-card-b-${k}`} /><Alternatives m={mb} side="b" panels={panels} /></dd>
                 </div>
                 <div className="col-span-2 rounded-md border bg-accent p-1.5">
                   <dt className="px-1.5 text-[11px] text-muted-foreground">{t('rc.cmp.difference')} ({t('rc.cmp.diffHint')})</dt>
-                  <dd><ValueLink side="d" m={md} panels={panels} testId={`text-card-diff-${k}`} /></dd>
+                  <dd><ValueLink data={data} side="d" m={md} panels={panels} testId={`text-card-diff-${k}`} /></dd>
                 </div>
               </dl>
             </li>
@@ -319,7 +326,7 @@ function Result({ data }: { data: RunComparison }) {
       )}
 
       {mainGroups.map(({ g, keys, icon: Icon }) =>
-        blocked(g) ? (
+        blocked(g) && g !== 'volume' ? (
           <BlockedGroup key={g} group={g} data={data} panels={panels} />
         ) : (
           <section key={g} className="overflow-hidden rounded-xl border bg-card shadow-[var(--shadow-sm)]" aria-labelledby={`grp-${g}`} data-testid={`section-group-${g}`}>

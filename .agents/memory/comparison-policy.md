@@ -2,10 +2,12 @@
 name: Comparison policy
 description: User clarification on partial comparisons and the meaning of a run date
 ---
-Refuse only red metric groups, not the whole comparison. Keep unaffected groups
-visible and show the overall status and blocking reasons.
-**Why:** The user explicitly chose this over the whole-comparison blocking rule
-in the original Phase 6 attachment. Do not reintroduce that superseded instruction.
+Refuse red time groups, not the whole comparison. Volume is per metric: display
+non-null approved engine values even if Volume is red; show unavailable values
+with reasons and Data Quality links. Preserve golden rate-difference refusal.
+**Why:** The user replaced whole-comparison refusal with per-group refusal, then
+explicitly refined Volume to per-metric availability (scenario 07 retains Input
+and Good output). Do not reintroduce either superseded blanket refusal.
 **How to apply:** Preserve locked engine/fixture behavior; never turn a group's
 unavailable result into zero or hide unaffected groups because overall is red.
 

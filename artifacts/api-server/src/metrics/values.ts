@@ -34,7 +34,9 @@ export function runMetrics(runId:string,importId:string,run:Run,mapping:Mapping,
   return definitions.map(def=>{
     const group=run[def.group];
     const raw=(group as unknown as Record<string,unknown>)[def.field] as string|null;
-    const value=group.status==="red"?null:raw;
+    // Volume availability is per metric: preserve the approved engine's nulls
+    // without hiding valid input/output just because another metric is invalid.
+    const value=def.group==="volume"?raw:group.status==="red"?null:raw;
     let cols:readonly string[]=def.columns;
     if(mapping.capability_level===1 && def.group!=="volume") {
       cols=def.group==="changeover"?["changeover_hours"]:["downtime_min"];
@@ -57,7 +59,10 @@ export function runMetrics(runId:string,importId:string,run:Run,mapping:Mapping,
 export function differences(a:ProductionRun,b:ProductionRun):RunMetric[] {
   return definitions.map((def,index)=>{
     const left=a.metrics[index],right=b.metrics[index];
-    const value=left.value!==null&&right.value!==null?fmt(new D(right.value).sub(left.value)):null;
+    // Preserve golden rate-comparison refusal even when individual run values
+    // remain available; displaying a value is not a claim of comparability.
+    const comparable=def.unit!=="pct"||(left.status!=="red"&&right.status!=="red");
+    const value=comparable&&left.value!==null&&right.value!==null?fmt(new D(right.value).sub(left.value)):null;
     const unit=def.unit==="pct"?"pp":def.unit;
     const hours=value!==null&&unit==="min"?minutesToHoursDisplay(value):null;
     return {key:def.key,group:def.group,unit,status:worstStatus([left.status,right.status]),

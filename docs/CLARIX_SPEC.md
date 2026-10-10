@@ -241,6 +241,16 @@ Mapping JSON format: see `test-data/ethmar-plastics/00_baseline/mapping.json` (c
 
 ---
 
+### Phase 6 per-metric Volume clarification
+
+Even when Volume is red, show each non-null approved engine value normally.
+Only null metrics show “Not available”, with the applicable run's Volume issue
+reasons and links to Data Quality. Scenario 07 retains Input and Good output;
+Scrap, Scrap rate, Good rate and Material balance remain null. Preserve the
+golden comparison's rate-comparability decisions. Do not alter the engine or
+fixtures. Summary sentences (including quick answers) use `[source name]`
+only when the compared sources differ; otherwise show order IDs alone.
+
 ### Phase 4 wizard clarification
 
 Every distinct value in the selected event-code column requires an explicit

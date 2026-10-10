@@ -20,7 +20,7 @@ export async function verifyRunMetrics(who:any,other:any,viewer:any,source:strin
     for(const def of definitions) {
       const actual=run.metrics.find((m:any)=>m.key===def.key);
       const group=expected[def.group];
-      const value=group.status==="red"?null:group[def.field];
+      const value=def.group!=="volume"&&group.status==="red"?null:group[def.field];
       const display=value===null?null:def.unit==="pct"?displayNumber(value):value;
       assert.equal(actual.value,value,`${scenario}/${run.orderId}/${def.key}`);
       assert.equal(actual.display,display);
@@ -55,7 +55,7 @@ export async function verifyRunMetrics(who:any,other:any,viewer:any,source:strin
   const engineKey:Record<string,string>={scrap_rate_pct:"scrap_rate_pp",good_rate_pct:"good_rate_pp",changeover_min:"changeover_min",downtime_min:"downtime_min"};
   for(const def of definitions) {
     const a=exp.runs[left.orderId][def.group],b=exp.runs[right.orderId][def.group];
-    const available=a.status!=="red"&&b.status!=="red"&&a[def.field]!==null&&b[def.field]!==null;
+    const available=(def.group==="volume"&&def.unit!=="pct"||(a.status!=="red"&&b.status!=="red"))&&a[def.field]!==null&&b[def.field]!==null;
     const value=available?fmt(new D(b[def.field]).sub(a[def.field])):null;
     const actual=result.differences.find((m:any)=>m.key===def.key);
     assert.equal(actual.value,value);
