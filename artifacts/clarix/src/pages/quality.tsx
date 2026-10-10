@@ -207,7 +207,7 @@ function Refs({ issue, max = 2 }: { issue: QualityIssue; max?: number }) {
           <span className="num text-muted-foreground">:{r.line}</span>
         </span>
       ))}
-      {issue.refs.length > max && <span className="text-xs text-muted-foreground">{t('q.list.more', { n: issue.refs.length - max })}</span>}
+      {(issue.referenceCount ?? issue.refs.length) > max && <span className="text-xs text-muted-foreground">{t('q.list.more', { n: (issue.referenceCount ?? issue.refs.length) - max })}</span>}
     </span>
   );
 }

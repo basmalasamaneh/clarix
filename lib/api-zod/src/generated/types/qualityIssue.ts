@@ -13,6 +13,8 @@ import type { QualityIssueSeverity } from './qualityIssueSeverity';
 import type { QualityIssueSeverityStatus } from './qualityIssueSeverityStatus';
 
 export interface QualityIssue {
+  /** Total related source rows. refs and rows are previews of at most 20; use the paginated Source Drawer for complete rows. */
+  referenceCount?: number;
   id: string;
   importId: string;
   code: string;

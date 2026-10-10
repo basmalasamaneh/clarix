@@ -103,7 +103,7 @@ router.post("/imports/:id/event-codes",route(async(ctx,req,res)=>{
   const mapping=z.object({files:z.object({events:z.object({file:z.string(),columns:z.record(z.string())}).optional()}),event_code_map:z.record(z.string()).default({}),ignored_event_codes:z.array(z.string()).default([])}).parse(req.body.mapping);
   res.json(await eventCodes(ctx,row,mapping as any));
 }));
-router.get("/imports/:id/errors",route(async(ctx,req,res)=>{res.json(await issues(ctx,await service.getRow(ctx,id(req)),1,true));}));
+router.get("/imports/:id/errors",route(async(ctx,req,res)=>{res.json(await issues(ctx,await service.getRow(ctx,id(req)),page(req.query.page),true));}));
 router.post("/imports/:id/approve",route(async(ctx,req,res)=>{res.json(await approve(ctx,await service.getRow(ctx,id(req),true),ApproveImportBody.parse(req.body)));}));
 router.post("/imports/:id/reject",route(async(ctx,req,res)=>{
   const row=await service.getRow(ctx,id(req),true);service.editable(row);

@@ -55,7 +55,7 @@ try {
     await c.query(`ALTER TABLE ${schema}."${fk.table_name}" ADD CONSTRAINT "${fk.conname}" ${def}`);
   }
   await c.query(`SET search_path=${schema}`);
-  for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql"]) {
+  for(const file of ["foundation-rls.sql","canonical-rls.sql","history-rls.sql","accounts-rls.sql","runtime-grants.sql"]) {
     let sql=await readFile(root+"lib/db/"+file,"utf8");
     if(file==="foundation-rls.sql") sql=sql.slice(sql.indexOf("GRANT SELECT ON factories")); // roles already exist; no global role changes
     await c.query(sql);

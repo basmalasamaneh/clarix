@@ -3,7 +3,7 @@ import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import request from "supertest";
 import app from "../app";
-import { pool } from "@workspace/db";
+import { pool } from "@workspace/db/admin";
 import { assertSeedAllowed, allowedPages } from "../lib/permissions";
 import { withTenant, closeTenantPools } from "../lib/tenancy";
 import { sessionStore } from "../lib/session";

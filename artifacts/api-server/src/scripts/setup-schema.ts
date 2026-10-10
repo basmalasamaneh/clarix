@@ -1,4 +1,4 @@
-import {pool} from "@workspace/db";
+import {pool} from "@workspace/db/admin";
 import {spawnSync} from "node:child_process";
 import {isProduction} from "../lib/permissions";
 if(isProduction()) throw new Error("Development migration cannot run in production");

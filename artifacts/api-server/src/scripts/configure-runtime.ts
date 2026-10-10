@@ -13,6 +13,10 @@ try {
   const server=createHmac("sha256",salted).update("Server Key").digest("base64");
   const verifier=`SCRAM-SHA-256$4096:${salt.toString("base64")}$${stored}:${server}`;
   await pool.query(`ALTER ROLE clarix_runtime LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS PASSWORD '${verifier}'`);
+  // PUBLIC grants otherwise let any login create temporary tables despite the
+  // absence of direct grants. Database/schema owners retain setup privileges.
+  await pool.query(`REVOKE CREATE ON SCHEMA public FROM PUBLIC;
+    DO $$ BEGIN EXECUTE format('REVOKE TEMPORARY ON DATABASE %I FROM PUBLIC',current_database()); END $$;`);
   console.log("Runtime login configured; no credential values printed.");
 } catch {
   console.error("Runtime login configuration failed; credentials were not logged.");

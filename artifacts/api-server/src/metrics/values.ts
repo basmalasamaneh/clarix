@@ -15,7 +15,10 @@ export const definitions=[
 // Use the approved engine output, including quarantine/exclusion lineage. Never
 // recalculate a source with a different import's mapping or merge colliding IDs.
 export function references(runId:string,importId:string,mapping:Mapping,lines:readonly string[],columns:readonly string[],kind:MetricReference["kind"],identity:{sourceName:string;orderId:string}):MetricReference[] {
-  return lines.flatMap(ref=>{
+  // List/detail responses carry a bounded reference preview. The Source Drawer
+  // reads the complete stored engine references and pages original rows; metric
+  // calculation and complete traceability are unchanged.
+  return lines.slice(0,20).flatMap(ref=>{
     const match=/^(.*):(\d+)$/.exec(ref);
     if(!match) throw new Error("Invalid stored source reference");
     const spec=Object.values(mapping.files).find(s=>s?.file===match[1]);

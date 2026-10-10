@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import {pool} from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -15,6 +16,12 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
+const identity=(await pool.query(`SELECT session_user,current_user,rolsuper,rolbypassrls,rolcreatedb,rolcreaterole
+  FROM pg_roles WHERE rolname=current_user`)).rows[0];
+if(identity.session_user!=="clarix_runtime"||identity.current_user!=="clarix_runtime"||
+   identity.rolsuper||identity.rolbypassrls||identity.rolcreatedb||identity.rolcreaterole)
+  throw new Error("Application requires a direct least-privilege runtime database login");
+logger.info({databaseRole:identity.current_user},"Runtime database identity verified");
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");

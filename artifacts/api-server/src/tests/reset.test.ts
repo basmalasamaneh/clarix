@@ -1,7 +1,7 @@
 import "../testing/require-isolation";
 import {test,after} from "node:test";
 import assert from "node:assert/strict";
-import {pool} from "@workspace/db";
+import {pool} from "@workspace/db/admin";
 import {resetFactory,guardReset,fingerprint,importedTables,requireUnfilteredObserver} from "../maintenance/reset";
 import pg from "pg";
 import {randomUUID} from "node:crypto";

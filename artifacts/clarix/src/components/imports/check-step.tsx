@@ -238,8 +238,8 @@ function Issues({ id, mapping, onJump }: { id: string; mapping?: Record<string, 
 
 function ErrorList({ id }: { id: string }) {
   const { t } = useTranslation();
-  const q = useImportErrors(id, true);
   const [page, setPage] = useState(1);
+  const q = useImportErrors(id, true, page);
   if (q.isLoading)
     return (
       <div className="space-y-2" aria-busy="true">
@@ -264,11 +264,11 @@ function ErrorList({ id }: { id: string }) {
   return (
     <>
       <ul className="max-h-[40dvh] divide-y overflow-y-auto rounded-lg border" data-testid="list-approve-errors">
-        {items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((it, i) => (
+        {items.map((it, i) => (
           <IssueCard key={`${it.code}-${i}`} it={it} idx={(page - 1) * PAGE_SIZE + i} compact />
         ))}
       </ul>
-      <Pager page={page} total={items.length} onPage={setPage} testId="pager-approve-errors" />
+      <Pager page={page} total={q.data?.total ?? 0} onPage={setPage} testId="pager-approve-errors" />
     </>
   );
 }

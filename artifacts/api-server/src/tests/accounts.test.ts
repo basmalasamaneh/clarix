@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {randomUUID,randomBytes,createHash} from "node:crypto";
 import request from "supertest";
 import app from "../app";
-import {pool} from "@workspace/db";
+import {pool} from "@workspace/db/admin";
 import {sessionStore} from "../lib/session";
 import {closeTenantPools} from "../lib/tenancy";
 import {accountTransaction,scope} from "../accounts/context";

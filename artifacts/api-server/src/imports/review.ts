@@ -74,8 +74,8 @@ export async function duplicateState(ctx:Context,row:ImportRow) {
 export async function issues(ctx:Context,row:ImportRow,p=1,errorsOnly=false) {
   const filter=errorsOnly?" AND severity='error'":"";
   const result=await ctx.db.query(`SELECT code,severity,source_order_id AS "order","group",raw_row_ids FROM data_issues
-    WHERE factory_id=$1 AND import_id=$2 ${filter} ORDER BY code,id ${errorsOnly?"":"LIMIT 20 OFFSET $3"}`,
-    errorsOnly?[ctx.factory,row.id]:[ctx.factory,row.id,(p-1)*20]);
+    WHERE factory_id=$1 AND import_id=$2 ${filter} ORDER BY code,id LIMIT 20 OFFSET $3`,
+    [ctx.factory,row.id,(p-1)*20]);
   const codes=(await eventCodes(ctx,row,row.mapping!)).items;
   const raw=(await ctx.db.query("SELECT id,file,line_number AS line,cells FROM raw_rows WHERE factory_id=$1 AND import_id=$2 ORDER BY file,line_number",[ctx.factory,row.id])).rows;
   const byRef=new Map(raw.map(r=>[`${r.file}:${r.line}`,r]));

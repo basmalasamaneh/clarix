@@ -2,7 +2,7 @@ import "../testing/require-isolation";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { pool } from "@workspace/db";
+import { pool } from "@workspace/db/admin";
 import { closeTenantPools, withTenant, withRequestTenant } from "../lib/tenancy";
 import type { Request } from "express";
 
@@ -67,9 +67,15 @@ test("canonical schema isolation on real PostgreSQL, synthetic rows only", async
           const own = ids[i][table], other = ids[1-i][table];
           assert.equal((await c.query(`SELECT id FROM ${table} WHERE id=$1`, [own])).rowCount,1);
           assert.equal((await c.query(`SELECT id FROM ${table} WHERE id=$1`, [other])).rowCount,0);
+          if(table==="raw_rows") {
+            await fails("UPDATE raw_rows SET factory_id=factory_id WHERE id=$1",[other],"42501");
+            await fails("DELETE FROM raw_rows WHERE id=$1",[other],"42501");
+            await fails("UPDATE raw_rows SET factory_id=$1 WHERE id=$2",[i===0?b:a,own],"42501");
+            continue;
+          }
           assert.equal((await c.query(`UPDATE ${table} SET factory_id=factory_id WHERE id=$1`, [other])).rowCount,0);
           assert.equal((await c.query(`DELETE FROM ${table} WHERE id=$1`, [other])).rowCount,0);
-          if (table !== "raw_rows") await fails(`UPDATE ${table} SET factory_id=$1 WHERE id=$2`, [i===0 ? b:a,own], table === "data_issues" ? "23503" : "42501");
+          await fails(`UPDATE ${table} SET factory_id=$1 WHERE id=$2`, [i===0 ? b:a,own], table === "data_issues" ? "23503" : "42501");
         }
       }
     });
@@ -83,8 +89,8 @@ test("canonical schema isolation on real PostgreSQL, synthetic rows only", async
     });
     await t.test("raw_rows blocks UPDATE, DELETE and TRUNCATE; cells and physical line retained", async () => {
       await context(a,ua);
-      await fails("UPDATE raw_rows SET cells='{}' WHERE id=$1",[ids[0].raw_rows],"55000");
-      await fails("DELETE FROM raw_rows WHERE id=$1",[ids[0].raw_rows],"55000");
+      await fails("UPDATE raw_rows SET cells='{}' WHERE id=$1",[ids[0].raw_rows],"42501");
+      await fails("DELETE FROM raw_rows WHERE id=$1",[ids[0].raw_rows],"42501");
       await fails("TRUNCATE raw_rows",[],"42501");
       await c.query("RESET ROLE");
       await fails("UPDATE raw_rows SET cells='{}' WHERE id=$1",[ids[0].raw_rows],"55000");

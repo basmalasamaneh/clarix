@@ -403,6 +403,8 @@ export type QualityIssueRowsItem = {
 };
 
 export interface QualityIssue {
+  /** Total related source rows. refs and rows are previews of at most 20; use the paginated Source Drawer for complete rows. */
+  referenceCount?: number;
   id: string;
   importId: string;
   code: string;
@@ -833,6 +835,13 @@ export type ListImportTemplatesParams = {
  */
 page?: number;
 source?: string;
+};
+
+export type GetImportErrorsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
 };
 
 export type ListDataSourcesParams = {

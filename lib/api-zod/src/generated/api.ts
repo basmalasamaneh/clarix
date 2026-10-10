@@ -513,6 +513,7 @@ export const GetQualityQueryParams = zod.object({
 
 export const GetQualityResponse = zod.object({
   "items": zod.array(zod.object({
+  "referenceCount": zod.number().int().optional().describe('Total related source rows. refs and rows are previews of at most 20; use the paginated Source Drawer for complete rows.'),
   "id": zod.string(),
   "importId": zod.string(),
   "code": zod.string(),
@@ -559,6 +560,7 @@ export const GetQualityIssueParams = zod.object({
 })
 
 export const GetQualityIssueResponse = zod.object({
+  "referenceCount": zod.number().int().optional().describe('Total related source rows. refs and rows are previews of at most 20; use the paginated Source Drawer for complete rows.'),
   "id": zod.string(),
   "importId": zod.string(),
   "code": zod.string(),
@@ -1208,6 +1210,13 @@ export const InspectEventCodesResponse = zod.record(zod.string(), zod.unknown())
 
 export const GetImportErrorsParams = zod.object({
   "id": zod.coerce.string()
+})
+
+
+
+
+export const GetImportErrorsQueryParams = zod.object({
+  "page": zod.coerce.number().int().min(1).optional()
 })
 
 export const GetImportErrorsResponse = zod.object({

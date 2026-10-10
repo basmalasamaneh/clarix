@@ -29,11 +29,13 @@ function item(r:any) {
     comparable:run?worstStatus([run.volume.status,run.changeover.status,run.downtime.status])!=="red":null};
 }
 const columns=`d.id,d.import_id AS "importId",d.code,d.severity,d.source_order_id AS "orderId",d."group",
- i.source_name AS "sourceName",i.approved_at AS "approvedAt",
+ i.source_name AS "sourceName",i.approved_at AS "approvedAt",cardinality(d.raw_row_ids) AS "referenceCount",
  coalesce((f.settings->'sourceArchives'->i.source_name->>'archived')::boolean,false) AS archived,
  i.result->'runs'->d.source_order_id AS run,
  CASE WHEN d.source_order_id IS NULL THEN false ELSE NOT EXISTS(SELECT 1 FROM orders o WHERE o.factory_id=d.factory_id AND o.source_name=i.source_name AND o.source_order_id=d.source_order_id AND o.current_import_id=i.id) END AS superseded,
- coalesce((SELECT jsonb_agg(jsonb_build_object('file',r.file,'line',r.line_number) ORDER BY r.file,r.line_number) FROM raw_rows r WHERE r.factory_id=d.factory_id AND r.import_id=d.import_id AND r.id=ANY(d.raw_row_ids)),'[]') AS refs`;
+ coalesce((SELECT jsonb_agg(jsonb_build_object('file',r.file,'line',r.line_number) ORDER BY r.file,r.line_number)
+ FROM (SELECT file,line_number FROM raw_rows WHERE factory_id=d.factory_id AND import_id=d.import_id AND id=ANY(d.raw_row_ids)
+ ORDER BY file,line_number LIMIT 20) r),'[]') AS refs`;
 export async function qualityPage(ctx:Context,filters:QualityFilters) {
   const {values,sql}=selection(ctx,filters);
   const items=(await ctx.db.query(`SELECT ${columns} ${joins} WHERE ${sql}
@@ -58,7 +60,7 @@ export async function qualityDetail(ctx:Context,id:string) {
     WHERE d.factory_id=$1 AND d.id=$2 AND i.status='approved'`,[ctx.factory,id])).rows[0];
   if(!r) throw new ImportError("NOT_FOUND",404);
   const rows=(await ctx.db.query(`SELECT file,line_number AS line,cells FROM raw_rows
-    WHERE factory_id=$1 AND import_id=$2 AND id=ANY($3::uuid[]) ORDER BY file,line_number`,[ctx.factory,r.importId,r.raw_row_ids])).rows;
+    WHERE factory_id=$1 AND import_id=$2 AND id=ANY($3::uuid[]) ORDER BY file,line_number LIMIT 20`,[ctx.factory,r.importId,r.raw_row_ids])).rows;
   return {...item(r),mapping:undefined,rows:rows.map(row=>({...row,
     references:Object.keys(row.cells).map(column=>`${row.file}:${row.line}:${column}`)}))};
 }

@@ -30,3 +30,7 @@ not the full original DOM measurements.
 **How to apply:** Use per-attempt output directories and promote a successful
 manifest atomically. Do not rerun completed journeys to check a small unrelated
 detail, and never silently replace original measurements with a reconstructed summary.
+
+Preflight browser actions against the exact application state, including optional controls.
+**Why:** An approval confirmation was accidentally conditional on an error-only checkbox, and an approved read-only page was checked for an editable approval button; neither failure was an application defect.
+**How to apply:** Confirm required actions independently of optional checkboxes. Use state-specific ready markers. Capture the action's HTTP result and a failure screenshot before stopping, so a locator failure does not erase earlier verification.

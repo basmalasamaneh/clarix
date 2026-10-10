@@ -6,7 +6,7 @@ import {readFileSync,readdirSync,mkdirSync,writeFileSync} from "node:fs";
 import {fileURLToPath} from "node:url";
 import {randomUUID} from "node:crypto";
 import app from "../app";
-import {pool} from "@workspace/db";
+import {pool} from "@workspace/db/admin";
 import {withTenant,closeTenantPools} from "../lib/tenancy";
 import {sessionStore} from "../lib/session";
 import {verifyRunMetrics} from "./verify-run-metrics";

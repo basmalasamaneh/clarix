@@ -24,6 +24,7 @@ import type {
   ApprovalInput,
   Credentials,
   FactorySelection,
+  GetImportErrorsParams,
   GetInvitationDetails200,
   GetInvitationDetailsParams,
   GetInvitations200,
@@ -2299,17 +2300,26 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getInspectEventCodesMutationOptions(options));
     }
 
-export const getGetImportErrorsUrl = (id: string,) => {
+export const getGetImportErrorsUrl = (id: string,
+    params?: GetImportErrorsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/imports/${id}/errors`
+  return stringifiedParams.length > 0 ? `/api/imports/${id}/errors?${stringifiedParams}` : `/api/imports/${id}/errors`
 }
 
-export const getImportErrors = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<IssuePage> => {
+export const getImportErrors = async (id: string,
+    params?: GetImportErrorsParams, options?: Parameters<typeof customFetch>[1]): Promise<IssuePage> => {
 
-  return customFetch<IssuePage>(getGetImportErrorsUrl(id),
+  return customFetch<IssuePage>(getGetImportErrorsUrl(id,params),
   {
     ...options,
     method: 'GET'
@@ -2322,23 +2332,25 @@ export const getImportErrors = async (id: string, options?: Parameters<typeof cu
 
 
 
-export const getGetImportErrorsQueryKey = (id: string,) => {
+export const getGetImportErrorsQueryKey = (id: string,
+    params?: GetImportErrorsParams,) => {
     return [
-    `/api/imports/${id}/errors`
+    `/api/imports/${id}/errors`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetImportErrorsQueryOptions = <TData = Awaited<ReturnType<typeof getImportErrors>>, TError = ErrorType<unknown>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetImportErrorsQueryOptions = <TData = Awaited<ReturnType<typeof getImportErrors>>, TError = ErrorType<unknown>>(id: string,
+    params?: GetImportErrorsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetImportErrorsQueryKey(id);
+  const queryKey =  queryOptions?.queryKey ?? getGetImportErrorsQueryKey(id,params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getImportErrors>>> = ({ signal }) => getImportErrors(id, { signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getImportErrors>>> = ({ signal }) => getImportErrors(id,params, { signal, ...requestOptions });
 
 
 
@@ -2353,11 +2365,12 @@ export type GetImportErrorsQueryError = ErrorType<unknown>
 
 
 export function useGetImportErrors<TData = Awaited<ReturnType<typeof getImportErrors>>, TError = ErrorType<unknown>>(
- id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ id: string,
+    params?: GetImportErrorsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getImportErrors>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetImportErrorsQueryOptions(id,options)
+  const queryOptions = getGetImportErrorsQueryOptions(id,params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

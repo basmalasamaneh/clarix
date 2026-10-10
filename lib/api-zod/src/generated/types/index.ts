@@ -11,6 +11,7 @@ export * from './approvalInput';
 export * from './credentials';
 export * from './factorySelection';
 export * from './fileInput';
+export * from './getImportErrorsParams';
 export * from './getInvitationDetails200';
 export * from './getInvitationDetailsParams';
 export * from './getInvitations200';

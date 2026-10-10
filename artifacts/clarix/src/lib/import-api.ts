@@ -85,11 +85,11 @@ export function useEventCodes(id: string, file: string | undefined, column: stri
 
 export const errorsKey = (id: string) => [`/api/imports/${id}/errors`] as const;
 
-export function useImportErrors(id: string, enabled: boolean) {
+export function useImportErrors(id: string, enabled: boolean, page=1) {
   return useQuery({
-    queryKey: errorsKey(id),
+    queryKey: [...errorsKey(id),page],
     enabled,
-    queryFn: ({ signal }) => apiJson<ErrorPage>(`/api/imports/${encodeURIComponent(id)}/errors`, { signal, credentials: 'include' }),
+    queryFn: ({ signal }) => apiJson<ErrorPage>(`/api/imports/${encodeURIComponent(id)}/errors?page=${page}`, { signal, credentials: 'include' }),
   });
 }
 

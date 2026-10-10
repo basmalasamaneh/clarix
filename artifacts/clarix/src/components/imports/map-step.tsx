@@ -377,6 +377,15 @@ export function MapStep({ detail, readOnly, onChecked, focus, visible }: { detai
       <Section title={t('imp.map.formatTitle')} body={t('imp.map.formatHint')} testId="section-format">
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="min-w-0 space-y-1.5">
+            <Label htmlFor="fmt-delimiter">{t('imp.upload.delimiter')}</Label>
+            <NativeSelect id="fmt-delimiter" value={draft.format.delimiter} disabled={readOnly}
+              onChange={(e)=>update(d=>({...d,format:{...d.format,delimiter:e.target.value}}))}
+              data-testid="select-delimiter">
+              <option value="auto">{t('imp.map.delimiterAuto')}</option>
+              {[',',';','\t','|'].map(value=><option key={value} value={value}>{t(`imp.upload.delims.${value}`)}</option>)}
+            </NativeSelect>
+          </div>
+          <div className="min-w-0 space-y-1.5">
             <Label htmlFor="fmt-decimal">{t('imp.map.decimal')}</Label>
             <NativeSelect
               id="fmt-decimal"
