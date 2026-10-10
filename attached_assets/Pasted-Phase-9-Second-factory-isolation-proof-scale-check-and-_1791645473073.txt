@@ -1,0 +1,38 @@
+Phase 9 — Second factory, isolation proof, scale check and runtime database login. Read docs/CLARIX_SPEC.md (tenancy, data model, test data, performance sections), docs/TENANCY_TESTS.md and replit.md first. Build ONLY this phase.
+
+Goal
+Prove that Clarix really is multi-factory: a second factory (Najm Packaging) with a different CSV format works end to end, factories never see each other's data, the app runs with a least-privilege database login, and the app stays fast with realistic volumes.
+
+1. Najm Packaging end to end (through the real UI/API pipeline, not scripts)
+ - Import test-data/najm-packaging/00_baseline as user najm_manager: semicolon separator, decimal comma, dd/mm/yyyy dates, tonnes. The mapping step must let the user set separator, decimal format, date format and unit; save the mapping for the factory.
+ - Compare its runs and check against expected/expected_results.json (Najm baseline, including its own run named E-01 with 8% scrap and 180 min changeover). Show the Source Drawer values for Najm too.
+ - Ethmar and Najm both have a run named E-01 and the same record ids; both must work with no clash.
+
+2. Isolation proof
+ - Run every test in docs/TENANCY_TESTS.md (T1-T12) that applies today through the real HTTP API with real logins, and report PASS / FAIL / not-applicable-yet for each with the observed status codes and a confirmation that no error body leaks data.
+ - Additionally test: IDs of Najm objects (imports, runs, issues, raw rows, sources, drawers, members, invitations, audit entries) requested by an Ethmar user return 404/403 with identical error shapes to a non-existent id (no existence oracle).
+ - Direct database test as the app role without a tenant context: RLS must return zero rows or error, for EVERY table that has factory_id. Produce an automatic check that lists every table with factory_id and fails if any has RLS not enabled and forced.
+ - Platform Admin: confirm there is no way to see a factory's data without a granted permission (Platform Admin delegation itself is NOT built here; just prove the default is denied).
+
+3. Runtime database login
+ - Replace the "connect as privileged user then SET ROLE" approach: the running app and API must connect directly as the least-privilege runtime role (clarix_runtime) with its own credentials from Replit Secrets (never printed or committed). Privileged credentials are used ONLY by migration/setup/dev scripts.
+ - Prove with a test that the app connection cannot: create/alter/drop tables, bypass RLS, update/delete/truncate raw rows, or read another factory's rows.
+ - Document in docs how to rotate the runtime credentials and what is needed before publishing.
+
+4. Scale check (measure, do not guess)
+ - Generate a synthetic dataset in an isolated test target: 20 factories, ~200,000 production records and ~100,000 events in total, with the largest factory holding about 50,000 records. Keep generated data out of the Ethmar/Najm dev factories and out of test-data/.
+ - Measure and report (p50 / p95): import of a 50,000-row file, Runs list, Comparison, Data quality list, Source Drawer, and login. Report the slowest queries and any missing indexes; add indexes (as migrations) only where measurements show a need.
+ - Targets (report honestly if missed, do not weaken them): Runs list and Comparison under 1 s p95; Data quality list under 1.5 s p95; Source Drawer under 1 s p95; 50,000-row import under 60 s without blocking other users.
+ - Confirm lists are paginated server-side and no endpoint returns unbounded rows.
+
+5. Safety and cleanliness
+ - All tests and the synthetic data run in an isolated target and are removed afterwards. Show before/after counts and fingerprints for Ethmar and Najm dev data (Najm will now contain its baseline import, which is expected; report that as the only intentional change).
+ - Do not change the engine, test-data/, expected/ or tools/.
+
+6. UI/UX
+ - Verify the user menu and every page show only the current factory's name and data; switching accounts never shows stale data from the previous account (clear client caches on sign-out).
+ - Najm Arabic/English, light/dark at 360/1280px screenshots. State clearly you cannot judge visual quality.
+
+Do NOT build: Platform Admin delegation UI, charts, PDF/export, AI, snapshots, reconciliation, resolve workflow.
+
+Final report: built / not built, T1-T12 table, RLS coverage table (every table with factory_id), runtime-login proof, scale measurements table (p50/p95 vs target), before/after counts, and exact manual steps for me.
