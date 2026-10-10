@@ -44,6 +44,9 @@ app.use((_req, res) => { res.status(404).json({ error: "NOT_FOUND" }); });
 app.use((err: unknown, req: express.Request, res: express.Response, _next: express.NextFunction) => {
   // Never serialize thrown DB/request objects: they can include password inputs.
   req.log.error({ errorType: err instanceof Error ? err.name : "Error" }, "Request failed");
+  // Session-store errors may arrive after a response has already been written.
+  // Do not throw another headers-sent error or leak its stack through Express.
+  if(res.headersSent){res.end();return;}
   res.status(500).json({ error: "SERVER_ERROR" });
 });
 

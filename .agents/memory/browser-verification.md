@@ -41,3 +41,12 @@ as background tasks rather than a bounded foreground shell.
 lost geometry/locale assertions and interrupted disposable-resource cleanup.
 **How to apply:** Checkpoint every result, retain successful preference-save
 responses before navigating, and verify namespace/storage cleanup after interruption.
+
+Correlate preference responses with the request body or a request identifier,
+not merely the endpoint. Do not require a new PATCH when replaying an already
+dismissed tour.
+**Why:** Concurrent response waiters matched the same earlier preference response,
+and replay dismissal correctly made no redundant write; both produced false
+failures before the requested language/layout matrix was reached.
+**How to apply:** Check final server and DOM state independently. Checkpoint each
+independent group and continue remaining groups after a driver-only failure.

@@ -284,6 +284,21 @@ Wave 3: AI Analyst panel · remaining charts · audit log view · comments · ad
 
 ## 11. Multi-factory (multi-tenant) and security
 
+### Approved Phase 10: MVP polish and publish readiness
+
+The approved Phase 10 brief replaces the second-factory roadmap entry.
+Scope: reliable persisted language/theme, bilingual copy and missing-key checks,
+non-blocking dismissible onboarding, helpful empty/error states and a short
+bilingual Help page. Add a privileged, explicitly invoked production bootstrap
+command for a factory and its first manager's hashed, expiring invitation.
+Production must reject seeded identities even when test seeding is disabled.
+Verify security headers, sessions/CSRF, rate/upload limits, logging, empty-database
+setup, runtime privileges and RLS; document publishing, backup and rollback.
+Run isolated acceptance tests without modifying development Ethmar/Najm data.
+Report missing browser combinations honestly. No charts, exports, AI, snapshots,
+reconciliation, resolve workflow, calculation changes or fixture changes.
+Publishing itself requires a separate user action.
+
 ### Approved Phase 9: isolation, runtime login and scale proof
 
 The approved Phase 9 brief replaces the charts/explanations/PDF roadmap entry.
@@ -424,7 +439,7 @@ Acceptance (wave 1): E-01 5% / 240 min · E-02 10% / 360 min · +5 pp · +120 mi
 | 7 | Source Drawer (drill-down) | 1 | any number opens its file/line rows, excluded and quarantined rows included |
 | 8 | Accounts, roles and invite-only onboarding | 1 | secure invitation lifecycle, member management and session revocation; isolated tests |
 | 9 | Second factory, isolation proof, runtime database login and scale check | 2 | applicable tenancy tests and forced-RLS coverage pass; direct least-privilege login proven; measured latency reported |
-| 10 | Second factory + isolation test suite | 2 | all tenancy tests pass |
+| 10 | MVP polish and publish readiness | 1 | isolated acceptance, production bootstrap, bilingual reliability and explicit readiness report |
 | 11 | AI assistant (tools, structured output, validator) | 3 | AI test suite passes |
 | 12 | Remaining charts, demo mode, polish, accessibility, deploy | 3 | demo script (below) runs end-to-end |
 

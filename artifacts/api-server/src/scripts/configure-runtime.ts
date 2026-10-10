@@ -1,7 +1,8 @@
 import pg from "pg";
 import {randomBytes,pbkdf2Sync,createHmac,createHash} from "node:crypto";
 import {isProduction} from "../lib/permissions";
-if(isProduction()) throw new Error("Runtime role setup is development-only");
+if(isProduction()&&(process.env.SEED_TEST_USERS!=="false"||!process.argv.includes("--production-setup")))
+  throw new Error("Production runtime setup requires SEED_TEST_USERS=false and --production-setup");
 const password=process.env.CLARIX_RUNTIME_PASSWORD;
 if(!password||password.length<32) throw new Error("A runtime password of at least 32 characters is required");
 const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});

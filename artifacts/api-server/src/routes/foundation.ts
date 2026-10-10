@@ -36,7 +36,7 @@ router.post("/auth/login", loginLimit, async (req, res) => {
     res.status(401).json({ error: "INVALID_CREDENTIALS" }); return;
   }
   const view = await signIn(req,user.id,user.sessionVersion);
-  req.log.info({ userId: user.id }, "User authenticated");
+  req.log.info("User authenticated");
   res.json(view);
 });
 router.post("/auth/logout", async (req, res) => {

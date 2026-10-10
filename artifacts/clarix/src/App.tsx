@@ -3,12 +3,15 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Redirect, Route, Switch, useLocation, useSearch, Router as WouterRouter } from 'wouter';
 import '@/lib/accounts-i18n';
+import '@/lib/phase10-i18n';
+import HelpPage from '@/pages/help';
 import MembersPage from '@/pages/members';
 import AccountPage from '@/pages/account';
 import InvitePage from '@/pages/invite';
 import { Building2, CloudOff, RotateCcw, UserRoundX } from 'lucide-react';
 import type { Session } from '@workspace/api-client-react';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { CrashScreen } from '@/components/crash-screen';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
@@ -103,13 +106,16 @@ function AuthedRoutes({ session }: { session: Session }) {
   if (!user.platformAdmin && session.memberships.length === 0) {
     return (
       <AppShell session={session}>
-        <StateScreen
+        <Switch>
+          <Route path="/help">{() => <HelpPage />}</Route>
+          <Route>{() => <StateScreen
           icon={UserRoundX}
           tone="amber"
           title={t('states.noMembershipTitle')}
           body={t('states.noMembershipBody')}
           testId="state-no-membership"
-        />
+        />}</Route>
+        </Switch>
       </AppShell>
     );
   }
@@ -134,6 +140,7 @@ function AuthedRoutes({ session }: { session: Session }) {
               )
             }
           </Route>
+          <Route path="/help">{() => <HelpPage />}</Route>
           <Route path="/account">{() => <AccountPage session={session} />}</Route>
           <Route path="/compare">{() => <CompareAlias />}</Route>
           <Route path="/platform">
@@ -191,7 +198,7 @@ function Gate() {
 
 function RoutedErrorBoundary({ children }: { children: ReactNode }) {
   const [location] = useLocation();
-  return <ErrorBoundary resetKey={location}>{children}</ErrorBoundary>;
+  return <ErrorBoundary resetKey={location} FallbackComponent={CrashScreen}>{children}</ErrorBoundary>;
 }
 
 function App() {

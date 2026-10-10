@@ -19,6 +19,7 @@ import {
   UserCog,
   Users,
   Sparkles,
+  CircleHelp,
   type LucideIcon,
 } from 'lucide-react';
 import {
@@ -56,6 +57,7 @@ export const PAGE_ICONS: Record<string, LucideIcon> = {
   platform: ShieldHalf,
   members: Users,
   account: UserCog,
+  help: CircleHelp,
 };
 
 function initials(name: string) {
@@ -107,6 +109,12 @@ function NavList({ session, onNavigate }: { session: Session; onNavigate?: () =>
           <ul className="flex flex-col gap-0.5">{tenant.map(item)}{showMembers && item('members')}</ul>
         </div>
       )}
+      <div>
+        <div className="px-3 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          {t('nav.helpSection')}
+        </div>
+        <ul className="flex flex-col gap-0.5">{item('help')}</ul>
+      </div>
       {showPlatform && (
         <div>
           <div className="px-3 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
@@ -237,8 +245,9 @@ export function AppShell({ session, children }: { session: Session; children: Re
   const { language, setTourCompleted } = usePrefs();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [replay, setReplay] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const csrf = session.csrfToken;
-  const tourOpen = replay || session.user?.tourCompleted === false;
+  const tourOpen = replay || (!dismissed && session.user?.tourCompleted === false);
 
   const sidebarBody = (onNavigate?: () => void) => (
     <div className="flex h-full flex-col">
@@ -310,6 +319,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
         open={tourOpen}
         onFinish={() => {
           setReplay(false);
+          setDismissed(true);
           if (session.user?.tourCompleted === false) setTourCompleted(true);
         }}
       />

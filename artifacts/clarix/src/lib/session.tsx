@@ -11,6 +11,7 @@ import {
 } from '@workspace/api-client-react';
 import i18n, { LOCAL_LANG_KEY, LOCAL_THEME_KEY } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
+import {remainingPreferences} from "./preference-ack";
 
 export type Lang = 'en' | 'ar';
 export type ThemePref = 'light' | 'dark' | 'system';
@@ -99,6 +100,11 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const { data: session } = useSession();
   const user = session?.user ?? null;
+  const [pending,setPending]=useState<{userId:string;values:Preferences;revision:number}|null>(null);
+  const pendingRef=useRef(pending);
+  const revisionRef=useRef(0);
+  const mutationVersions=useRef(new WeakMap<object,number>());
+  pendingRef.current=pending;
 
   const [localLang, setLocalLang] = useState<Lang>(() => readLocal<Lang>(LOCAL_LANG_KEY, ['en', 'ar'], (i18n.language as Lang) ?? 'en'));
   const [localTheme, setLocalTheme] = useState<ThemePref>(() =>
@@ -115,8 +121,9 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     return () => mq.removeEventListener('change', fn);
   }, []);
 
-  const language: Lang = user?.language ?? localLang;
-  const theme: ThemePref = user?.theme ?? localTheme;
+  const ownPending=pending?.userId===user?.id?pending?.values:undefined;
+  const language: Lang = ownPending?.language ?? user?.language ?? localLang;
+  const theme: ThemePref = ownPending?.theme ?? user?.theme ?? localTheme;
   const resolvedTheme = theme === 'system' ? (systemDark ? 'dark' : 'light') : theme;
 
   useEffect(() => {
@@ -125,17 +132,38 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
     root.dir = language === 'ar' ? 'rtl' : 'ltr';
     if (i18n.language !== language) void i18n.changeLanguage(language);
     writeLocal(LOCAL_LANG_KEY, language);
+    setLocalLang(language);
   }, [language]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', resolvedTheme === 'dark');
     writeLocal(LOCAL_THEME_KEY, theme);
+    setLocalTheme(theme);
   }, [resolvedTheme, theme]);
 
   const csrf = session?.csrfToken ?? '';
   const update = useUpdatePreferences({
-    request: { credentials: 'include', headers: { 'X-CSRF-Token': csrf } },
-    mutation: { scope: { id: 'user-preferences' } },
+    // Keep small preference writes alive across reload/direct navigation.
+    request: { credentials: 'include', keepalive:true, headers: { 'X-CSRF-Token': csrf } },
+    mutation: { scope: { id: 'user-preferences' },
+      onSuccess:(next,variables)=>{
+        const current=qc.getQueryData<Session>(getGetSessionQueryKey());
+        if(current?.user?.id!==next.user?.id)return;
+        const outstanding=pendingRef.current;
+        let remaining:Preferences={};
+        if(outstanding&&outstanding.userId===next.user?.id){
+          remaining=remainingPreferences(outstanding.values,next.user!,outstanding.revision,mutationVersions.current.get(variables));
+        }
+        const updated=Object.keys(remaining).length?{userId:next.user!.id,values:remaining,revision:outstanding!.revision}:null;
+        pendingRef.current=updated;setPending(updated);
+        qc.setQueryData(getGetSessionQueryKey(),next.user?{...next,user:{...next.user,...remaining}}:next);
+      },
+      onError:()=>{
+        pendingRef.current=null;setPending(null);
+        void qc.invalidateQueries({queryKey:getGetSessionQueryKey()});
+        toastRef.current.toast({variant:"destructive",description:toastRef.current.t("prefs.saveFailed")});
+      },
+    },
   });
   const mutateRef = useRef(update.mutate);
   mutateRef.current = update.mutate;
@@ -147,17 +175,12 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
       const key = getGetSessionQueryKey();
       const prev = qc.getQueryData<Session>(key);
       if (!prev?.user) return false;
+      const updated={userId:prev.user.id,revision:++revisionRef.current,values:{...(pendingRef.current?.userId===prev.user.id?pendingRef.current.values:{}),...prefs}};
+      pendingRef.current=updated;setPending(updated);
       qc.setQueryData<Session>(key, { ...prev, user: { ...prev.user, ...prefs } });
-      mutateRef.current(
-        { data: prefs },
-        {
-          onSuccess: (next) => qc.setQueryData(key, next),
-          onError: () => {
-            void qc.invalidateQueries({ queryKey: key });
-            toastRef.current.toast({ variant: 'destructive', description: toastRef.current.t('prefs.saveFailed') });
-          },
-        },
-      );
+      const variables={data:prefs};
+      mutationVersions.current.set(variables,updated.revision);
+      mutateRef.current(variables);
       return true;
     },
     [qc],

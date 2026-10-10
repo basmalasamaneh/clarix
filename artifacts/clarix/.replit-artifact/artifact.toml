@@ -16,12 +16,9 @@ run = "pnpm --filter @workspace/clarix run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/clarix", "run", "build" ]
-serve = "static"
-publicDir = "artifacts/clarix/dist/public"
+run = ["node", "artifacts/clarix/serve.mjs"]
 
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+
 
 [services.env]
 PORT = "23314"

@@ -2,6 +2,8 @@ import { createRoot } from 'react-dom/client';
 
 import App from './App';
 import { ErrorBoundary } from '@/components/error-boundary';
+import { CrashScreen } from '@/components/crash-screen';
+import './lib/phase10-i18n';
 
 import '@fontsource-variable/inter';
 import '@fontsource/ibm-plex-sans-arabic/400.css';
@@ -17,7 +19,7 @@ createRoot(document.getElementById('root')!, {
     console.error(error, errorInfo.componentStack);
   },
 }).render(
-  <ErrorBoundary>
+  <ErrorBoundary FallbackComponent={CrashScreen}>
     <App />
   </ErrorBoundary>,
 );

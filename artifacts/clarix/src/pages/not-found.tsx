@@ -11,7 +11,7 @@ export default function NotFound({ home = '/' }: { home?: string }) {
       icon={Compass}
       title={t('states.notFoundTitle')}
       body={t('states.notFoundBody')}
-      code="404"
+      code={t('states.notFoundCode')}
       testId="state-not-found"
       actions={
         <Button asChild>

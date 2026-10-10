@@ -35,9 +35,10 @@ export function inspect(bytes:Uint8Array,name:string) {
   const delimiter=detectDelimiter(text);
   try {
     const table=parseCsv(text,delimiter);
+    if(table.rows.length>100_000)throw new ImportError("TOO_MANY_ROWS",413,{file:name,maxRows:100_000});
     if(table.header.length<2 || !table.rows.length) throw new Error("Empty table");
     return {encoding,delimiter,table};
-  } catch {throw new ImportError("INVALID_CSV",400,{file:name});}
+  } catch(e) {if(e instanceof ImportError)throw e;throw new ImportError("INVALID_CSV",400,{file:name});}
 }
 const aliases:Record<string,string[]>={
   order_id:["orderid","orderno","jobno","jobid"],product_code:["productcode","product"],

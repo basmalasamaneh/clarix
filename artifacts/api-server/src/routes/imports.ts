@@ -1,4 +1,5 @@
 import { Router,type Request,type Response,type NextFunction } from "express";
+import {rateLimit} from "express-rate-limit";
 import { z } from "zod";
 import { CreateImportBody,SaveImportMappingBody,ApproveImportBody,CreateImportTemplateBody,GetQualityResponse,GetQualityIssueResponse,ListProductionRunsResponse,GetProductionRunResponse,GetRunComparisonResponse } from "@workspace/api-zod";
 import { CellReadError } from "@workspace/calculation";
@@ -15,6 +16,8 @@ import * as metrics from "../metrics/service";
 import {GetSourceDetailResponse} from "@workspace/api-zod";
 import {sourceDetail} from "../metrics/source-detail";
 const router=Router();
+const uploadLimit=rateLimit({windowMs:15*60*1000,limit:60,standardHeaders:"draft-8",legacyHeaders:false,
+  keyGenerator:req=>req.session.userId!,skip:req=>!req.session.userId,message:{error:"TOO_MANY_ATTEMPTS"}});
 type Action=(ctx:service.Context,req:Request,res:Response)=>Promise<void>;
 function route(action:Action,allowViewer=false) {
   return async(req:Request,res:Response,next:NextFunction)=>{
@@ -95,7 +98,7 @@ router.get("/imports",route(async(ctx,req,res)=>{
   const total=(await ctx.db.query("SELECT count(*)::int AS n FROM imports WHERE factory_id=$1",[ctx.factory])).rows[0].n;
   res.json({items:await Promise.all(result.rows.map(r=>service.view(ctx,r))),page:p,total});
 }));
-router.post("/imports",route(async(ctx,req,res)=>{res.status(201).json(await service.create(ctx,CreateImportBody.parse(req.body)));}));
+router.post("/imports",uploadLimit,route(async(ctx,req,res)=>{res.status(201).json(await service.create(ctx,CreateImportBody.parse(req.body)));}));
 router.get("/imports/:id",route(async(ctx,req,res)=>{res.json(await service.view(ctx,await service.getRow(ctx,id(req)),true));}));
 router.post("/imports/:id/finalize",route(async(ctx,req,res)=>{res.json(await service.finalize(ctx,await service.getRow(ctx,id(req),true)));}));
 router.put("/imports/:id/mapping",route(async(ctx,req,res)=>{res.json(await service.saveMapping(ctx,await service.getRow(ctx,id(req),true),SaveImportMappingBody.parse(req.body).mapping));}));

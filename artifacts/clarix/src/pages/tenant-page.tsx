@@ -18,6 +18,7 @@ export function ForbiddenState({ session }: { session: Session }) {
       tone="amber"
       title={t('states.forbiddenTitle')}
       body={t('states.forbiddenBody')}
+      code={t('states.forbiddenCode')}
       testId="state-forbidden"
       actions={
         <Button asChild variant="outline">
