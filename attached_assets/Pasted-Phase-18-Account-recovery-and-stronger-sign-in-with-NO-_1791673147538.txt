@@ -1,0 +1,43 @@
+Phase 18 — Account recovery and stronger sign-in, with NO external email service. Read docs/CLARIX_SPEC.md (auth, roles, tenancy, audit), docs/ACCOUNTS.md, docs/PHASE13_FACTORY_MANAGEMENT.md and replit.md first. Build ONLY this phase. The product stays invite-only; do not add public sign-up.
+
+Goal
+Real people can recover access and sign in more safely, without anyone gaining silent access to a factory's data.
+
+1. Manager-issued password reset
+ - A Factory manager can issue a one-time "reset password" link for an active member of THEIR factory (Members page). Hashed token, single use, expires in 24 hours, shown once in a copy box, never logged, previous link invalidated when a new one is issued, can be revoked. The member opens it, chooses a new password (same strength rules, Argon2id), all their other sessions end, and they are signed out everywhere.
+ - A manager cannot reset their own password this way (they use the Account page) and cannot reset another manager's password if that would bypass two-factor (see 3): resetting a member who has two-factor enabled keeps two-factor in place.
+ - Audit (who issued, who completed, no secrets).
+
+2. Recovery when the only manager is locked out
+ - Design and implement the SAFEST recovery path for a factory whose only active manager lost access, WITHOUT letting a Platform Admin gain silent access to that factory's data. Propose the options with trade-offs in plain language first (for example: recovery codes shown once at enrollment, a time-delayed recovery that notifies other members and is visible in the factory's audit log, a second manager recommendation), pick the safest, implement it, and state the residual risks honestly. A Platform Admin must still be unable to read tenant data through any recovery path.
+ - Show a clear, non-blocking recommendation to every factory with a single manager: "Add a second manager."
+
+3. Two-factor authentication (TOTP, authenticator app, no external service)
+ - Optional for Factory managers, Analysts and Viewers; REQUIRED for Platform Admins (enforced at next sign-in with a guided setup). QR code and manual key shown once at enrollment; confirm with a valid code; 10 single-use recovery codes shown once (stored hashed). Secrets stored encrypted at rest with a key from a deployment secret (name the secret; never log it; document rotation).
+ - Sign-in with two-factor: password, then code (or a recovery code). Rate limit and lock out repeated wrong codes safely; generic errors; no user enumeration; remember-this-device is NOT built.
+ - Disable or re-enrol two-factor requires the current password and a valid code; a manager can require two-factor for all members of their factory (a factory setting, audited) with a grace period message.
+ - Seeded dev accounts keep working in development exactly as before (SEED_TEST_USERS guard unchanged); two-factor must be testable without weakening production rules.
+
+4. Sessions and sign-in safety
+ - Account page: list active sessions (device/browser summary, approximate last-active time, current marked), revoke one or all others. Show "last sign-in" info. Password strength guidance in plain words (AR + EN) while typing, with the existing minimum length; reject passwords that appear in a small built-in common-password list.
+ - Login rate limiting and generic error messages stay; add per-account and per-IP limits with a friendly "try again later" message that does not reveal whether the account exists.
+ - Session cookies stay Secure/HttpOnly/SameSite; absolute and idle timeouts configurable per environment; sensitive actions (changing password, disabling two-factor, issuing resets) require a recent sign-in confirmation.
+
+5. Email-ready, not email-enabled
+ - Add a small NotificationProvider interface (no provider implemented, a "no-op" default that records nothing sensitive) so a mail provider can be added later without touching the flows. Do NOT build sending, verification emails or magic links. Document in docs/ACCOUNTS.md what is needed to add email later.
+
+6. UI/UX
+ - Plain wording for non-technical users (AR RTL + EN LTR), light + dark, tokens only, 360/768/1280px, loading/empty/error/success states, confirmations for destructive actions, not colour alone, keyboard accessible, visible focus. Update the Help page with short guides: forgot password, set up two-factor, lost phone.
+
+7. Tests (isolated target; never write to Ethmar/Najm dev data; show before/after counts and fingerprints)
+ - Reset: lifecycle (issue/complete/expire/revoke/reuse fails), tokens hashed, sessions ended, only the member's own factory, manager cannot reset self or bypass two-factor, Analyst/Viewer 403, Platform Admin 403 on factory members, cross-factory 404 with identical error shape, audit without secrets.
+ - Recovery path: the chosen design works as specified, a Platform Admin cannot read tenant data through it (T10 style), residual risks documented.
+ - Two-factor: enrollment, correct and wrong codes, recovery code single use, rate limit/lockout, disable and re-enrol require password+code, required for Platform Admin at next sign-in, secrets encrypted at rest and never in logs/responses, factory-wide requirement with grace.
+ - Sessions list/revoke; password strength and common-password rejection; per-account/per-IP limits with no enumeration; recent-sign-in requirement for sensitive actions.
+ - Seeded dev sign-in unchanged in development; production still rejects seeded identities (401); production bootstrap flows still work.
+ - Full existing suite still passes in ONE green run (fixtures vs expected_results.json, 52 verifier checks, tenancy T1-T12, accounts, platform, snapshots, reports, AI, formatting, translation parity, TypeScript).
+ - Browser journeys (best effort; list exactly what is missing; do not report a partial set as complete): reset flow, two-factor enrollment and sign-in, sessions page at 360/1280px, Arabic/English, light/dark. State clearly that you cannot judge visual quality.
+
+Do NOT build: email sending, magic links, Google/social sign-in, public sign-up, passkeys, remember-this-device, SMS. Do not change the engine, calculation rules, test-data/, expected/ or tools/.
+
+Final report: options considered for recovery and why chosen (with residual risks), built / not built, test table, before/after counts and fingerprints, new secret names (names only), updated publish checklist if anything changed, and exact manual steps for me.
