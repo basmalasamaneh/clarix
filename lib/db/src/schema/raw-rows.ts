@@ -16,7 +16,8 @@ export const rawRows = pgTable("raw_rows", {
   cells: jsonb("cells").notNull(),
 }, (t) => [
   unique().on(t.factoryId, t.id),
-  unique().on(t.factoryId,t.importId,t.id),
+  // Publish must discover a constraint, not only the historical standalone index.
+  unique("raw_rows_factory_import_id_unique").on(t.factoryId,t.importId,t.id),
   unique().on(t.factoryId, t.sourceName, t.id),
   unique().on(t.factoryId, t.importId, t.file, t.lineNumber),
   foreignKey({ columns: [t.factoryId, t.sourceName, t.importId], foreignColumns: [imports.factoryId, imports.sourceName, imports.id] }),

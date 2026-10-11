@@ -13,6 +13,7 @@ try {
   const sql = await readFile(new URL("../../../../lib/db/foundation-rls.sql", import.meta.url), "utf8");
   await pool.query(sql);
   await pool.query(await readFile(new URL("../../../../lib/db/import-migration.sql",import.meta.url),"utf8"));
+  await pool.query(await readFile(new URL("../../../../lib/db/publish-constraints-migration.sql",import.meta.url),"utf8"));
   const canonical = await readFile(new URL("../../../../lib/db/canonical-rls.sql", import.meta.url), "utf8");
   await pool.query(canonical);
   await pool.query(await readFile(new URL("../../../../lib/db/history-rls.sql",import.meta.url),"utf8"));

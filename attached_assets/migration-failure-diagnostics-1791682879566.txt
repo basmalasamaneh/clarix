@@ -1,0 +1,807 @@
+<migration_failure>
+   Failed to run database migration statement
+ALTER TABLE "source_row_links" ADD CONSTRAINT "source_row_links_factory_id_import_id_raw_row_id_fkey" FOREIGN KEY ("factory_id","import_id","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","import_id","id") ON DELETE no action ON UPDATE no action;
+there is no unique constraint matching given keys for referenced table "raw_rows"
+   </migration_failure>
+
+   <generated_migration_diff>
+   CREATE TABLE "snapshot_audit" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"snapshot_id" uuid NOT NULL,
+"actor_id" text NOT NULL,
+"action" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE "snapshot_audit" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "ai_state" (
+"factory_id" text PRIMARY KEY NOT NULL,
+"state" jsonb DEFAULT '{}'::jsonb NOT NULL
+);
+
+
+ALTER TABLE "ai_state" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "events" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"event_id" text NOT NULL,
+"order_id" uuid NOT NULL,
+"event_code" text,
+"type" text,
+"start" timestamp,
+"end" timestamp,
+"duration_min" numeric,
+"reason" text,
+"raw_row_id" uuid NOT NULL,
+CONSTRAINT "events_factory_id_source_name_event_id_unique" UNIQUE("factory_id","source_name","event_id")
+);
+
+
+ALTER TABLE "events" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "sessions" (
+"sid" varchar PRIMARY KEY NOT NULL,
+"sess" json NOT NULL,
+"expire" timestamp(6) NOT NULL
+);
+
+
+CREATE TABLE "ai_usage" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"actor_id" text NOT NULL,
+"task" text NOT NULL,
+"status" text NOT NULL,
+"model" text NOT NULL,
+"latency" integer NOT NULL,
+"tokens" integer,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE "ai_usage" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "column_mappings" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"version" integer NOT NULL,
+"mapping" jsonb NOT NULL,
+"name" text DEFAULT 'Default' NOT NULL,
+CONSTRAINT "column_mappings_factory_id_source_name_id_unique" UNIQUE("factory_id","source_name","id"),
+CONSTRAINT "column_mappings_factory_id_source_name_version_unique" UNIQUE("factory_id","source_name","version"),
+CONSTRAINT "mapping_version_positive" CHECK (version > 0)
+);
+
+
+ALTER TABLE "column_mappings" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "reconciliations" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"snapshot_id" uuid NOT NULL,
+"created_by" text NOT NULL,
+"author" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+"payload" jsonb NOT NULL
+);
+
+
+ALTER TABLE "reconciliations" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "source_row_links" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"snapshot_id" uuid NOT NULL,
+"import_id" uuid NOT NULL,
+"raw_row_id" uuid NOT NULL,
+"refs" jsonb NOT NULL
+);
+
+
+ALTER TABLE "source_row_links" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "account_audit" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"actor_id" text,
+"subject_id" text,
+"action" text NOT NULL,
+"role" text,
+"event_count" integer DEFAULT 1 NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+CONSTRAINT "account_audit_role_check" CHECK (role = ANY (ARRAY['factory_manager'::text, 'analyst'::text, 'viewer'::text]))
+);
+
+
+ALTER TABLE "account_audit" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "raw_rows" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"import_id" uuid NOT NULL,
+"file" text NOT NULL,
+"line_number" integer NOT NULL,
+"cells" jsonb NOT NULL,
+"record_end_line" integer,
+"start_line" integer GENERATED ALWAYS AS (line_number) STORED,
+"end_line" integer GENERATED ALWAYS AS (COALESCE(record_end_line, line_number)) STORED,
+CONSTRAINT "raw_rows_factory_id_id_unique" UNIQUE("factory_id","id"),
+CONSTRAINT "raw_rows_factory_id_import_id_file_line_number_unique" UNIQUE("factory_id","import_id","file","line_number"),
+CONSTRAINT "raw_rows_factory_id_source_name_id_unique" UNIQUE("factory_id","source_name","id"),
+CONSTRAINT "raw_line_positive" CHECK (line_number > 0)
+);
+
+
+ALTER TABLE "raw_rows" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "factories" (
+"id" text PRIMARY KEY NOT NULL,
+"name" text NOT NULL,
+"default_language" text DEFAULT 'ar' NOT NULL,
+"settings" jsonb DEFAULT '{"timeZone":"Asia/Hebron"}'::jsonb NOT NULL,
+"status" text DEFAULT 'active' NOT NULL,
+"created_at" timestamp with time zone,
+"last_approved_at" timestamp with time zone
+);
+
+
+ALTER TABLE "factories" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "orders" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"source_order_id" text NOT NULL,
+"product" text,
+"line" text,
+"machine" text,
+"mold" text,
+"current_import_id" uuid,
+"metrics" jsonb,
+CONSTRAINT "orders_factory_id_id_unique" UNIQUE("factory_id","id"),
+CONSTRAINT "orders_factory_id_source_name_id_unique" UNIQUE("factory_id","source_name","id"),
+CONSTRAINT "orders_factory_id_source_name_source_order_id_unique" UNIQUE("factory_id","source_name","source_order_id")
+);
+
+
+ALTER TABLE "orders" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "imports" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"file_names" jsonb NOT NULL,
+"content_hash" text NOT NULL,
+"status" text DEFAULT 'draft' NOT NULL,
+"uploaded_by" text NOT NULL,
+"mapping_id" uuid,
+"created_at" timestamp DEFAULT now() NOT NULL,
+"files" jsonb DEFAULT '[]'::jsonb NOT NULL,
+"mapping" jsonb,
+"result" jsonb,
+"counts" jsonb,
+"progress" integer DEFAULT 0 NOT NULL,
+"finalized" boolean DEFAULT false NOT NULL,
+"approved_at" timestamp,
+"decision_audit" jsonb DEFAULT '[]'::jsonb NOT NULL,
+"replaced_orders" jsonb DEFAULT '[]'::jsonb NOT NULL,
+CONSTRAINT "imports_factory_id_id_unique" UNIQUE("factory_id","id"),
+CONSTRAINT "imports_factory_id_source_name_id_unique" UNIQUE("factory_id","source_name","id")
+);
+
+
+ALTER TABLE "imports" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "events_history" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"source_id" text NOT NULL,
+"order_id" uuid NOT NULL,
+"original_import_id" uuid NOT NULL,
+"raw_row_id" uuid,
+"superseded_by_import_id" uuid NOT NULL,
+"superseded_at" timestamp DEFAULT now() NOT NULL,
+"status" text DEFAULT 'superseded' NOT NULL,
+"payload" jsonb NOT NULL,
+CONSTRAINT "events_history_superseded" CHECK (status = 'superseded'::text)
+);
+
+
+ALTER TABLE "events_history" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "data_issues" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"import_id" uuid NOT NULL,
+"code" text NOT NULL,
+"severity" text NOT NULL,
+"order_id" uuid,
+"group" text NOT NULL,
+"raw_row_ids" uuid[] DEFAULT '{}' NOT NULL,
+"status" text DEFAULT 'new' NOT NULL,
+"note" text,
+"source_order_id" text,
+CONSTRAINT "issue_severity_valid" CHECK (severity = ANY (ARRAY['info'::text, 'warning'::text, 'error'::text])),
+CONSTRAINT "issue_status_valid" CHECK (status = ANY (ARRAY['new'::text, 'reviewed'::text, 'accepted-with-note'::text]))
+);
+
+
+ALTER TABLE "data_issues" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "orders_history" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"source_id" text NOT NULL,
+"order_id" uuid NOT NULL,
+"original_import_id" uuid NOT NULL,
+"raw_row_id" uuid,
+"superseded_by_import_id" uuid NOT NULL,
+"superseded_at" timestamp DEFAULT now() NOT NULL,
+"status" text DEFAULT 'superseded' NOT NULL,
+"payload" jsonb NOT NULL,
+CONSTRAINT "orders_history_superseded" CHECK (status = 'superseded'::text)
+);
+
+
+ALTER TABLE "orders_history" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "platform_invitations" (
+"id" uuid PRIMARY KEY NOT NULL,
+"email" text NOT NULL,
+"token_hash" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+"expires_at" timestamp with time zone NOT NULL,
+"accepted_at" timestamp with time zone,
+CONSTRAINT "platform_invitations_token_hash_key" UNIQUE("token_hash")
+);
+
+
+ALTER TABLE "platform_invitations" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "production_records_history" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"source_id" text NOT NULL,
+"order_id" uuid NOT NULL,
+"original_import_id" uuid NOT NULL,
+"raw_row_id" uuid,
+"superseded_by_import_id" uuid NOT NULL,
+"superseded_at" timestamp DEFAULT now() NOT NULL,
+"status" text DEFAULT 'superseded' NOT NULL,
+"payload" jsonb NOT NULL,
+CONSTRAINT "production_records_history_superseded" CHECK (status = 'superseded'::text)
+);
+
+
+ALTER TABLE "production_records_history" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "analysis_snapshots" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"created_by" text NOT NULL,
+"author" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+"title" text NOT NULL,
+"note" text NOT NULL,
+"order_search" text NOT NULL,
+"payload" jsonb NOT NULL,
+"provenance" jsonb NOT NULL,
+"definitions_version" text NOT NULL,
+CONSTRAINT "analysis_snapshots_factory_id_id_key" UNIQUE("factory_id","id")
+);
+
+
+ALTER TABLE "analysis_snapshots" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "platform_audit" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text,
+"actor_id" text,
+"action" text NOT NULL,
+"old_value" jsonb,
+"new_value" jsonb,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE "platform_audit" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "account_security" (
+"user_id" text PRIMARY KEY NOT NULL,
+"secret" text,
+"pending_secret" text,
+"pending_until" timestamp with time zone,
+"pending_confirmed" boolean DEFAULT false NOT NULL,
+"enabled" boolean DEFAULT false NOT NULL,
+"recovery_hashes" jsonb DEFAULT '[]'::jsonb NOT NULL,
+"pending_hashes" jsonb DEFAULT '[]'::jsonb NOT NULL,
+"recovery_key_hash" text,
+"last_step" bigint DEFAULT '-1' NOT NULL,
+"last_sign_in" timestamp with time zone,
+"pending_step" bigint,
+CONSTRAINT "account_security_recovery_key_hash_key" UNIQUE("recovery_key_hash")
+);
+
+
+ALTER TABLE "account_security" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "security_limits" (
+"key" text PRIMARY KEY NOT NULL,
+"hits" integer NOT NULL,
+"expires_at" timestamp with time zone NOT NULL
+);
+
+
+ALTER TABLE "security_limits" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "users" (
+"id" text PRIMARY KEY NOT NULL,
+"email" text NOT NULL,
+"name" text NOT NULL,
+"password_hash" text NOT NULL,
+"platform_admin" boolean DEFAULT false NOT NULL,
+"language" text DEFAULT 'en' NOT NULL,
+"theme" text DEFAULT 'system' NOT NULL,
+"tour_completed" boolean DEFAULT false NOT NULL,
+"test_account" boolean DEFAULT false NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+"session_version" integer DEFAULT 0 NOT NULL,
+CONSTRAINT "users_email_unique" UNIQUE("email")
+);
+
+
+CREATE TABLE "revoked_sessions" (
+"id" text PRIMARY KEY NOT NULL,
+"user_id" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE "revoked_sessions" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "password_resets" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"user_id" text NOT NULL,
+"issued_by" text NOT NULL,
+"token_hash" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+"expires_at" timestamp with time zone NOT NULL,
+"revoked_at" timestamp with time zone,
+"completed_at" timestamp with time zone,
+CONSTRAINT "password_resets_token_hash_key" UNIQUE("token_hash")
+);
+
+
+ALTER TABLE "password_resets" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "invitations" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"email" text NOT NULL,
+"role" text NOT NULL,
+"token_hash" text NOT NULL,
+"created_by" text,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+"expires_at" timestamp with time zone NOT NULL,
+"revoked_at" timestamp with time zone,
+"accepted_at" timestamp with time zone,
+CONSTRAINT "invitations_token_hash_key" UNIQUE("token_hash"),
+CONSTRAINT "invitations_role_check" CHECK (role = ANY (ARRAY['factory_manager'::text, 'analyst'::text, 'viewer'::text])),
+CONSTRAINT "invitations_token_hash_check" CHECK (length(token_hash) = 64)
+);
+
+
+ALTER TABLE "invitations" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "factory_settings_audit" (
+"id" uuid PRIMARY KEY NOT NULL,
+"factory_id" text NOT NULL,
+"actor_id" text NOT NULL,
+"action" text NOT NULL,
+"old_value" jsonb,
+"new_value" jsonb,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE "factory_settings_audit" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "production_records" (
+"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+"factory_id" text NOT NULL,
+"source_name" text NOT NULL,
+"record_id" text NOT NULL,
+"order_id" uuid NOT NULL,
+"shift" text,
+"date" date,
+"input" numeric,
+"good" numeric,
+"scrap" numeric,
+"unit" text,
+"raw_row_id" uuid NOT NULL,
+CONSTRAINT "production_records_factory_id_source_name_record_id_unique" UNIQUE("factory_id","source_name","record_id")
+);
+
+
+ALTER TABLE "production_records" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "security_audit" (
+"id" uuid PRIMARY KEY NOT NULL,
+"user_id" text NOT NULL,
+"action" text NOT NULL,
+"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE "security_audit" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE "memberships" (
+"user_id" text NOT NULL,
+"factory_id" text NOT NULL,
+"role" text NOT NULL,
+"active" boolean DEFAULT true NOT NULL,
+"recovery_required" boolean DEFAULT false NOT NULL,
+"last_login" timestamp with time zone,
+"login_success_count" integer DEFAULT 0 NOT NULL,
+"login_failure_count" integer DEFAULT 0 NOT NULL,
+CONSTRAINT "memberships_user_id_factory_id_pk" PRIMARY KEY("user_id","factory_id")
+);
+
+
+ALTER TABLE "memberships" ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE "snapshot_audit" ADD CONSTRAINT "snapshot_audit_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "snapshot_audit" ADD CONSTRAINT "snapshot_audit_factory_id_snapshot_id_fkey" FOREIGN KEY ("factory_id","snapshot_id") REFERENCES "public"."analysis_snapshots"("factory_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "ai_state" ADD CONSTRAINT "ai_state_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "events" ADD CONSTRAINT "events_factory_id_source_name_order_id_orders_factory_id_source" FOREIGN KEY ("factory_id","source_name","order_id") REFERENCES "public"."orders"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "events" ADD CONSTRAINT "events_factory_id_source_name_raw_row_id_raw_rows_factory_id_so" FOREIGN KEY ("factory_id","source_name","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "ai_usage" ADD CONSTRAINT "ai_usage_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "column_mappings" ADD CONSTRAINT "column_mappings_factory_id_factories_id_fk" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "reconciliations" ADD CONSTRAINT "reconciliations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "reconciliations" ADD CONSTRAINT "reconciliations_factory_id_snapshot_id_fkey" FOREIGN KEY ("factory_id","snapshot_id") REFERENCES "public"."analysis_snapshots"("factory_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "source_row_links" ADD CONSTRAINT "source_row_links_factory_id_import_id_raw_row_id_fkey" FOREIGN KEY ("factory_id","import_id","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","import_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "source_row_links" ADD CONSTRAINT "source_row_links_factory_id_snapshot_id_fkey" FOREIGN KEY ("factory_id","snapshot_id") REFERENCES "public"."analysis_snapshots"("factory_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "account_audit" ADD CONSTRAINT "account_audit_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "account_audit" ADD CONSTRAINT "account_audit_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "account_audit" ADD CONSTRAINT "account_audit_subject_id_fkey" FOREIGN KEY ("subject_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "raw_rows" ADD CONSTRAINT "raw_rows_factory_id_source_name_import_id_imports_factory_id_so" FOREIGN KEY ("factory_id","source_name","import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "orders" ADD CONSTRAINT "orders_current_import_fk" FOREIGN KEY ("factory_id","source_name","current_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "orders" ADD CONSTRAINT "orders_factory_id_factories_id_fk" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "imports" ADD CONSTRAINT "imports_factory_id_factories_id_fk" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "imports" ADD CONSTRAINT "imports_factory_id_source_name_mapping_id_column_mappings_facto" FOREIGN KEY ("factory_id","source_name","mapping_id") REFERENCES "public"."column_mappings"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "imports" ADD CONSTRAINT "imports_uploaded_by_users_id_fk" FOREIGN KEY ("uploaded_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "events_history" ADD CONSTRAINT "events_history_order_fk" FOREIGN KEY ("factory_id","source_name","order_id") REFERENCES "public"."orders"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "events_history" ADD CONSTRAINT "events_history_original_fk" FOREIGN KEY ("factory_id","source_name","original_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "events_history" ADD CONSTRAINT "events_history_raw_fk" FOREIGN KEY ("factory_id","original_import_id","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","import_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "events_history" ADD CONSTRAINT "events_history_superseding_fk" FOREIGN KEY ("factory_id","source_name","superseded_by_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "data_issues" ADD CONSTRAINT "data_issues_factory_id_import_id_imports_factory_id_id_fk" FOREIGN KEY ("factory_id","import_id") REFERENCES "public"."imports"("factory_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "data_issues" ADD CONSTRAINT "data_issues_factory_id_order_id_orders_factory_id_id_fk" FOREIGN KEY ("factory_id","order_id") REFERENCES "public"."orders"("factory_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "orders_history" ADD CONSTRAINT "orders_history_order_fk" FOREIGN KEY ("factory_id","source_name","order_id") REFERENCES "public"."orders"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "orders_history" ADD CONSTRAINT "orders_history_original_fk" FOREIGN KEY ("factory_id","source_name","original_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "orders_history" ADD CONSTRAINT "orders_history_raw_fk" FOREIGN KEY ("factory_id","original_import_id","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","import_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "orders_history" ADD CONSTRAINT "orders_history_superseding_fk" FOREIGN KEY ("factory_id","source_name","superseded_by_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "production_records_history" ADD CONSTRAINT "production_records_history_order_fk" FOREIGN KEY ("factory_id","source_name","order_id") REFERENCES "public"."orders"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "production_records_history" ADD CONSTRAINT "production_records_history_original_fk" FOREIGN KEY ("factory_id","source_name","original_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "production_records_history" ADD CONSTRAINT "production_records_history_raw_fk" FOREIGN KEY ("factory_id","original_import_id","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","import_id","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "production_records_history" ADD CONSTRAINT "production_records_history_superseding_fk" FOREIGN KEY ("factory_id","source_name","superseded_by_import_id") REFERENCES "public"."imports"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "analysis_snapshots" ADD CONSTRAINT "analysis_snapshots_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "analysis_snapshots" ADD CONSTRAINT "analysis_snapshots_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "platform_audit" ADD CONSTRAINT "platform_audit_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "platform_audit" ADD CONSTRAINT "platform_audit_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "account_security" ADD CONSTRAINT "account_security_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "revoked_sessions" ADD CONSTRAINT "revoked_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_factory_id_user_id_fkey" FOREIGN KEY ("factory_id","user_id") REFERENCES "public"."memberships"("factory_id","user_id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_issued_by_fkey" FOREIGN KEY ("issued_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "password_resets" ADD CONSTRAINT "password_resets_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "invitations" ADD CONSTRAINT "invitations_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "invitations" ADD CONSTRAINT "invitations_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "factory_settings_audit" ADD CONSTRAINT "factory_settings_audit_actor_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "factory_settings_audit" ADD CONSTRAINT "factory_settings_audit_factory_id_fkey" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "production_records" ADD CONSTRAINT "production_records_factory_id_source_name_order_id_orders_facto" FOREIGN KEY ("factory_id","source_name","order_id") REFERENCES "public"."orders"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "production_records" ADD CONSTRAINT "production_records_factory_id_source_name_raw_row_id_raw_rows_f" FOREIGN KEY ("factory_id","source_name","raw_row_id") REFERENCES "public"."raw_rows"("factory_id","source_name","id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "security_audit" ADD CONSTRAINT "security_audit_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;
+
+ALTER TABLE "memberships" ADD CONSTRAINT "memberships_factory_id_factories_id_fk" FOREIGN KEY ("factory_id") REFERENCES "public"."factories"("id") ON DELETE cascade ON UPDATE no action;
+
+ALTER TABLE "memberships" ADD CONSTRAINT "memberships_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+
+CREATE INDEX "snapshot_audit_factory_snapshot" ON "snapshot_audit" USING btree ("factory_id","snapshot_id","created_at");
+
+CREATE INDEX "events_factory_id_order_id_start_index" ON "events" USING btree ("factory_id","order_id","start");
+
+CREATE INDEX "events_factory_id_raw_row_id_index" ON "events" USING btree ("factory_id","raw_row_id");
+
+CREATE INDEX "events_factory_id_start_index" ON "events" USING btree ("factory_id","start");
+
+CREATE INDEX "sessions_expire_idx" ON "sessions" USING btree ("expire");
+
+CREATE INDEX "ai_usage_factory_id_actor_id_created_at_index" ON "ai_usage" USING btree ("factory_id","actor_id","created_at");
+
+CREATE INDEX "ai_usage_factory_id_created_at_index" ON "ai_usage" USING btree ("factory_id","created_at");
+
+CREATE INDEX "reconciliations_factory_snapshot" ON "reconciliations" USING btree ("factory_id","snapshot_id","created_at");
+
+CREATE INDEX "snapshot_links_factory_raw" ON "source_row_links" USING btree ("factory_id","import_id","raw_row_id");
+
+CREATE INDEX "snapshot_links_factory_snapshot" ON "source_row_links" USING btree ("factory_id","snapshot_id");
+
+CREATE INDEX "account_audit_factory_date" ON "account_audit" USING btree ("factory_id","created_at" DESC NULLS FIRST);
+
+CREATE INDEX "orders_current_import_idx" ON "orders" USING btree ("factory_id","current_import_id");
+
+CREATE INDEX "orders_factory_id_line_index" ON "orders" USING btree ("factory_id","line");
+
+CREATE INDEX "orders_factory_id_machine_index" ON "orders" USING btree ("factory_id","machine");
+
+CREATE INDEX "orders_factory_id_mold_index" ON "orders" USING btree ("factory_id","mold");
+
+CREATE INDEX "orders_factory_order_idx" ON "orders" USING btree ("factory_id","source_order_id");
+
+CREATE INDEX "orders_factory_quality_idx" ON "orders" USING btree ("factory_id",((metrics ->> 'overall'::text)),"source_order_id");
+
+CREATE INDEX "imports_factory_id_status_created_at_index" ON "imports" USING btree ("factory_id","status","created_at");
+
+CREATE INDEX "imports_hash_lookup_idx" ON "imports" USING btree ("factory_id","content_hash");
+
+CREATE INDEX "events_history_order_idx" ON "events_history" USING btree ("factory_id","order_id","superseded_at");
+
+CREATE INDEX "events_history_original_idx" ON "events_history" USING btree ("factory_id","original_import_id");
+
+CREATE INDEX "events_history_source_idx" ON "events_history" USING btree ("factory_id","source_name","source_id");
+
+CREATE INDEX "events_history_superseding_idx" ON "events_history" USING btree ("factory_id","superseded_by_import_id");
+
+CREATE INDEX "data_issues_factory_id_import_id_index" ON "data_issues" USING btree ("factory_id","import_id");
+
+CREATE INDEX "data_issues_factory_id_order_id_index" ON "data_issues" USING btree ("factory_id","order_id");
+
+CREATE INDEX "data_issues_factory_id_status_severity_index" ON "data_issues" USING btree ("factory_id","status","severity");
+
+CREATE INDEX "orders_history_order_idx" ON "orders_history" USING btree ("factory_id","order_id","superseded_at");
+
+CREATE INDEX "orders_history_original_idx" ON "orders_history" USING btree ("factory_id","original_import_id");
+
+CREATE INDEX "orders_history_source_idx" ON "orders_history" USING btree ("factory_id","source_name","source_id");
+
+CREATE INDEX "orders_history_superseding_idx" ON "orders_history" USING btree ("factory_id","superseded_by_import_id");
+
+CREATE INDEX "production_records_history_order_idx" ON "production_records_history" USING btree ("factory_id","order_id","superseded_at");
+
+CREATE INDEX "production_records_history_original_idx" ON "production_records_history" USING btree ("factory_id","original_import_id");
+
+CREATE INDEX "production_records_history_source_idx" ON "production_records_history" USING btree ("factory_id","source_name","source_id");
+
+CREATE INDEX "production_records_history_superseding_idx" ON "production_records_history" USING btree ("factory_id","superseded_by_import_id");
+
+CREATE INDEX "snapshots_factory_date" ON "analysis_snapshots" USING btree ("factory_id","created_at");
+
+CREATE INDEX "snapshots_factory_orders" ON "analysis_snapshots" USING btree ("factory_id","order_search");
+
+CREATE INDEX "platform_audit_factory_created" ON "platform_audit" USING btree ("factory_id","created_at");
+
+CREATE INDEX "revoked_sessions_user" ON "revoked_sessions" USING btree ("user_id");
+
+CREATE INDEX "reset_factory_user" ON "password_resets" USING btree ("factory_id","user_id","created_at" DESC NULLS FIRST);
+
+CREATE INDEX "invitations_factory_pending" ON "invitations" USING btree ("factory_id","created_at" DESC NULLS FIRST) WHERE ((revoked_at IS NULL) AND (accepted_at IS NULL));
+
+CREATE UNIQUE INDEX "invitations_pending_email" ON "invitations" USING btree ("factory_id","email") WHERE ((revoked_at IS NULL) AND (accepted_at IS NULL));
+
+CREATE INDEX "factory_settings_audit_factory_created" ON "factory_settings_audit" USING btree ("factory_id","created_at");
+
+CREATE INDEX "production_records_factory_id_date_index" ON "production_records" USING btree ("factory_id","date");
+
+CREATE INDEX "production_records_factory_id_order_id_index" ON "production_records" USING btree ("factory_id","order_id");
+
+CREATE INDEX "production_records_factory_id_raw_row_id_index" ON "production_records" USING btree ("factory_id","raw_row_id");
+
+CREATE INDEX "production_records_factory_id_shift_date_index" ON "production_records" USING btree ("factory_id","shift","date");
+
+CREATE INDEX "security_audit_user_date" ON "security_audit" USING btree ("user_id","created_at" DESC NULLS FIRST);
+
+CREATE POLICY "snapshot_export_audit" ON "snapshot_audit" AS PERMISSIVE FOR INSERT TO "clarix_runtime";
+
+CREATE POLICY "snapshot_insert" ON "snapshot_audit" AS PERMISSIVE FOR INSERT TO "clarix_runtime";
+
+CREATE POLICY "snapshot_read" ON "snapshot_audit" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "ai_tenant" ON "ai_state" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "demo_provision" ON "events" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "events" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "events" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "ai_actor" ON "ai_usage" AS RESTRICTIVE FOR INSERT TO "clarix_runtime";
+
+CREATE POLICY "ai_tenant" ON "ai_usage" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "demo_provision" ON "column_mappings" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "column_mappings" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "column_mappings" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "snapshot_insert" ON "reconciliations" AS PERMISSIVE FOR INSERT TO "clarix_runtime";
+
+CREATE POLICY "snapshot_read" ON "reconciliations" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "snapshot_insert" ON "source_row_links" AS PERMISSIVE FOR INSERT TO "clarix_runtime";
+
+CREATE POLICY "snapshot_read" ON "source_row_links" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "accounts_audit" ON "account_audit" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "demo_provision" ON "raw_rows" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "raw_rows" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "raw_rows" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "accounts_factory_lock" ON "factories" AS PERMISSIVE FOR UPDATE TO "clarix_accounts";
+
+CREATE POLICY "accounts_factory_read" ON "factories" AS PERMISSIVE FOR SELECT TO "clarix_accounts";
+
+CREATE POLICY "factory_discovery" ON "factories" AS PERMISSIVE FOR SELECT TO "clarix_identity";
+
+CREATE POLICY "factory_import_metadata" ON "factories" AS PERMISSIVE FOR UPDATE TO "clarix_runtime";
+
+CREATE POLICY "factory_isolation" ON "factories" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "factory_manager_settings" ON "factories" AS PERMISSIVE FOR UPDATE TO "clarix_runtime";
+
+CREATE POLICY "platform_factories" ON "factories" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "demo_provision" ON "orders" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "orders" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "orders" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "demo_provision" ON "imports" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "imports" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "imports" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "demo_provision" ON "events_history" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "events_history" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "events_history" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "demo_provision" ON "data_issues" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "data_issues" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "data_issues" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "demo_provision" ON "orders_history" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "orders_history" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "orders_history" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "platform_token" ON "platform_invitations" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "demo_provision" ON "production_records_history" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "production_records_history" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "production_records_history" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "snapshot_insert" ON "analysis_snapshots" AS PERMISSIVE FOR INSERT TO "clarix_runtime";
+
+CREATE POLICY "snapshot_read" ON "analysis_snapshots" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "platform_audit_accept" ON "platform_audit" AS PERMISSIVE FOR INSERT TO "clarix_accounts";
+
+CREATE POLICY "platform_audit_admin" ON "platform_audit" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "security_owner" ON "account_security" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "security_limits_key" ON "security_limits" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "revoked_session_owner" ON "revoked_sessions" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "reset_scope" ON "password_resets" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "accounts_invitation_insert" ON "invitations" AS PERMISSIVE FOR INSERT TO "clarix_accounts";
+
+CREATE POLICY "accounts_invitation_read" ON "invitations" AS PERMISSIVE FOR SELECT TO "clarix_accounts";
+
+CREATE POLICY "accounts_invitation_update" ON "invitations" AS PERMISSIVE FOR UPDATE TO "clarix_accounts";
+
+CREATE POLICY "platform_invites" ON "invitations" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "settings_audit_scope" ON "factory_settings_audit" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "demo_provision" ON "production_records" AS PERMISSIVE FOR ALL TO "clarix_platform";
+
+CREATE POLICY "tenant_read" ON "production_records" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "tenant_write" ON "production_records" AS PERMISSIVE FOR ALL TO "clarix_runtime";
+
+CREATE POLICY "security_audit_owner" ON "security_audit" AS PERMISSIVE FOR ALL TO "clarix_accounts";
+
+CREATE POLICY "accounts_member_insert" ON "memberships" AS PERMISSIVE FOR INSERT TO "clarix_accounts";
+
+CREATE POLICY "accounts_member_read" ON "memberships" AS PERMISSIVE FOR SELECT TO "clarix_accounts";
+
+CREATE POLICY "accounts_member_update" ON "memberships" AS PERMISSIVE FOR UPDATE TO "clarix_accounts";
+
+CREATE POLICY "membership_discovery" ON "memberships" AS PERMISSIVE FOR SELECT TO "clarix_identity";
+
+CREATE POLICY "membership_isolation" ON "memberships" AS PERMISSIVE FOR SELECT TO "clarix_runtime";
+
+CREATE POLICY "platform_members" ON "memberships" AS PERMISSIVE FOR SELECT TO "clarix_platform";
+   </generated_migration_diff>
+
+   <migration_warnings>
+   No additional migration warnings were generated.
+   </migration_warnings>

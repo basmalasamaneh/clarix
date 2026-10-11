@@ -34,3 +34,11 @@ whose target role did not exist in production.
 RLS or claim startup provisioning fixes a pre-startup restore. An unchanged
 factory fingerprint does not prove the database has no leftover test schemas;
 inspect namespaces separately and obtain approval before destructive cleanup.
+
+Publish schema introspection can omit a standalone unique index used as a
+composite foreign-key target; use an explicit UNIQUE constraint for such keys.
+**Why:** A real diff included dependent foreign keys but omitted their unique
+index, causing validation to fail despite a valid development database.
+**How to apply:** Inspect both pg_indexes and pg_constraint. Prefer attaching
+the existing index non-destructively, align the schema declaration, and recompute
+the diff. A rolled-back local replay is not production-fork validation.
