@@ -24,7 +24,7 @@ export function ForbiddenState({ session }: { session: Session }) {
       code={t('states.forbiddenCode')}
       testId="state-forbidden"
       actions={
-        <Button asChild variant="outline">
+        <Button asChild className="min-h-11">
           <Link href={firstAllowedPath(session)} data-testid="link-allowed-page">
             {t('states.forbiddenAction')}
           </Link>
@@ -56,7 +56,7 @@ export default function TenantPageView({ page, session }: { page: TenantPage; se
         code={errorCode(q.error) ? t('states.code', { code: errorCode(q.error) }) : undefined}
         testId="state-page-error"
         actions={
-          <Button onClick={() => q.refetch()} className="gap-2" data-testid="button-retry">
+          <Button onClick={() => q.refetch()} disabled={q.isFetching} className="min-h-11 gap-2" data-testid="button-retry">
             <RotateCcw className="size-4" aria-hidden="true" />
             {t('common.retry')}
           </Button>

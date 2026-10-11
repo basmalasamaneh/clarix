@@ -14,7 +14,7 @@ export default function NotFound({ home = '/' }: { home?: string }) {
       code={t('states.notFoundCode')}
       testId="state-not-found"
       actions={
-        <Button asChild>
+        <Button asChild className="min-h-11">
           <Link href={home} data-testid="link-home">
             {t('states.notFoundAction')}
           </Link>

@@ -76,10 +76,13 @@ No publishing was performed. **You** means a Replit-interface action;
     storage; complete outstanding browser checks. The owner must have table
     ownership and role-management permission. These actual platform permissions
     still need verification on the first authorized deployment.
-15. **You:** Enable backups in **Database → production → Settings → Advanced →
+15. **You — post-publish:** Enable backups in **Database → production → Settings → Advanced →
     Scheduled backups → Keep backups for**. Rehearse only on a separate disposable
     project. Restore via **View all backups → Restore → type `restore` → Continue**.
     A database restore does not restore code or establish object-file recovery.
+    The restore rehearsal is a post-publish operational step, not a pre-publish
+    blocker. Keep authenticator encryption keys privately recoverable and check
+    object-file recovery separately. Never rehearse by overwriting live factories.
 
 No Shell commands, manual manager passwords or invitation-link logging are part
 of this procedure. A failed initial setup leaves the API unavailable rather than

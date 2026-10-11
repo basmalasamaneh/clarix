@@ -19,3 +19,8 @@ Keep the first invitation as a durable latch; never extend expiry on restarts.
 Require a production runtime password different from development and removal of
 the bootstrap token after first sign-in. Actual managed-platform privileges still
 need live verification; never represent a disposable test as a successful publish.
+
+Backup/restore rehearsal belongs after publishing, not as a pre-publish blocker.
+**Why:** The user explicitly clarified this readiness boundary.
+**How to apply:** Keep safe disposable-project rehearsal instructions in the
+post-publish checklist; never imply the rehearsal ran without evidence.

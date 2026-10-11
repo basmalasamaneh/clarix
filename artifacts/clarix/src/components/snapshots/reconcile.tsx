@@ -382,7 +382,7 @@ export function AddReconciliationPanel({ snapshotId }: { snapshotId: string }) {
       <p className="mb-3 text-xs text-muted-foreground">{t('snp.fig.lead')}</p>
       <FiguresForm value={figs} onChange={setFigs} disabled={addM.isPending} />
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Button onClick={() => { addM.reset(); setOpen(true); }} disabled={!figures} className="min-h-11 gap-2" data-testid="button-open-add-reconciliation">
+        <Button variant="outline" onClick={() => { addM.reset(); setOpen(true); }} disabled={!figures} className="min-h-11 gap-2" data-testid="button-open-add-reconciliation">
           <History className="size-4" aria-hidden="true" />{t('snp.fig.add')}
         </Button>
         {!figures && invalid.length === 0 && <span className="text-xs text-muted-foreground">{t('snp.fig.nothing')}</span>}

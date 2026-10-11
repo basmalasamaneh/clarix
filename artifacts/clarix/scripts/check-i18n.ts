@@ -2,9 +2,9 @@
  * Build-failing i18n checks (run via `pnpm run check:i18n`, also before `build`).
  * 1. Parity: every key in EN exists in AR and vice versa (plural suffixes normalised).
  * 2. Static keys: every literal t('a.b') / i18nKey="a.b" in src resolves in EN and AR.
- * 3. Hardcoded-string audit (report only): JSX text nodes with Latin letters.
+ * 3. Reviewed hardcoded/mixed-language findings; new unresolved findings fail.
  * Limitations: dynamic keys (template literals, variables) are not verified;
- * the hardcoded audit is a regex heuristic and does not fail the build.
+ * the text audit is a regex heuristic, not a full rendered-screen certification.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -51,6 +51,22 @@ for (const k of en) {
 const keyRe = /\bt\(\s*'([a-zA-Z0-9_.]+)'|i18nKey=["']([a-zA-Z0-9_.]+)["']/g;
 const textRe = />\s*([\p{L}][\p{L}\p{M} ,.'!?؟-]{2,})\s*</gu;
 const hardcoded: string[] = [];
+const intentional: Record<string,string> = {
+  'src/components/accounts/shared.tsx: "v.length"': 'Regex sees TypeScript comparison syntax, not visible JSX text.',
+  'src/components/brand.tsx: "Clarix"': 'Product name must remain Latin in both languages.',
+  'src/lib/report/render.tsx: "Clarix"': 'Printed product name must remain Latin in both languages.',
+  'src/lib/session.tsx: "readLocal"': 'Regex sees a TypeScript generic/function expression, not rendered text.',
+  'mixed:prefs.english': 'Language selector uses the English endonym so English readers can switch languages.',
+  'mixed:help.reportBody': 'Chrome and Edge are official browser product names; PDF and Clarix are intentional.',
+  'mixed:rpt.browserNote': 'Chrome and Edge are official supported-browser product names.',
+  'mixed:sec.strength.common': 'password123 is a literal example of a rejected weak password, not untranslated prose.',
+  'mixed:sec.mfa.leadOff': 'Google Authenticator and Microsoft Authenticator identify the actual apps users must locate.',
+};
+let reviewed=0;
+function finding(id:string){
+  if(intentional[id]){reviewed++;console.log(`[i18n] intentional: ${id} — ${intentional[id]}`);}
+  else errors.push(`unresolved audit finding: ${id}`);
+}
 for (const file of walk(src)) {
   if (file.includes(`${join('src', 'components', 'ui')}`) || /i18n.*\.ts$/.test(file)) continue;
   const text = readFileSync(file, 'utf8');
@@ -65,8 +81,7 @@ for (const file of walk(src)) {
 }
 
 if (hardcoded.length) {
-  console.warn(`[i18n] hardcoded-string audit (report only, ${hardcoded.length}):`);
-  for (const h of hardcoded) console.warn(`  ${h}`);
+  for (const h of hardcoded) finding(h);
 }
 // Heuristic review findings, not a claim of complete rendered-screen coverage.
 function auditMessages(o:unknown,path=""){
@@ -77,9 +92,9 @@ function auditMessages(o:unknown,path=""){
     if(/هالك|الهالك|كلاريكس/.test(value))errors.push(`inconsistent Arabic terminology: ${p}`);
     const latin=value.replace(/{{.*?}}/g,"").match(/[A-Za-z]{3,}/g)??[];
     const allowed=new Set(["Clarix","DEMO","CSV","PDF","ERP","API","Gemini","Google","TOTP","UTC","SHA","UTF","CHG","UDT","MFA","ISBN"]);
-    if(latin.some(w=>!allowed.has(w)))console.warn(`[i18n] review mixed-language AR: ${p}`);
+    if(latin.some(w=>!allowed.has(w)))finding(`mixed:${p}`);
     if(/{{count}}.*(?:ساعات|دقائق|نقاط مئوية)/.test(value)&&!PLURAL.test(key))
-      console.warn(`[i18n] review number agreement: ${p}`);
+      finding(`number-agreement:${p}`);
   }
 }
 auditMessages(i18n.getResourceBundle('ar','translation'));
@@ -89,3 +104,4 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(`[i18n] OK: ${en.size} keys, EN/AR parity and static keys verified.`);
+console.log(`[i18n] audit: 0 unresolved findings; ${reviewed} intentional occurrences with documented reasons.`);

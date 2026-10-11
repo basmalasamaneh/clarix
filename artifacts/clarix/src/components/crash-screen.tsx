@@ -16,7 +16,7 @@ export function CrashScreen({ resetError }: ErrorFallbackProps) {
       code={t('states.crashCode')}
       testId="state-crash"
       actions={
-        <Button onClick={resetError} className="gap-2" data-testid="button-crash-retry">
+        <Button onClick={resetError} className="min-h-11 gap-2" data-testid="button-crash-retry">
           <RotateCcw className="size-4" aria-hidden="true" />
           {t('states.crashAction')}
         </Button>

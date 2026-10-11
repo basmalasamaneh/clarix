@@ -132,7 +132,7 @@ export default function InvitePage({ token }: { token: string }) {
           body={t('acct.invite.unavailableBody')}
           testId="state-invite-unavailable"
           actions={
-            <Button asChild variant="outline" className="min-h-11">
+            <Button asChild className="min-h-11">
               <Link href="/login" data-testid="link-invite-login">{t('acct.invite.toLogin')}</Link>
             </Button>
           }
