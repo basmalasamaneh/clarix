@@ -24,3 +24,13 @@ Backup/restore rehearsal belongs after publishing, not as a pre-publish blocker.
 **Why:** The user explicitly clarified this readiness boundary.
 **How to apply:** Keep safe disposable-project rehearsal instructions in the
 post-publish checklist; never imply the rehearsal ran without evidence.
+
+The first Publish must not copy development data. Custom-role policies in
+development (including retained isolated-test schemas) can make the platform's
+database restore fail before application startup can provision security roles.
+**Why:** A real first-publish attempt failed restoring a test-schema policy
+whose target role did not exist in production.
+**How to apply:** Verify the copy-development-data option is off. Do not weaken
+RLS or claim startup provisioning fixes a pre-startup restore. An unchanged
+factory fingerprint does not prove the database has no leftover test schemas;
+inspect namespaces separately and obtain approval before destructive cleanup.

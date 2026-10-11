@@ -41,3 +41,6 @@ GEMINI_MODEL = "gemini-3.8-flash"
 NODE_ENV = "production"
 SEED_TEST_USERS = "false"
 CLARIX_INITIAL_ADMIN_EMAIL = "basmalasamaneh@gmail.com"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-16757fe1-3288-46d3-9663-2ada45fe2762"
