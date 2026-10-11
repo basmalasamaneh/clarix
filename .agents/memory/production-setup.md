@@ -35,6 +35,15 @@ RLS or claim startup provisioning fixes a pre-startup restore. An unchanged
 factory fingerprint does not prove the database has no leftover test schemas;
 inspect namespaces separately and obtain approval before destructive cleanup.
 
+An unchecked copy-development-data setting did not prevent the observed Publish
+restore from failing on a custom-role policy.
+**Why:** The user confirmed it was unchecked; a newer build still failed during
+pg_restore. Public application policies also reference the missing role, so
+deleting leftover test schemas alone would not resolve the dependency.
+**How to apply:** Do not repeatedly tell the user to toggle the setting. Preserve
+RLS, distinguish schema copying from row copying, and seek supported platform
+role provisioning before policy restore; never bypass Publish with production DDL.
+
 Publish schema introspection can omit a standalone unique index used as a
 composite foreign-key target; use an explicit UNIQUE constraint for such keys.
 **Why:** A real diff included dependent foreign keys but omitted their unique
