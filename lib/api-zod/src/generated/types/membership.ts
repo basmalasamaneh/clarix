@@ -8,6 +8,7 @@
 import type { MembershipRole } from './membershipRole';
 
 export interface Membership {
+  demo?: boolean;
   factoryId: string;
   factoryName: string;
   role: MembershipRole;

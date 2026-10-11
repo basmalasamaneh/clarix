@@ -46,6 +46,8 @@ export * from './chartSpecStatus';
 export * from './chartSpecUnit';
 export * from './chartText';
 export * from './credentials';
+export * from './demoFactoryCreation';
+export * from './demoFactoryCreationDefaultLanguage';
 export * from './factoryAdministration';
 export * from './factoryAdministrationStatus';
 export * from './factoryCreation';

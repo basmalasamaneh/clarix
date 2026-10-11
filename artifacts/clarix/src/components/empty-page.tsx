@@ -1,9 +1,10 @@
 import type { LucideIcon } from 'lucide-react';
 import { CircleDashed, ShieldCheck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import type { ReactNode } from 'react';
 import { Badge } from '@/components/ui/badge';
 
-export function PageHeader({ title, lead, icon: Icon, meta }: { title: string; lead: string; icon: LucideIcon; meta?: string }) {
+export function PageHeader({ title, lead, icon: Icon, meta, help }: { title: string; lead: string; icon: LucideIcon; meta?: string; help?: ReactNode }) {
   return (
     <header className="fade-up flex flex-col gap-4 border-b pb-6 sm:flex-row sm:items-end sm:justify-between">
       <div className="flex items-start gap-4">
@@ -15,6 +16,7 @@ export function PageHeader({ title, lead, icon: Icon, meta }: { title: string; l
             {title}
           </h1>
           <p className="mt-1 text-muted-foreground">{lead}</p>
+          {help}
         </div>
       </div>
       {meta && (

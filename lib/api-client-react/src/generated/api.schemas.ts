@@ -340,6 +340,7 @@ export const AiExplanationStatus = {
 } as const;
 
 export interface AiExplanation {
+  message?: string;
   status: AiExplanationStatus;
   statements: AiStatement[];
   facts: AiFact[];
@@ -829,6 +830,25 @@ export interface FactoryLimits {
   maxRows: number;
 }
 
+export type DemoFactoryCreationDefaultLanguage = typeof DemoFactoryCreationDefaultLanguage[keyof typeof DemoFactoryCreationDefaultLanguage];
+
+
+export const DemoFactoryCreationDefaultLanguage = {
+  ar: 'ar',
+  en: 'en',
+} as const;
+
+export interface DemoFactoryCreation {
+  /**
+     * @minLength 1
+     * @maxLength 140
+     */
+  name: string;
+  defaultLanguage: DemoFactoryCreationDefaultLanguage;
+  /** @maxLength 254 */
+  managerEmail?: string;
+}
+
 export type FactoryCreationDefaultLanguage = typeof FactoryCreationDefaultLanguage[keyof typeof FactoryCreationDefaultLanguage];
 
 
@@ -903,6 +923,7 @@ export const PlatformFactoryInvitationStatus = {
 } as const;
 
 export interface PlatformFactory {
+  demo?: boolean;
   id: string;
   name: string;
   slug: string;
@@ -1577,6 +1598,7 @@ export const MembershipRole = {
 } as const;
 
 export interface Membership {
+  demo?: boolean;
   factoryId: string;
   factoryName: string;
   role: MembershipRole;

@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowLeftRight, ArrowRight, Calendar, CheckCircle2, File
 import { getGetOverviewQueryKey, useGetOverview, type Overview, type ProductionRun, type Session } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/empty-page';
+import { HowToRead } from '@/components/how-to-read';
 import { PAGE_ICONS } from '@/components/app-shell';
 import { StateScreen } from '@/components/state-screen';
 import { Raw, StatusBadge } from '@/components/imports/shared';
@@ -320,7 +321,7 @@ export default function OverviewPage({ session }: { session: Session }) {
 
   return (
     <div data-testid="page-overview">
-      <PageHeader icon={PAGE_ICONS.overview} title={t('ov.title')} lead={t('ov.lead')} meta={factory ? `${factory.factoryName} · ${t('ov.meta')}` : t('ov.meta')} />
+      <PageHeader icon={PAGE_ICONS.overview} title={t('ov.title')} lead={t('ov.lead')} help={<HowToRead page="overview" />} meta={factory ? `${factory.factoryName} · ${t('ov.meta')}` : t('ov.meta')} />
       {body}
     </div>
   );

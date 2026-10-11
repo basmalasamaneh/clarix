@@ -35,8 +35,8 @@ export type AdvancedRequest={data:ReturnType<typeof buildFacts>;task:string;mode
 export async function explain(ctx:Context,input:AiExplanationInput,signal?:AbortSignal,internalQuestion?:string,advanced?:AdvancedRequest){
  const data=advanced?.data??await loadFacts(ctx,input),p=provider(),cfg=config(),started=Date.now();
  const validate=advanced?.validate??((raw:unknown)=>validateAnswer(raw,data.packed));
- const result=(status:AiExplanation["status"],retryAfter=0):AiExplanation=>({
-  status,statements:[],facts:data.facts,fallback:data.fallback,retryAfter,cached:false,
+ const result=(status:AiExplanation["status"],retryAfter=0,message=""):AiExplanation=>({
+  status,statements:[],facts:data.facts,fallback:data.fallback,retryAfter,cached:false,message,
  });
  // The consent writer takes this same lock. Do not lock factories FOR SHARE:
  // PostgreSQL would also apply its manager-only UPDATE policy to readers.
@@ -45,15 +45,18 @@ export async function explain(ctx:Context,input:AiExplanationInput,signal?:Abort
  const f=(await ctx.db.query("SELECT settings FROM factories WHERE id=$1",[ctx.factory])).rows[0];
  if(f?.settings?.aiEnabled!==true)return result("off");
  if(advanced&&f.settings.aiConsentVersion!==2)return result("off");
- if(!p.configured)return result("unavailable");
+ const text=(en:string,ar:string)=>input.language==="ar"?ar:en;
+ if(!p.configured)return result("unavailable",0,text("AI is not configured on this server. Example questions still work.","الذكاء الاصطناعي غير مُعدّ على هذا الخادم. أسئلة الأمثلة ما زالت تعمل."));
  const counts=(await ctx.db.query(`SELECT count(*) FILTER(WHERE created_at>=date_trunc('day',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')::int daily,
  count(*) FILTER(WHERE actor_id=$2 AND created_at>now()-interval '1 minute')::int AS "minute" FROM ai_usage WHERE factory_id=$1 AND created_at>now()-interval '1 day'`,
  [ctx.factory,ctx.user])).rows[0];
- if(counts.daily>=cfg.daily||counts.minute>=cfg.minute)return result("quota",counts.daily>=cfg.daily?86400:60);
+ if(counts.daily>=cfg.daily)return result("quota",Math.ceil((Date.UTC(new Date().getUTCFullYear(),new Date().getUTCMonth(),new Date().getUTCDate()+1)-Date.now())/1000),
+   text("This factory's daily AI limit was reached. It resets at midnight UTC.","وصل المصنع إلى الحد اليومي للذكاء الاصطناعي. يتجدد عند منتصف الليل بتوقيت UTC."));
+ if(counts.minute>=cfg.minute)return result("quota",60,text("Your per-minute AI limit was reached. Try again in 60 seconds.","وصلت إلى حد طلبات الذكاء الاصطناعي في الدقيقة. حاول بعد 60 ثانية."));
  await ctx.db.query("INSERT INTO ai_state(factory_id,state) VALUES($1,'{}') ON CONFLICT DO NOTHING",[ctx.factory]);
  const state=(await ctx.db.query("SELECT state FROM ai_state WHERE factory_id=$1 FOR UPDATE",[ctx.factory])).rows[0].state;
  const now=Date.now();
- if(state.openUntil>now)return result("unavailable",Math.ceil((state.openUntil-now)/1000));
+ if(state.openUntil>now)return result("unavailable",Math.ceil((state.openUntil-now)/1000),text("AI requests are temporarily paused after repeated service failures.","طلبات الذكاء الاصطناعي متوقفة مؤقتًا بعد تعطل الخدمة عدة مرات."));
  const question=(internalQuestion??"").slice(0,1000); // Internal tests only, never selects any record.
  const task=advanced?.task??(input.snapshotId?"snapshot":"comparison");
  const key=createHash("sha256").update(JSON.stringify([ctx.factory,task,p.model,advanced?.payload??data.packed,input.language,question])).digest("hex");
@@ -88,7 +91,10 @@ export async function explain(ctx:Context,input:AiExplanationInput,signal?:Abort
    failures,openUntil:failures>=cfg.failures?Date.now()+cfg.cooldown*1000:0,
   })]);
   await audit(error.kind,tokens);
-  return result(error.kind==="quota"?"quota":error.kind==="unavailable"?"unavailable":"error",error.retryAfter);
+  return result(error.kind==="quota"?"quota":error.kind==="unavailable"?"unavailable":"error",error.retryAfter,
+    error.kind==="quota"?text("The AI provider's request limit was reached. Retry after the wait shown below; its quota reset time is not known.","تم بلوغ حد الطلبات لدى مزوّد الذكاء الاصطناعي. أعد المحاولة بعد المدة أدناه؛ وقت تجدد حصته غير معروف."):
+    error.kind==="unavailable"?text("The AI response could not be verified. Use the example questions instead.","تعذر التحقق من إجابة الذكاء الاصطناعي. استخدم أسئلة الأمثلة بدلًا منها."):
+    text("The AI service did not respond successfully. Your data and comparisons are still available.","لم تستجب خدمة الذكاء الاصطناعي بنجاح. بياناتك ومقارناتك ما زالت متاحة."));
  }finally{clearTimeout(timer);signal?.removeEventListener("abort",abort);}
 }
 export async function abortable(p:AIProvider,input:Parameters<AIProvider["generate"]>[0],signal:AbortSignal){

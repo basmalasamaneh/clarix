@@ -18,6 +18,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PageHeader } from '@/components/empty-page';
+import { HowToRead } from '@/components/how-to-read';
 import { PAGE_ICONS } from '@/components/app-shell';
 import { StateScreen } from '@/components/state-screen';
 import { ErrorNote, NativeSelect, Pager, Raw } from '@/components/imports/shared';
@@ -554,6 +555,7 @@ export default function QualityPageView({ session }: { session: Session }) {
         icon={PAGE_ICONS.quality}
         title={t('q.page.title')}
         lead={t('q.page.lead')}
+        help={<HowToRead page="quality" />}
         meta={factory ? `${factory.factoryName} · ${t('q.page.readOnly')}` : t('q.page.readOnly')}
       />
       {body}

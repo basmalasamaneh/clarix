@@ -220,8 +220,7 @@ export function AssistResultView({ res, prefix, max, onRetry, footer }: { res: A
         </p>
       ) : (
         <div className="rounded-lg border bg-muted/40 p-3" data-testid={`${prefix}-status-${res.status}`}>
-          <p className="whitespace-pre-wrap [overflow-wrap:anywhere] text-xs font-medium text-status-amber" dir="auto">{res.status==='unsupported'&&res.message?res.message:t(`as.status.${res.status}`)}</p>
-          {res.status!=='unsupported'&&res.message && <p className="mt-1 whitespace-pre-wrap [overflow-wrap:anywhere] text-xs text-muted-foreground" dir="auto">{res.message}</p>}
+          <p className="whitespace-pre-wrap [overflow-wrap:anywhere] text-xs font-medium text-status-amber" dir="auto">{res.message||t(`as.status.${res.status}`)}</p>
           {res.retryAfter > 0 && <p className="mt-1 text-xs text-muted-foreground">{t('as.retryAfter', { count: res.retryAfter })}</p>}
           {onRetry && (res.status === 'quota' || res.status === 'unavailable' || res.status === 'error') && (
             <Button variant="outline" onClick={onRetry} className={`${btn44} mt-2`} data-testid={`${prefix}-again`}><RotateCcw className="size-4" aria-hidden="true" />{t('as.retry')}</Button>

@@ -78,10 +78,12 @@ try {
       ["TypeScript libraries",["run","typecheck:libs"]],
       ["TypeScript API",["--filter","@workspace/api-server","run","typecheck"]],
       ["TypeScript frontend",["--filter","@workspace/clarix","exec","tsc","--noEmit"]],
+      ["API production build",["--filter","@workspace/api-server","run","build"]],
+      ["Frontend production build",["--filter","@workspace/clarix","run","build"]],
     ];
     for(const [name,command] of checks){
       console.log(`COMPLETE SUITE: START ${name}`);
-      await run("pnpm",command);
+      await run("pnpm",command,name==="Frontend production build"?{PORT:"5000",BASE_PATH:"/"}:{});
       console.log(`COMPLETE SUITE: PASS ${name}`);
     }
     console.log("COMPLETE SUITE: START Python verifier");

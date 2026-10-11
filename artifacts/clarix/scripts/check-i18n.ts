@@ -49,7 +49,7 @@ for (const k of en) {
   for (let n = 1; n < parts.length; n++) prefixes.add(parts.slice(0, n).join('.'));
 }
 const keyRe = /\bt\(\s*'([a-zA-Z0-9_.]+)'|i18nKey=["']([a-zA-Z0-9_.]+)["']/g;
-const textRe = />\s*([A-Za-z][A-Za-z ,.'!?-]{2,})\s*</g;
+const textRe = />\s*([\p{L}][\p{L}\p{M} ,.'!?؟-]{2,})\s*</gu;
 const hardcoded: string[] = [];
 for (const file of walk(src)) {
   if (file.includes(`${join('src', 'components', 'ui')}`) || /i18n.*\.ts$/.test(file)) continue;
@@ -68,6 +68,21 @@ if (hardcoded.length) {
   console.warn(`[i18n] hardcoded-string audit (report only, ${hardcoded.length}):`);
   for (const h of hardcoded) console.warn(`  ${h}`);
 }
+// Heuristic review findings, not a claim of complete rendered-screen coverage.
+function auditMessages(o:unknown,path=""){
+  if(!o||typeof o!=="object")return;
+  for(const [key,value] of Object.entries(o)){
+    const p=path?`${path}.${key}`:key;
+    if(typeof value!=="string"){auditMessages(value,p);continue;}
+    if(/هالك|الهالك|كلاريكس/.test(value))errors.push(`inconsistent Arabic terminology: ${p}`);
+    const latin=value.replace(/{{.*?}}/g,"").match(/[A-Za-z]{3,}/g)??[];
+    const allowed=new Set(["Clarix","DEMO","CSV","PDF","ERP","API","Gemini","Google","TOTP","UTC","SHA","UTF","CHG","UDT","MFA","ISBN"]);
+    if(latin.some(w=>!allowed.has(w)))console.warn(`[i18n] review mixed-language AR: ${p}`);
+    if(/{{count}}.*(?:ساعات|دقائق|نقاط مئوية)/.test(value)&&!PLURAL.test(key))
+      console.warn(`[i18n] review number agreement: ${p}`);
+  }
+}
+auditMessages(i18n.getResourceBundle('ar','translation'));
 if (errors.length) {
   console.error(`[i18n] ${errors.length} problem(s):`);
   for (const e of errors) console.error(`  ${e}`);

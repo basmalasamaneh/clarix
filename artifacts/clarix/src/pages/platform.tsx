@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Building2, Check, Copy, Gauge, KeyRound, Link2Off, Pause, Play, Plus, RefreshCcw, ShieldCheck, ShieldHalf } from 'lucide-react';
+import { Building2, FlaskConical, Check, Copy, Gauge, KeyRound, Link2Off, Pause, Play, Plus, RefreshCcw, ShieldCheck, ShieldHalf } from 'lucide-react';
 import {
   getGetPlatformAuditQueryKey,
   getGetPlatformFactoriesQueryKey,
@@ -13,6 +13,7 @@ import {
   type PlatformFactory,
 } from '@workspace/api-client-react';
 import { PageHeader } from '@/components/empty-page';
+import { DemoFactoryDialog } from '@/components/platform/demo-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -117,6 +118,7 @@ function FactoryRow({
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="text-base font-semibold" data-testid={`text-factory-name-${f.id}`}>{f.name}</h3>
             <StatusBadge status={f.status} />
+            {f.demo && <span className="rounded border border-dashed px-1.5 py-0.5 text-[11px] font-bold tracking-wider" dir="ltr" data-testid={`badge-demo-${f.id}`}>{t('p19.demo.badge')}</span>}
           </div>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {t('p13.plat.slug')} <span className="font-mono" dir="ltr">{f.slug}</span> · {t(`p13.plat.lang.${f.defaultLanguage}`)}
@@ -466,6 +468,7 @@ export default function PlatformPage() {
   const [page, setPage] = useState(1);
   const [auditPage, setAuditPage] = useState(1);
   const [creating, setCreating] = useState(false);
+  const [creatingDemo, setCreatingDemo] = useState(false);
   const [limitsFor, setLimitsFor] = useState<PlatformFactory | null>(null);
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [link, setLink] = useState<OneShot | null>(null);
@@ -521,10 +524,16 @@ export default function PlatformPage() {
         meta={d ? t('p13.plat.count', { count: d.total }) : undefined}
         testId="panel-factories"
         action={
-          <Button className="min-h-11 gap-2" onClick={() => setCreating(true)} data-testid="button-add-factory">
-            <Plus className="size-4" aria-hidden="true" />
-            {t('p13.plat.add')}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" className="min-h-11 gap-2" onClick={() => setCreatingDemo(true)} data-testid="button-add-demo-factory">
+              <FlaskConical className="size-4" aria-hidden="true" />
+              {t('p19.demo.add')}
+            </Button>
+            <Button className="min-h-11 gap-2" onClick={() => setCreating(true)} data-testid="button-add-factory">
+              <Plus className="size-4" aria-hidden="true" />
+              {t('p13.plat.add')}
+            </Button>
+          </div>
         }
       >
         {list.isLoading ? (
@@ -567,6 +576,7 @@ export default function PlatformPage() {
       />
 
       <CreateDialog open={creating} onClose={() => setCreating(false)} onLink={setLink} />
+      <DemoFactoryDialog open={creatingDemo} onClose={() => setCreatingDemo(false)} onLink={setLink} onCreated={invalidate} />
       <LimitsDialog factory={limitsFor} onClose={() => setLimitsFor(null)} />
       <LinkDialog link={link} onClose={() => setLink(null)} />
 

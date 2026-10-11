@@ -4,6 +4,7 @@ import { Link, useLocation, useSearch } from 'wouter';
 import { ArrowLeft, CloudOff, Copy, FileStack, GitBranch, Plus, RotateCcw } from 'lucide-react';
 import { getGetImportQueryKey, getListImportsQueryKey, useGetImport, useListImports, type ImportDetail, type Session } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
+import '@/lib/phase19-i18n';
 import { PageHeader } from '@/components/empty-page';
 import { PAGE_ICONS } from '@/components/app-shell';
 import { errorStatus } from '@/lib/session';
@@ -199,6 +200,8 @@ export default function ImportsPage({ session }: { session: Session }) {
   const step: StepKey | null = stepParam === 'upload' || stepParam === 'map' || stepParam === 'check' ? stepParam : null;
   const factory = session.memberships.find((m) => m.factoryId === session.activeFactoryId);
   const canEdit = session.user?.platformAdmin || factory?.role === 'analyst' || factory?.role === 'factory_manager';
+  const demo = !!factory?.demo;
+  const canCreate = !!canEdit && !demo;
 
   const go = (nid: string, s?: StepKey, f?: string) =>
     setLocation(`/imports?id=${encodeURIComponent(nid)}${s ? `&step=${s}` : ''}${f ? `&focus=${encodeURIComponent(f)}&n=${Date.now() % 100000}` : ''}`);
@@ -211,6 +214,9 @@ export default function ImportsPage({ session }: { session: Session }) {
         lead={t('imp.lead')}
         meta={factory ? `${factory.factoryName} · ${t('factory.isolated')}` : undefined}
       />
+      {demo && (
+        <p role="note" className="rounded-lg border border-dashed bg-card px-3 py-2.5 text-sm text-muted-foreground [overflow-wrap:anywhere]" data-testid="notice-demo-imports">{t('p19.demo.importsOff')}</p>
+      )}
       {id ? (
         <div className="space-y-6">
           <Link href="/imports" className="inline-flex min-h-11 items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground" data-testid="link-back-history">
@@ -218,14 +224,14 @@ export default function ImportsPage({ session }: { session: Session }) {
             {t('imp.backToHistory')}
           </Link>
           {id === 'new' ? (
-            canEdit ? <NewImport onCreated={(d) => go(d.id, 'upload')} /> : null
+            canCreate ? <NewImport onCreated={(d) => go(d.id, 'upload')} /> : null
           ) : (
-            <Wizard key={id} id={id} step={step} focus={focus} canEdit={!!canEdit} go={go} />
+            <Wizard key={id} id={id} step={step} focus={focus} canEdit={canCreate} go={go} />
           )}
         </div>
       ) : (
         <>
-          {canEdit && (
+          {canCreate && (
             <div className="flex justify-end">
               <Link href="/imports?id=new" className={`${linkBtn} border border-primary-border bg-primary text-primary-foreground`} data-testid="link-new-import">
                 <Plus className="size-4" aria-hidden="true" />

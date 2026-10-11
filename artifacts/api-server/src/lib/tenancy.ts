@@ -48,7 +48,7 @@ export async function getMemberships(userId: string) {
     await client.query("BEGIN");
     await client.query("SELECT set_config('app.user_id',$1,true)", [userId]);
     const result = await client.query<{ factoryId: string; factoryName: string; role: string }>(
-      `SELECT m.factory_id AS "factoryId", f.name AS "factoryName", m.role
+      `SELECT m.factory_id AS "factoryId", f.name AS "factoryName", m.role, coalesce(f.settings->>'demo'='true',false) AS demo
        FROM memberships m JOIN factories f ON f.id=m.factory_id
        WHERE m.user_id=$1 AND m.active AND NOT m.recovery_required AND f.status='active' ORDER BY f.name`, [userId],
     );

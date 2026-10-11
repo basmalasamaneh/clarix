@@ -5,6 +5,7 @@ import {ImportError} from "../imports/model";
 import {managerTransaction} from "../accounts/context";
 import {platformTransaction,factories,createFactory,updateFactory,invitationAction} from "../platform/service";
 import {getPreferences,savePreferences,managementAudit} from "../platform/settings";
+import {createDemo} from "../platform/demo";
 const router=Router();
 const page=(r:Request)=>{const n=Number(r.query.page??1);if(!Number.isSafeInteger(n)||n<1)throw new ImportError("INVALID_INPUT");return n;};
 const wrap=(fn:(req:Request,res:Response)=>Promise<unknown>)=>async(req:Request,res:Response)=>{
@@ -22,6 +23,7 @@ router.use("/platform",async(req,res,next)=>{
   next();
 });
 // Middleware must advance only after the platform identity check.
+router.post("/platform/demo-factories",wrap(async(req,res)=>res.status(201).json(await platformTransaction(res.locals.platformUser,c=>createDemo(c,res.locals.platformUser,s.CreateDemoFactoryBody.strict().parse(req.body))))));
 router.get("/platform/factories",wrap(async(req,res)=>res.json(await platformTransaction(res.locals.platformUser,c=>factories(c,page(req))))));
 router.post("/platform/factories",wrap(async(req,res)=>res.status(201).json(await platformTransaction(res.locals.platformUser,c=>createFactory(c,res.locals.platformUser,s.CreatePlatformFactoryBody.strict().parse(req.body))))));
 router.patch("/platform/factories/:id",wrap(async(req,res)=>res.json(await platformTransaction(res.locals.platformUser,c=>updateFactory(c,String(req.params.id),res.locals.platformUser,s.UpdatePlatformFactoryBody.strict().parse(req.body))))));

@@ -1,4 +1,28 @@
--- No production-table grants: this role is only used by platform management.
+-- Platform management cannot access ordinary factory production data.
+-- Narrow exception: transaction-local provisioning of a NEW synthetic demo.
+-- The server clears demoProvisioning before commit, so this policy never
+-- permits platform reads of existing factory production data.
+DO $$
+DECLARE tbl text;
+BEGIN
+  FOREACH tbl IN ARRAY ARRAY['imports','raw_rows','column_mappings','orders','production_records','events','data_issues','orders_history','production_records_history','events_history']
+  LOOP
+    EXECUTE format('REVOKE UPDATE, DELETE, TRUNCATE ON %I FROM clarix_platform',tbl);
+    EXECUTE format('GRANT SELECT, INSERT ON %I TO clarix_platform',tbl);
+    IF tbl NOT IN ('raw_rows','orders_history','production_records_history','events_history') THEN
+      EXECUTE format('GRANT UPDATE ON %I TO clarix_platform',tbl);
+    END IF;
+    IF tbl='data_issues' THEN EXECUTE 'GRANT DELETE ON data_issues TO clarix_platform'; END IF;
+    EXECUTE format('DROP POLICY IF EXISTS demo_provision ON %I',tbl);
+    EXECUTE format($p$CREATE POLICY demo_provision ON %I TO clarix_platform
+      USING (factory_id=nullif(current_setting('app.factory_id',true),'') AND EXISTS (
+        SELECT 1 FROM factories f JOIN users u ON u.id=nullif(current_setting('app.user_id',true),'')
+        WHERE f.id=factory_id AND u.platform_admin AND f.settings->>'demoProvisioning'=u.id AND f.settings->>'demo'='true'))
+      WITH CHECK (factory_id=nullif(current_setting('app.factory_id',true),'') AND EXISTS (
+        SELECT 1 FROM factories f JOIN users u ON u.id=nullif(current_setting('app.user_id',true),'')
+        WHERE f.id=factory_id AND u.platform_admin AND f.settings->>'demoProvisioning'=u.id AND f.settings->>'demo'='true'))$p$,tbl);
+  END LOOP;
+END $$;
 GRANT SELECT,INSERT,UPDATE ON factories TO clarix_platform;
 GRANT SELECT ON users,memberships TO clarix_platform;
 GRANT UPDATE(session_version) ON users TO clarix_platform;

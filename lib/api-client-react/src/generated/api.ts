@@ -31,6 +31,7 @@ import type {
   AiExplanationInput,
   ApprovalInput,
   Credentials,
+  DemoFactoryCreation,
   FactoryAdministration,
   FactoryCreation,
   FactoryPreferences,
@@ -844,6 +845,88 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getExplainAiMutationOptions(options));
+    }
+
+export const getCreateDemoFactoryUrl = () => {
+
+
+
+
+  return `/api/platform/demo-factories`
+}
+
+export const createDemoFactory = async (demoFactoryCreation: DemoFactoryCreation, options?: Parameters<typeof customFetch>[1]): Promise<PlatformInvitationResult> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<PlatformInvitationResult>(getCreateDemoFactoryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(demoFactoryCreation)
+  }
+);}
+
+
+
+
+
+export const getCreateDemoFactoryMutationKey = () => ['createDemoFactory'] as const;
+
+export const getCreateDemoFactoryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoFactory>>, TError,CreateDemoFactoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDemoFactory>>, TError,CreateDemoFactoryMutationVariables, TContext> => {
+
+const mutationKey = getCreateDemoFactoryMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDemoFactory>>, CreateDemoFactoryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDemoFactory(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDemoFactoryMutationResult = NonNullable<Awaited<ReturnType<typeof createDemoFactory>>>
+    export type CreateDemoFactoryMutationBody = BodyType<DemoFactoryCreation>
+    export type CreateDemoFactoryMutationError = ErrorType<unknown>
+    export type CreateDemoFactoryMutationVariables = {data: BodyType<DemoFactoryCreation>}
+
+    export const useCreateDemoFactory = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDemoFactory>>, TError,CreateDemoFactoryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDemoFactory>>,
+        TError,
+        CreateDemoFactoryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateDemoFactoryMutationOptions(options));
     }
 
 export const getGetPlatformFactoriesUrl = (params?: GetPlatformFactoriesParams,) => {

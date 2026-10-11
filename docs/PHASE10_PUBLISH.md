@@ -5,10 +5,9 @@ No publishing was performed. **You** means a Replit-interface action;
 `PRODUCTION_GATE_REPORT.md` for proof and remaining real-platform checks.
 
 1. **You:** Open Publishing's production configuration. Leave development
-   settings unchanged. Enable production mode using `NODE_ENV` and disable
-   test seeding using `SEED_TEST_USERS`.
+   settings unchanged. Set `NODE_ENV=production` and `SEED_TEST_USERS=false`.
 2. **You:** Review **Publishing → Adjust settings → Production app secrets**.
-   Required secret names: `CLARIX_RUNTIME_PASSWORD`, `SESSION_SECRET`,
+   Required secret names: `CLARIX_RUNTIME_PASSWORD`, `SESSION_SECRET`, `CLARIX_TOTP_ENCRYPTION_KEY`,
    `DEFAULT_OBJECT_STORAGE_BUCKET_ID`, `PRIVATE_OBJECT_DIR`,
    `PUBLIC_OBJECT_SEARCH_PATHS`, `CLARIX_INITIAL_FACTORY_NAME`,
    `CLARIX_INITIAL_FACTORY_SLUG`, `CLARIX_INITIAL_MANAGER_EMAIL`,
@@ -23,6 +22,14 @@ No publishing was performed. **You** means a Replit-interface action;
    Verify storage settings privately. **Do not set `SEED_TEST_PASSWORD` for the
    deployment.** Remove its inherited production entry without deleting the
    development secret. Never copy the development `DATABASE_URL`.
+   Optional AI: configure the deployment secret `GEMINI_API_KEY` and setting
+   `GEMINI_MODEL` only if AI is wanted. Without both, AI is unavailable and
+   core comparisons still work. Factory-manager consent is also required.
+   Optional limit settings: `AI_DAILY_CAP`, `AI_USER_PER_MINUTE`, `AI_TIMEOUT_MS`,
+   `AI_CACHE_SECONDS`, `AI_BREAKER_FAILURES`, `AI_BREAKER_SECONDS`.
+   Optional sign-in settings: `CLARIX_REQUIRE_ADMIN_MFA`,
+   `CLARIX_SESSION_IDLE_SECONDS`, `CLARIX_SESSION_ABSOLUTE_SECONDS`.
+   Keep authenticator encryption keys backed up separately and privately.
    Also set a separate production `CLARIX_TOTP_ENCRYPTION_KEY` (64 random
    hexadecimal characters). Review `CLARIX_REQUIRE_ADMIN_MFA` (defaults on in
    production), `CLARIX_SESSION_IDLE_SECONDS` and

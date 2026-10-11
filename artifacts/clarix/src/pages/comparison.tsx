@@ -17,6 +17,7 @@ import {
 } from '@workspace/api-client-react';
 import { Button } from '@/components/ui/button';
 import { PageHeader } from '@/components/empty-page';
+import { HowToRead } from '@/components/how-to-read';
 import { PAGE_ICONS } from '@/components/app-shell';
 import { StateScreen } from '@/components/state-screen';
 import { Raw } from '@/components/imports/shared';
@@ -363,7 +364,6 @@ export function Result({ data, aiSlot }: { data: RunComparison; aiSlot?: ReactNo
             {data.groups.downtime && <span className="inline-flex items-center"><QualityStatusBadge status={data.groups.downtime} size="sm" /><StatusTip status={data.groups.downtime} testId="button-glossary-status-section-downtime" /></span>}
           </div>
           <p className="mt-1 text-xs text-muted-foreground" data-testid="text-downtime-note">{t('rc.cmp.downtimeNote')}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{t('rc.cmp.separateLine')}</p>
         </header>
         {blocked('downtime') ? <div className="p-3"><BlockedGroup group="downtime" data={data}  /></div> : <MetricRows keys={['downtime_min']} data={data}  />}
       </section>
@@ -472,7 +472,7 @@ export default function ComparisonPage({ session }: { session: Session }) {
 
   return (
     <div data-testid="page-comparison">
-      <PageHeader icon={PAGE_ICONS.comparison} title={t('rc.cmp.title')} lead={t('rc.cmp.lead')} />
+      <PageHeader icon={PAGE_ICONS.comparison} title={t('rc.cmp.title')} lead={t('rc.cmp.lead')} help={<HowToRead page="comparison" />} />
       {valid && !stale && (
         <div className="mb-4">
           <Link href="/runs" className={cn(linkBtn, 'border bg-card px-3')} data-testid="link-back-runs">

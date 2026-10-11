@@ -134,7 +134,12 @@ router.get("/imports",route(async(ctx,req,res)=>{
   const total=(await ctx.db.query("SELECT count(*)::int AS n FROM imports WHERE factory_id=$1",[ctx.factory])).rows[0].n;
   res.json({items:await Promise.all(result.rows.map(r=>service.view(ctx,r))),page:p,total});
 }));
-router.post("/imports",uploadLimit,route(async(ctx,req,res)=>{res.status(201).json(await service.create(ctx,CreateImportBody.parse(req.body)));}));
+router.post("/imports",uploadLimit,route(async(ctx,req,res)=>{
+  // Demo contents must stay synthetic; provisioning invokes the pipeline
+  // internally, never accepts arbitrary uploaded files from a demo member.
+  if(ctx.settings.demo===true)throw new ImportError("FORBIDDEN",403);
+  res.status(201).json(await service.create(ctx,CreateImportBody.parse(req.body)));
+}));
 router.get("/imports/:id",route(async(ctx,req,res)=>{res.json(await service.view(ctx,await service.getRow(ctx,id(req)),true));}));
 router.post("/imports/:id/finalize",route(async(ctx,req,res)=>{res.json(await service.finalize(ctx,await service.getRow(ctx,id(req),true)));}));
 router.put("/imports/:id/mapping",route(async(ctx,req,res)=>{res.json(await service.saveMapping(ctx,await service.getRow(ctx,id(req),true),SaveImportMappingBody.parse(req.body).mapping));}));

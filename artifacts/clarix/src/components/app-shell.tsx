@@ -1,4 +1,5 @@
 import { Archive } from 'lucide-react';
+import { DemoBanner } from '@/components/platform/demo-dialog';
 import { SourceDrawerProvider } from '@/components/source/source-context';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'wouter';
@@ -314,7 +315,7 @@ export function AppShell({ session, children }: { session: Session; children: Re
           </div>
         </header>
         <main id="main" tabIndex={-1} className="flex-1 px-4 py-8 outline-none sm:px-8 lg:px-12 lg:py-10">
-          <div className="mx-auto w-full max-w-6xl"><SourceDrawerProvider session={session}>{children}</SourceDrawerProvider></div>
+          <div className="mx-auto w-full max-w-6xl">{session.memberships.find((m) => m.factoryId === session.activeFactoryId)?.demo && <DemoBanner />}<SourceDrawerProvider session={session}>{children}</SourceDrawerProvider></div>
         </main>
       </div>
 

@@ -118,6 +118,20 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/AiExplanation" }
+  /platform/demo-factories:
+    post:
+      operationId: createDemoFactory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DemoFactoryCreation" }
+      responses:
+        "201":
+          description: Synthetic demo provisioned
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlatformInvitationResult" }
   /platform/factories:
     get:
       operationId: getPlatformFactories
@@ -1081,6 +1095,7 @@ components:
       type: object
       required: [status, statements, facts, fallback, retryAfter, cached]
       properties:
+        message: { type: string }
         status: { type: string, enum: [verified, off, unavailable, quota, error] }
         statements: { type: array, items: { $ref: "#/components/schemas/AiStatement" } }
         facts: { type: array, items: { $ref: "#/components/schemas/AiFact" } }
@@ -1257,6 +1272,13 @@ components:
         maxMembers: { type: integer, minimum: 1, maximum: 10000 }
         maxFileBytes: { type: integer, minimum: 1024, maximum: 20000000 }
         maxRows: { type: integer, minimum: 1, maximum: 100000 }
+    DemoFactoryCreation:
+      type: object
+      required: [name, defaultLanguage]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 140 }
+        defaultLanguage: { type: string, enum: [ar, en] }
+        managerEmail: { type: string, format: email, maxLength: 254 }
     FactoryCreation:
       type: object
       required: [name, slug, defaultLanguage, managerEmail]
@@ -1279,6 +1301,7 @@ components:
       type: object
       required: [id, name, slug, status, defaultLanguage, createdAt, activeMembers, managers, lastApprovedAt, limits, uploadBytesUsage, rowsUsage, invitationStatus]
       properties:
+        demo: { type: boolean }
         id: { type: string }
         name: { type: string }
         slug: { type: string }
@@ -1947,6 +1970,7 @@ components:
       type: object
       required: [factoryId, factoryName, role]
       properties:
+        demo: { type: boolean }
         factoryId: { type: string }
         factoryName: { type: string }
         role: { type: string, enum: [factory_manager, analyst, viewer] }

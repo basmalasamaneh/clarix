@@ -49,7 +49,7 @@ const AR: Record<Exclude<UnitKey, 'pct'>, ArForms> = {
   h: { one: 'ساعة', twoNom: 'ساعتان', twoGen: 'ساعتين', few: 'ساعات', many: 'ساعة', other: 'ساعة' },
   min: { one: 'دقيقة', twoNom: 'دقيقتان', twoGen: 'دقيقتين', few: 'دقائق', many: 'دقيقة', other: 'دقيقة' },
   kg: { one: 'كغ', twoNom: 'كغ', twoGen: 'كغ', few: 'كغ', many: 'كغ', other: 'كغ' },
-  count: { one: 'طلب', twoNom: 'طلبان', twoGen: 'طلبين', few: 'طلبات', many: 'طلبًا', other: 'طلب' },
+  count: { one: 'تشغيلة', twoNom: 'تشغيلتان', twoGen: 'تشغيلتين', few: 'تشغيلات', many: 'تشغيلة', other: 'تشغيلة' },
 };
 const EN_LONG: Record<Exclude<UnitKey, 'pct'>, [string, string]> = {
   pp: ['percentage point', 'percentage points'],

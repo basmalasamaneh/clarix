@@ -23,7 +23,7 @@ export async function factoryView(c:PoolClient,id:string){
   if(!f)throw new ImportError("NOT_FOUND",404);
   const n=(await c.query("SELECT count(*) FILTER(WHERE active)::int members,count(*) FILTER(WHERE active AND role='factory_manager')::int managers FROM memberships WHERE factory_id=$1",[id])).rows[0];
   const inv=(await c.query("SELECT accepted_at,revoked_at,expires_at FROM invitations WHERE factory_id=$1 AND role='factory_manager' ORDER BY created_at DESC,id DESC LIMIT 1",[id])).rows[0];
-  return {id:f.id,slug:f.id,name:f.name,status:f.status,defaultLanguage:f.default_language,createdAt:f.created_at?.toISOString()??null,
+  return {id:f.id,demo:f.settings?.demo===true,slug:f.id,name:f.name,status:f.status,defaultLanguage:f.default_language,createdAt:f.created_at?.toISOString()??null,
     activeMembers:n.members,managers:n.managers,lastApprovedAt:f.last_approved_at?.toISOString()??null,limits:limits(f.settings),
     uploadBytesUsage:f.settings?.platformUsage?.uploadBytes??0,rowsUsage:f.settings?.platformUsage?.rows??0,
     invitationStatus:!inv?"none":inv.accepted_at?"accepted":inv.revoked_at?"revoked":inv.expires_at<=new Date()?"expired":"pending"};
@@ -33,7 +33,7 @@ export async function factories(c:PoolClient,page:number){
   const items=[];for(const {id} of ids)items.push(await factoryView(c,id));
   return {items,page,total:(await c.query("SELECT count(*)::int n FROM factories")).rows[0].n};
 }
-async function issue(c:PoolClient,id:string,actor:string,email:string){
+export async function issue(c:PoolClient,id:string,actor:string,email:string){
   if((await c.query("SELECT 1 FROM users WHERE email=$1",[email])).rowCount)throw new ImportError("INVITATION_UNAVAILABLE",409);
   const token=randomBytes(32).toString("base64url");
   const r=(await c.query(`INSERT INTO invitations(id,factory_id,email,role,token_hash,created_by,expires_at) VALUES($1,$2,$3,'factory_manager',$4,$5,now()+interval '7 days') RETURNING expires_at`,

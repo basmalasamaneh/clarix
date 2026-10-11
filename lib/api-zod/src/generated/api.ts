@@ -93,6 +93,7 @@ export const CompleteSecondFactorResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
@@ -251,6 +252,7 @@ export const ExplainAiBody = zod.object({
 })
 
 export const ExplainAiResponse = zod.object({
+  "message": zod.string().optional(),
   "status": zod.enum(['verified', 'off', 'unavailable', 'quota', 'error']),
   "statements": zod.array(zod.object({
   "type": zod.enum(['FACT', 'HYPOTHESIS', 'SUGGESTION']),
@@ -275,6 +277,53 @@ export const ExplainAiResponse = zod.object({
 })
 
 
+export const createDemoFactoryBodyNameMax = 140;
+
+export const createDemoFactoryBodyManagerEmailMax = 254;
+
+
+
+export const CreateDemoFactoryBody = zod.object({
+  "name": zod.string().min(1).max(createDemoFactoryBodyNameMax),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "managerEmail": zod.string().email().max(createDemoFactoryBodyManagerEmailMax).optional()
+})
+
+export const createDemoFactoryResponseFactoryLimitsMaxMembersMax = 10000;
+
+export const createDemoFactoryResponseFactoryLimitsMaxFileBytesMin = 1024;
+export const createDemoFactoryResponseFactoryLimitsMaxFileBytesMax = 20000000;
+
+export const createDemoFactoryResponseFactoryLimitsMaxRowsMax = 100000;
+
+
+
+export const CreateDemoFactoryResponse = zod.object({
+  "factory": zod.object({
+  "demo": zod.boolean().optional(),
+  "id": zod.string(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "status": zod.enum(['active', 'suspended']),
+  "defaultLanguage": zod.enum(['ar', 'en']),
+  "createdAt": zod.string().nullable(),
+  "activeMembers": zod.number().int(),
+  "managers": zod.number().int(),
+  "lastApprovedAt": zod.string().nullable(),
+  "limits": zod.object({
+  "maxMembers": zod.number().int().min(1).max(createDemoFactoryResponseFactoryLimitsMaxMembersMax),
+  "maxFileBytes": zod.number().int().min(createDemoFactoryResponseFactoryLimitsMaxFileBytesMin).max(createDemoFactoryResponseFactoryLimitsMaxFileBytesMax),
+  "maxRows": zod.number().int().min(1).max(createDemoFactoryResponseFactoryLimitsMaxRowsMax)
+}),
+  "uploadBytesUsage": zod.number().int(),
+  "rowsUsage": zod.number().int(),
+  "invitationStatus": zod.enum(['none', 'pending', 'expired', 'revoked', 'accepted'])
+}),
+  "path": zod.string().nullable(),
+  "expiresAt": zod.string().nullable()
+})
+
+
 
 
 
@@ -293,6 +342,7 @@ export const getPlatformFactoriesResponseItemsItemLimitsMaxRowsMax = 100000;
 
 export const GetPlatformFactoriesResponse = zod.object({
   "items": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
@@ -341,6 +391,7 @@ export const createPlatformFactoryResponseFactoryLimitsMaxRowsMax = 100000;
 
 export const CreatePlatformFactoryResponse = zod.object({
   "factory": zod.object({
+  "demo": zod.boolean().optional(),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
@@ -396,6 +447,7 @@ export const updatePlatformFactoryResponseLimitsMaxRowsMax = 100000;
 
 
 export const UpdatePlatformFactoryResponse = zod.object({
+  "demo": zod.boolean().optional(),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
@@ -435,6 +487,7 @@ export const managePlatformInvitationResponseFactoryLimitsMaxRowsMax = 100000;
 
 export const ManagePlatformInvitationResponse = zod.object({
   "factory": zod.object({
+  "demo": zod.boolean().optional(),
   "id": zod.string(),
   "name": zod.string(),
   "slug": zod.string(),
@@ -962,6 +1015,7 @@ export const AcceptInvitationResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
@@ -996,6 +1050,7 @@ export const ChangePasswordResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
@@ -2290,6 +2345,7 @@ export const GetSessionResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
@@ -2323,6 +2379,7 @@ export const LoginResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
@@ -2354,6 +2411,7 @@ export const UpdatePreferencesResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])
@@ -2380,6 +2438,7 @@ export const SelectFactoryResponse = zod.object({
   "csrfToken": zod.string(),
   "activeFactoryId": zod.string().nullable(),
   "memberships": zod.array(zod.object({
+  "demo": zod.boolean().optional(),
   "factoryId": zod.string(),
   "factoryName": zod.string(),
   "role": zod.enum(['factory_manager', 'analyst', 'viewer'])

@@ -643,6 +643,17 @@ Acceptance (wave 1): E-01 5% / 240 min · E-02 10% / 360 min · +5 pp · +120 mi
 
 ## 16. Build roadmap (one prompt per step; each ends with its gate)
 
+### Approved Phase 19 — final polish and readiness
+
+Polish, fixes and isolated verification only, except the explicitly approved
+Platform Admin-only Create demo factory action. Demo data is embedded synthetic
+baseline data, never copied from live factories, imported through the unchanged
+pipeline. No generated user accounts. An optional manager invitation uses the
+existing invite flow. A persistent DEMO banner identifies every demo-factory
+page. Existing suspension safely disables a demo without deleting immutable
+records or touching another factory. No publishing, engine changes or edits to
+test-data/, expected/ or tools/ are authorized.
+
 | # | Phase | Wave | Gate |
 |---|---|---|---|
 | 0 | Put this spec, `replit.md` and `test-data/` in the project | 1 | files present, `python3 tools/verify.py` passes |

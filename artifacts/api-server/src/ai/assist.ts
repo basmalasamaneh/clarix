@@ -58,7 +58,7 @@ export async function assist(ctx:Context,input:AiAssistInput,signal?:AbortSignal
    payload:{candidates:routed.candidates.map((c,i)=>({choice:i,intent:c.intent??"unsupported",parameters:c}))},
    validate:raw=>{const n=validateChoice(raw,statements.length);return n===null?null:[statements[n]];},
   });
-  if(r.status!=="verified")return {...base,status:r.status,retryAfter:r.retryAfter};
+  if(r.status!=="verified")return {...base,status:r.status,retryAfter:r.retryAfter,message:r.message??""};
   request=JSON.parse(r.statements[0].text);if(!request.intent)return unsupported();
   base.status="verified";base.intent=request.intent;
  }
@@ -76,7 +76,7 @@ export async function assist(ctx:Context,input:AiAssistInput,signal?:AbortSignal
   const payload={ids,items:"ranking" in data?data.ranking:ids.map(id=>({id}))};
   const r=await explain(ctx,{language:input.language},signal,undefined,{task:input.task,mode:"rank",data:{packed,facts:[],fallback:""},payload,
    validate:raw=>{const ranked=validateRank(raw,ids);return ranked?.map(id=>({type:"SUGGESTION",text:id,refs:[id]}))??null;}});
-  base.status=r.status;base.retryAfter=r.retryAfter;
+  base.status=r.status;base.retryAfter=r.retryAfter;base.message=r.message??"";
   if(r.status==="verified")base.blocks=r.statements.map(s=>base.blocks.find(b=>b.id===s.text)!);
  }
  return base;

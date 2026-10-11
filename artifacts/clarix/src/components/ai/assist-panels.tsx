@@ -1,3 +1,4 @@
+import '@/lib/phase19-i18n';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Compass, ListOrdered, MessageSquareText, SendHorizontal, Sparkles, Stethoscope, X } from 'lucide-react';
@@ -89,7 +90,7 @@ function AskInner({ chips, context }: { scope: string; chips: AskChip[]; context
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(e); } }}
           autoComplete="off" className="min-h-11 resize-none" data-testid="input-ask" />
         <div id="ask-help" className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <span>{typedOn ? t('as.ask.providerNote') : t('as.ask.disabledHint')}</span>
+          <span>{typedOn ? t('as.ask.providerNote') : consent.state === 'unconfigured' ? t('as.ask.unavailableHint') : t('as.ask.disabledHint')}</span>
           <span className={cn('num', tooLong && 'font-semibold text-status-red')} data-testid="text-ask-count">{t('as.ask.count', { count: question.length })}</span>
         </div>
         {tooLong && <p role="alert" className="text-xs text-status-red" data-testid="error-ask-too-long">{t('as.ask.tooLong')}</p>}

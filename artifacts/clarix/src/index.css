@@ -246,7 +246,8 @@ html[lang='ar'] {
 
 @keyframes fade-up {
   from {
-    opacity: 0;
+    /* Keep readable text at full contrast throughout the entrance motion. */
+    opacity: 1;
     transform: translateY(6px);
   }
   to {

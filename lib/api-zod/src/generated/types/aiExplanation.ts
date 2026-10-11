@@ -10,6 +10,7 @@ import type { AiFact } from './aiFact';
 import type { AiStatement } from './aiStatement';
 
 export interface AiExplanation {
+  message?: string;
   status: AiExplanationStatus;
   statements: AiStatement[];
   facts: AiFact[];

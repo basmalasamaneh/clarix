@@ -11,6 +11,7 @@ import type { PlatformFactoryInvitationStatus } from './platformFactoryInvitatio
 import type { PlatformFactoryStatus } from './platformFactoryStatus';
 
 export interface PlatformFactory {
+  demo?: boolean;
   id: string;
   name: string;
   slug: string;

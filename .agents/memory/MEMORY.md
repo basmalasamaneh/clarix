@@ -10,3 +10,4 @@
 - [Production setup boundary](production-setup.md) — privileged explicit bootstrap, immutable migration baseline, and isolated production-mode proof.
 - [PDF font proof](pdf-font-proof.md) — Chromium Type 3 Inter fonts can be embedded despite empty PyMuPDF font extraction; check Poppler flags too.
 - [AI safety](ai-safety.md) — closed-language verification, explicit consent, free-tier confidentiality and locking-read RLS constraints.
+- [Demo policy](demo-policy.md) — synthetic-only admin provisioning; suspension retains history; no ordinary factory access.
