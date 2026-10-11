@@ -43,3 +43,45 @@ https://docs.replit.com/features/data-and-storage/shared-database-migration
 
 All database queries in this investigation were read-only. No secrets are
 included in this report.
+
+## Subsequent production-fork validation diagnostic
+
+The newer diagnostic `migration-failure-diagnostics-1791683548290.txt`
+fails on:
+
+```sql
+CREATE POLICY "ai_tenant" ON "ai_state"
+  AS PERMISSIVE FOR ALL TO "clarix_runtime";
+```
+
+Error: `role "clarix_runtime" does not exist`.
+
+The new file was compared statement-by-statement with the previous diagnostic
+(ignoring statement order). Its only changed SQL definition is the corrected
+raw_rows unique constraint; that previous fix is present.
+
+Fresh inspection and recomputed Publish diff confirm:
+
+- All four required Clarix roles exist in development; none are superusers or
+  bypass RLS. None of the four exist in the production read-only role catalog.
+- The current generated diff includes the failing policy but no CREATE ROLE
+  statements. The supplied diff has 69 CREATE POLICY statements.
+- The development ai_state policy has USING and WITH CHECK expressions enforcing
+  matching factory context, signed-in membership, active/non-recovery status,
+  non-platform-admin status and an active factory.
+- The generated ai_state policy omits both expressions. Absent expressions are
+  not equivalent to these tenant checks. The omission must also be addressed,
+  not merely the missing role.
+- The diff reports no warnings, despite these observed missing dependencies and
+  missing policy expressions.
+
+There is no verified development-schema defect in that policy or role: the
+source catalog contains the required objects and expressions. No development
+change was applied for this new error. No production writes or deployment-time
+DDL were added.
+
+The supported Publish process needs to resolve role dependencies before policy
+creation and preserve the policy expressions. Ask Replit Support to investigate
+both findings. Do not retry the unchanged plan expecting it to pass. Once the
+Publish plan preserves those prerequisites, retry through Publish and validate
+on its disposable production fork before claiming success.

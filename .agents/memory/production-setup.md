@@ -51,3 +51,10 @@ index, causing validation to fail despite a valid development database.
 **How to apply:** Inspect both pg_indexes and pg_constraint. Prefer attaching
 the existing index non-destructively, align the schema declaration, and recompute
 the diff. A rolled-back local replay is not production-fork validation.
+
+Check generated policy predicates as well as role dependencies before publishing.
+**Why:** The generated ai_state policy omitted USING and WITH CHECK even though
+the development catalog held both tenant-isolation expressions; the diff gave
+no warning. Merely making CREATE POLICY execute would not prove isolation.
+**How to apply:** Compare generated policies with pg_policies, preserve security
+conditions, and do not equate a successful DDL replay with security equivalence.
